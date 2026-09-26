@@ -16,6 +16,7 @@ import '../../domain/entities/ludo_token.dart';
 import '../../domain/entities/player_color.dart';
 import '../../domain/entities/power_type.dart';
 import '../../domain/entities/token_status.dart';
+import '../../domain/power/power_game_event.dart';
 import '../../domain/power/power_inventory.dart';
 import '../../domain/power/power_ludo_action_result.dart';
 import '../../domain/power/power_ludo_engine.dart';
@@ -266,12 +267,15 @@ class _PowerComputerGameScreenState
         } on StateError catch (error) {
           _showRuleMessage(error.message);
         }
+        break;
 
       case PowerType.shield:
         await _humanUseShield();
+        break;
 
       case PowerType.diceControl:
         await _humanUseDiceControl();
+        break;
 
       case PowerType.bonusRoll:
         try {
@@ -284,6 +288,7 @@ class _PowerComputerGameScreenState
         } on StateError catch (error) {
           _showRuleMessage(error.message);
         }
+        break;
     }
   }
 
@@ -495,6 +500,7 @@ class _PowerComputerGameScreenState
               continue;
             }
             await _rollNormally(isComputer: true);
+            break;
 
           case PowerAiPreRollActionType.diceControl:
             final int value = decision.diceValue ?? 6;
@@ -518,6 +524,7 @@ class _PowerComputerGameScreenState
               prefix:
                   '$computerName controlled the dice to $value.',
             );
+            break;
 
           case PowerAiPreRollActionType.bonusRoll:
             final result =
@@ -534,9 +541,11 @@ class _PowerComputerGameScreenState
               continue;
             }
             await _rollNormally(isComputer: true);
+            break;
 
           case PowerAiPreRollActionType.normalRoll:
             await _rollNormally(isComputer: true);
+            break;
         }
 
         if (!mounted || _state.isGameOver || _isHumanTurn) {
