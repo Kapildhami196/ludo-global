@@ -84,7 +84,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1800));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Play Now').at(1));
+    final Finder powerPlay = find.text('Play Now').at(1);
+    await tester.ensureVisible(powerPlay);
+    await tester.tap(powerPlay);
     await tester.pumpAndSettle();
 
     expect(find.text('SELECT MATCH TYPE'), findsOneWidget);
