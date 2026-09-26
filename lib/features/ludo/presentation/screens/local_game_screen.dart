@@ -554,6 +554,7 @@ class _DiceButton extends StatelessWidget {
       enabled: enabled,
       label: 'Roll dice',
       child: GestureDetector(
+        key: const Key('roll_dice_button'),
         onTap: enabled ? onTap : null,
         child: AnimatedScale(
           duration: const Duration(milliseconds: 160),
