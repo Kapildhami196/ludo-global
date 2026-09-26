@@ -16,6 +16,7 @@ class LudoBoard extends StatelessWidget {
     this.activePlayerCount = 4,
     this.gameState,
     this.movableTokenIds = const <int>{},
+    this.visualPathOverrides = const <int, int>{},
     this.onTokenTap,
     super.key,
   });
@@ -23,6 +24,7 @@ class LudoBoard extends StatelessWidget {
   final int activePlayerCount;
   final LudoGameState? gameState;
   final Set<int> movableTokenIds;
+  final Map<int, int> visualPathOverrides;
   final ValueChanged<int>? onTokenTap;
 
   @override
@@ -52,7 +54,9 @@ class LudoBoard extends StatelessWidget {
                     ),
                   ),
                   for (final _TokenPlacement placement in placements)
-                    Positioned(
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 125),
+                      curve: Curves.easeOut,
                       left: placement.center.dx - (tokenSize / 2),
                       top: placement.center.dy - (tokenSize * 0.58),
                       child: PremiumLudoToken(
@@ -92,16 +96,22 @@ class LudoBoard extends StatelessWidget {
         final LudoToken token = player.tokens[tokenIndex];
         Offset center;
 
-        if (token.status == TokenStatus.base) {
+        final int? visualProgress =
+            visualPathOverrides[token.id];
+
+        if (visualProgress == null &&
+            token.status == TokenStatus.base) {
           center = _baseAnchor(
             player.color,
             tokenIndex,
             cell,
           );
         } else {
+          final int pathPosition =
+              visualProgress ?? token.pathPosition;
           final boardCell = LudoBoardMap.cellFor(
             color: player.color,
-            pathPosition: token.pathPosition,
+            pathPosition: pathPosition,
           );
           center = Offset(
             (boardCell.column + 0.5) * cell,
@@ -176,37 +186,32 @@ class LudoBoard extends StatelessWidget {
     int tokenIndex,
     double cell,
   ) {
-    final List<Offset> positions;
-    switch (color) {
-      case PlayerColor.red:
-        positions = const <Offset>[
+    final List<Offset> positions = switch (color) {
+      PlayerColor.red => const <Offset>[
           Offset(2, 2),
           Offset(4, 2),
           Offset(2, 4),
           Offset(4, 4),
-        ];
-      case PlayerColor.green:
-        positions = const <Offset>[
+        ],
+      PlayerColor.green => const <Offset>[
           Offset(11, 2),
           Offset(13, 2),
           Offset(11, 4),
           Offset(13, 4),
-        ];
-      case PlayerColor.yellow:
-        positions = const <Offset>[
+        ],
+      PlayerColor.yellow => const <Offset>[
           Offset(11, 11),
           Offset(13, 11),
           Offset(11, 13),
           Offset(13, 13),
-        ];
-      case PlayerColor.blue:
-        positions = const <Offset>[
+        ],
+      PlayerColor.blue => const <Offset>[
           Offset(2, 11),
           Offset(4, 11),
           Offset(2, 13),
           Offset(4, 13),
-        ];
-    }
+        ],
+    };
 
     final Offset point = positions[tokenIndex % positions.length];
     return Offset(point.dx * cell, point.dy * cell);
