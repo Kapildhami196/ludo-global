@@ -192,7 +192,7 @@ class _PowerLocalGameScreenState
       return;
     }
 
-    final int previousPlayerIndex = _state.currentPlayerIndex;
+    _autoMoveSequence++;
 
     setState(() {
       _isRolling = true;
@@ -211,14 +211,10 @@ class _PowerLocalGameScreenState
 
     _applyActionResult(
       result,
-      previousPlayerIndex: previousPlayerIndex,
       updateDice: true,
       fallbackMessage: 'Dice Control selected $value.',
     );
-
-    if (_state.currentPlayerIndex != previousPlayerIndex) {
-      await _showTurnHandoff();
-    }
+    _scheduleSingleLegalAutoMove();
   }
 
   void _useDoubleDistance() {
