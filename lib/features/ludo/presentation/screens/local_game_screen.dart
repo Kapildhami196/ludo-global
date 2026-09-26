@@ -581,7 +581,7 @@ class _DiceButton extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  _faces[(value - 1).clamp(0, 5)],
+                  _faces[(value - 1).clamp(0, 5).toInt()],
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 49,
