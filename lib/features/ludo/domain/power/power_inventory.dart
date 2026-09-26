@@ -12,7 +12,7 @@ class PowerInventory {
         PowerType.doubleDistance: PowerRules.initialChargesPerPower,
         PowerType.shield: PowerRules.initialChargesPerPower,
         PowerType.diceControl: PowerRules.initialChargesPerPower,
-        PowerType.bonusRoll: PowerRules.initialChargesPerPower,
+        PowerType.bonusRoll: 0,
       },
     );
   }
@@ -22,6 +22,19 @@ class PowerInventory {
   int count(PowerType type) => charges[type] ?? 0;
 
   bool has(PowerType type) => count(type) > 0;
+
+  PowerInventory add(PowerType type) {
+    if (!PowerRules.heldPowerTypes.contains(type)) {
+      throw StateError('$type is an immediate board effect, not inventory.');
+    }
+
+    return PowerInventory(
+      charges: <PowerType, int>{
+        ...charges,
+        type: count(type) + 1,
+      },
+    );
+  }
 
   PowerInventory consume(PowerType type) {
     final int current = count(type);
