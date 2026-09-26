@@ -139,7 +139,11 @@ void main() {
       state = shielded.state;
       expect(state.isShielded(4), isTrue);
 
-      final greenEndsTurn = engine.useDiceControl(state, 1);
+      final greenRoll = engine.useDiceControl(state, 1);
+      state = greenRoll.state;
+      expect(state.gameState.phase, GamePhase.selectingToken);
+
+      final greenEndsTurn = engine.moveToken(state, 4);
       state = greenEndsTurn.state;
       expect(state.gameState.currentPlayerIndex, 0);
       expect(state.isShielded(4), isTrue);
