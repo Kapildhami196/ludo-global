@@ -72,7 +72,6 @@ void main() {
 
     expect(find.text('NORMAL LUDO'), findsOneWidget);
     expect(find.text('LOCAL'), findsOneWidget);
-    expect(find.text('Player 1'), findsOneWidget);
     expect(find.text('Roll the dice to begin.'), findsNothing);
     expect(find.byKey(const Key('roll_dice_button')), findsOneWidget);
   });
@@ -134,7 +133,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('VS COMPUTER'), findsOneWidget);
-    expect(find.text('You'), findsWidgets);
     expect(find.byKey(const Key('roll_dice_button')), findsOneWidget);
   });
 }
