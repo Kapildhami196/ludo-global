@@ -4,7 +4,6 @@ enum PowerAiPreRollActionType {
   normalRoll,
   shield,
   diceControl,
-  bonusRoll,
 }
 
 class PowerAiPreRollDecision {
@@ -26,7 +25,6 @@ class PowerAiPreRollDecision {
         PowerAiPreRollActionType.normalRoll => null,
         PowerAiPreRollActionType.shield => PowerType.shield,
         PowerAiPreRollActionType.diceControl => PowerType.diceControl,
-        PowerAiPreRollActionType.bonusRoll => PowerType.bonusRoll,
       };
 }
 
