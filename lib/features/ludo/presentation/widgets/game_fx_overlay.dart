@@ -79,7 +79,7 @@ class _GameFxOverlayState extends State<GameFxOverlay>
                     ),
                   ),
                 Opacity(
-                  opacity: fade.clamp(0.0, 1.0),
+                  opacity: fade.clamp(0.0, 1.0).toDouble(),
                   child: Transform.scale(
                     scale: 0.65 + (t * 0.55),
                     child: Container(
