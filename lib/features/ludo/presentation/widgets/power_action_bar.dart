@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../domain/entities/power_type.dart';
+import '../../domain/power/power_rules.dart';
 
 class PowerActionBar extends StatelessWidget {
   const PowerActionBar({
@@ -54,7 +55,7 @@ class PowerActionBar extends StatelessWidget {
               ),
               Spacer(),
               Text(
-                'ONE CHARGE EACH',
+                'COLLECT ON BOARD',
                 style: TextStyle(
                   color: LudoGlobalColors.textSecondary,
                   fontSize: 8,
@@ -66,8 +67,8 @@ class PowerActionBar extends StatelessWidget {
           const SizedBox(height: 9),
           Row(
             children: [
-              for (final PowerType type in PowerType.values) ...[
-                if (type != PowerType.values.first)
+              for (final PowerType type in PowerRules.heldPowerTypes) ...[
+                if (type != PowerRules.heldPowerTypes.first)
                   const SizedBox(width: 7),
                 Expanded(
                   child: _PowerButton(
