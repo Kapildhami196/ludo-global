@@ -10,7 +10,7 @@
 | V0.6 | Complete local 2–4 human player game |
 | V0.7 | Power system |
 | V0.8 | All four powers + animations |
-| V0.9 | Computer / AI |
+| V0.9 | Computer / AI — Normal + Power, Easy/Medium/Hard |
 | V1.0 | Polished offline release |
 | V1.1+ | Accounts + online multiplayer |
 
