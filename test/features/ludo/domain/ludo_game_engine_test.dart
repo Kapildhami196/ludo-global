@@ -250,6 +250,54 @@ void main() {
         ClassicRules.finishProgress,
       );
       expect(moved.state.currentPlayerIndex, 0);
+      expect(moved.state.phase, GamePhase.gameOver);
+    });
+
+    test('finishing a non-final token grants one extra roll', () {
+      final LudoGameState state = LudoGameState(
+        players: const <LudoPlayer>[
+          LudoPlayer(
+            id: 'player_0',
+            name: 'Red',
+            color: PlayerColor.red,
+            tokens: <LudoToken>[
+              LudoToken(
+                id: 0,
+                color: PlayerColor.red,
+                pathPosition: 55,
+                status: TokenStatus.homePath,
+              ),
+              LudoToken(
+                id: 1,
+                color: PlayerColor.red,
+              ),
+            ],
+          ),
+          LudoPlayer(
+            id: 'player_1',
+            name: 'Yellow',
+            color: PlayerColor.yellow,
+            tokens: <LudoToken>[
+              LudoToken(
+                id: 4,
+                color: PlayerColor.yellow,
+              ),
+            ],
+          ),
+        ],
+        currentPlayerIndex: 0,
+        phase: GamePhase.waitingForRoll,
+        mode: LudoGameMode.normal,
+      );
+
+      final rolled = engine.rollDice(state, forcedValue: 2);
+      final moved = engine.moveToken(rolled.state, 0);
+
+      expect(
+        moved.state.players.first.tokens.first.status,
+        TokenStatus.finished,
+      );
+      expect(moved.state.currentPlayerIndex, 0);
       expect(moved.state.phase, GamePhase.waitingForRoll);
     });
 
