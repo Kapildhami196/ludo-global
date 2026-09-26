@@ -32,7 +32,7 @@ void main() {
     expect(find.text('Selected from Home: Normal Ludo'), findsOneWidget);
   });
 
-  testWidgets('local pass-and-play reaches the board preview', (
+  testWidgets('local pass-and-play reaches the playable game board', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const LudoGlobalApp());
@@ -61,9 +61,10 @@ void main() {
     await tester.tap(startGame);
     await tester.pumpAndSettle();
 
-    expect(find.text('GAME BOARD'), findsOneWidget);
-    expect(find.text('Normal Ludo • Local Pass-and-Play'), findsOneWidget);
+    expect(find.text('NORMAL LUDO'), findsOneWidget);
+    expect(find.text('LOCAL'), findsOneWidget);
     expect(find.text('Player 1'), findsOneWidget);
-    expect(find.text('Player 2'), findsOneWidget);
+    expect(find.text('Roll the dice to begin.'), findsNothing);
+    expect(find.bySemanticsLabel('Roll dice'), findsOneWidget);
   });
 }
