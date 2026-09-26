@@ -63,6 +63,7 @@ void main() {
           playerCount: 4,
         ),
         playerNames: const ['A', 'B', 'C', 'D'],
+        startingPlayerIndex: 0,
       );
 
       expect(state.players.length, 4);
@@ -75,6 +76,41 @@ void main() {
       );
       expect(state.phase, GamePhase.waitingForRoll);
       expect(state.currentPlayer.color, PlayerColor.red);
+    });
+
+    test('two-player games use opposite Red and Yellow seats', () {
+      final LudoGameState state = engine.createGame(
+        config: const LudoGameConfig(
+          mode: LudoGameMode.normal,
+          matchType: LudoMatchType.localPassAndPlay,
+          playerCount: 2,
+        ),
+        playerNames: const <String>['A', 'B'],
+        startingPlayerIndex: 0,
+      );
+
+      expect(
+        state.players.map((player) => player.color).toList(),
+        const <PlayerColor>[
+          PlayerColor.red,
+          PlayerColor.yellow,
+        ],
+      );
+    });
+
+    test('starting player may be explicitly controlled for deterministic play', () {
+      final LudoGameState state = engine.createGame(
+        config: const LudoGameConfig(
+          mode: LudoGameMode.normal,
+          matchType: LudoMatchType.localPassAndPlay,
+          playerCount: 4,
+        ),
+        playerNames: const <String>['A', 'B', 'C', 'D'],
+        startingPlayerIndex: 2,
+      );
+
+      expect(state.currentPlayerIndex, 2);
+      expect(state.currentPlayer.color, PlayerColor.yellow);
     });
 
     test('a token in base requires a six to enter', () {
@@ -213,6 +249,36 @@ void main() {
         moved.state.players.first.tokens.first.pathPosition,
         ClassicRules.finishProgress,
       );
+      expect(moved.state.currentPlayerIndex, 0);
+      expect(moved.state.phase, GamePhase.waitingForRoll);
+    });
+
+    test('a six with no legal move still grants one extra roll', () {
+      final LudoGameState state = _stateWithTokens(
+        redProgress: 56,
+        redStatus: TokenStatus.homePath,
+      ).copyWith(
+        consecutiveSixes: 0,
+      );
+
+      final rolled = engine.rollDice(state, forcedValue: 6);
+
+      expect(rolled.state.currentPlayerIndex, 0);
+      expect(rolled.state.phase, GamePhase.waitingForRoll);
+      expect(rolled.state.consecutiveSixes, 1);
+    });
+
+    test('three opponent tokens on one unsafe cell remain an impassable blockade', () {
+      final LudoGameState state = _stateWithTokens(
+        redProgress: 2,
+        greenProgresses: const <int>[44, 44, 44],
+      );
+
+      expect(engine.getMovableTokenIds(state, 4), isEmpty);
+    });
+
+    test('online turn duration is twenty seconds', () {
+      expect(ClassicRules.onlineTurnDuration, const Duration(seconds: 20));
     });
   });
 }
@@ -224,7 +290,8 @@ LudoGameState _newTwoPlayerGame(LudoGameEngine engine) {
       matchType: LudoMatchType.localPassAndPlay,
       playerCount: 2,
     ),
-    playerNames: const ['Red', 'Green'],
+    playerNames: const ['Red', 'Yellow'],
+    startingPlayerIndex: 0,
   );
 }
 
