@@ -20,6 +20,7 @@ class LudoGameEngine {
   LudoGameState createGame({
     required LudoGameConfig config,
     required List<String> playerNames,
+    int? startingPlayerIndex,
   }) {
     if (playerNames.length != config.playerCount) {
       throw ArgumentError(
@@ -28,12 +29,35 @@ class LudoGameEngine {
       );
     }
 
-    const List<PlayerColor> colors = <PlayerColor>[
-      PlayerColor.red,
-      PlayerColor.green,
-      PlayerColor.yellow,
-      PlayerColor.blue,
-    ];
+    final List<PlayerColor> colors = switch (config.playerCount) {
+      2 => const <PlayerColor>[
+          PlayerColor.red,
+          PlayerColor.yellow,
+        ],
+      3 => const <PlayerColor>[
+          PlayerColor.red,
+          PlayerColor.green,
+          PlayerColor.yellow,
+        ],
+      4 => const <PlayerColor>[
+          PlayerColor.red,
+          PlayerColor.green,
+          PlayerColor.yellow,
+          PlayerColor.blue,
+        ],
+      _ => throw StateError('Unsupported player count.'),
+    };
+
+    final int firstPlayerIndex =
+        startingPlayerIndex ?? _random.nextInt(config.playerCount);
+    if (firstPlayerIndex < 0 ||
+        firstPlayerIndex >= config.playerCount) {
+      throw ArgumentError.value(
+        firstPlayerIndex,
+        'startingPlayerIndex',
+        'Starting player must be an active player index.',
+      );
+    }
 
     final List<LudoPlayer> players = List<LudoPlayer>.generate(
       config.playerCount,
@@ -59,7 +83,7 @@ class LudoGameEngine {
 
     return LudoGameState(
       players: players,
-      currentPlayerIndex: 0,
+      currentPlayerIndex: firstPlayerIndex,
       phase: GamePhase.waitingForRoll,
       mode: config.mode,
     );
@@ -356,7 +380,9 @@ class LudoGameEngine {
     final bool getsExtraTurn =
         (diceValue == 6 && ClassicRules.extraTurnOnSix) ||
             (capturedTokenIds.isNotEmpty &&
-                ClassicRules.extraTurnOnCapture);
+                ClassicRules.extraTurnOnCapture) ||
+            (targetStatus == TokenStatus.finished &&
+                ClassicRules.extraTurnOnFinish);
 
     if (getsExtraTurn) {
       events.add(
