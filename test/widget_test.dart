@@ -18,10 +18,18 @@ void main() {
 
     expect(find.text('NORMAL\nLUDO'), findsOneWidget);
     expect(find.text('POWER\nLUDO'), findsOneWidget);
-    expect(find.text('Local'), findsOneWidget);
+    expect(find.text('Lv. 1'), findsNothing);
+    expect(find.text('12,500'), findsNothing);
+    expect(find.text('320'), findsNothing);
+    expect(find.text('Shop'), findsNothing);
+    expect(find.text('Friends'), findsNothing);
+    expect(find.text('Missions'), findsNothing);
+    expect(find.text('Events'), findsNothing);
+    expect(find.text('Computer'), findsNothing);
+    expect(find.text('Local'), findsNothing);
   });
 
-  testWidgets('Normal mode opens mode selection', (
+  testWidgets('Normal mode opens match type directly', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const LudoGlobalApp());
@@ -31,8 +39,9 @@ void main() {
     await tester.tap(find.text('Play Now').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('CHOOSE YOUR MODE'), findsOneWidget);
-    expect(find.text('Selected from Home: Normal Ludo'), findsOneWidget);
+    expect(find.text('SELECT MATCH TYPE'), findsOneWidget);
+    expect(find.text('Normal Ludo'), findsOneWidget);
+    expect(find.text('CHOOSE YOUR MODE'), findsNothing);
   });
 
   testWidgets('local pass-and-play reaches the playable game board', (
@@ -40,9 +49,6 @@ void main() {
   ) async {
     await tester.pumpWidget(const LudoGlobalApp());
     await tester.pump(const Duration(milliseconds: 1800));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Play Now').first);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Play Now').first);
@@ -81,8 +87,8 @@ void main() {
     await tester.tap(find.text('Play Now').at(1));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Play Now').last);
-    await tester.pumpAndSettle();
+    expect(find.text('SELECT MATCH TYPE'), findsOneWidget);
+    expect(find.text('Power Ludo'), findsOneWidget);
 
     await tester.tap(find.text('Local / Pass-and-Play'));
     await tester.pumpAndSettle();
