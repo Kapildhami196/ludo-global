@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ludo_global/app/ludo_global_app.dart';
+import 'package:ludo_global/features/ludo/domain/entities/game_config.dart';
+import 'package:ludo_global/features/matchmaking/presentation/computer_setup_screen.dart';
 
 void main() {
   testWidgets('Ludo Global splash transitions to premium home', (
@@ -98,6 +100,32 @@ void main() {
     expect(find.text('SHIELD'), findsOneWidget);
     expect(find.text('CONTROL'), findsOneWidget);
     expect(find.text('BONUS'), findsOneWidget);
+    expect(find.byKey(const Key('roll_dice_button')), findsOneWidget);
+  });
+
+  testWidgets('computer setup launches an offline AI match', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ComputerSetupScreen(
+          mode: LudoGameMode.normal,
+        ),
+      ),
+    );
+
+    expect(find.text('PLAY WITH COMPUTER'), findsOneWidget);
+    expect(find.text('Easy'), findsOneWidget);
+    expect(find.text('Medium'), findsOneWidget);
+    expect(find.text('Hard'), findsOneWidget);
+
+    final Finder start = find.text('Start vs Computer');
+    await tester.ensureVisible(start);
+    await tester.tap(start);
+    await tester.pumpAndSettle();
+
+    expect(find.text('VS COMPUTER'), findsOneWidget);
+    expect(find.text('You'), findsWidgets);
     expect(find.byKey(const Key('roll_dice_button')), findsOneWidget);
   });
 }
