@@ -254,8 +254,8 @@ void main() {
     });
 
     test('finishing a non-final token grants one extra roll', () {
-      final LudoGameState state = LudoGameState(
-        players: const <LudoPlayer>[
+      const LudoGameState state = LudoGameState(
+        players: <LudoPlayer>[
           LudoPlayer(
             id: 'player_0',
             name: 'Red',
