@@ -1,23 +1,39 @@
 import 'package:flutter/material.dart';
 
-abstract final class LudoGlobalTheme {
-  static const Color _background = Color(0xFF071A36);
-  static const Color _surface = Color(0xFF0C2B55);
-  static const Color _accent = Color(0xFF18A7FF);
+import 'ludo_global_tokens.dart';
 
+abstract final class LudoGlobalTheme {
   static ThemeData get dark {
-    final ColorScheme scheme = ColorScheme.fromSeed(
-      seedColor: _accent,
-      brightness: Brightness.dark,
-      surface: _surface,
+    const ColorScheme colorScheme = ColorScheme.dark(
+      primary: LudoGlobalColors.electricBlue,
+      secondary: LudoGlobalColors.gold,
+      surface: LudoGlobalColors.surface,
+      error: LudoGlobalColors.red,
+      onPrimary: Colors.white,
+      onSecondary: Color(0xFF1A2740),
+      onSurface: Colors.white,
     );
 
     return ThemeData(
       useMaterial3: true,
-      colorScheme: scheme,
-      scaffoldBackgroundColor: _background,
-      cardTheme: const CardThemeData(
-        margin: EdgeInsets.zero,
+      brightness: Brightness.dark,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: LudoGlobalColors.backgroundDeep,
+      fontFamily: null,
+      textTheme: const TextTheme(
+        bodyMedium: TextStyle(
+          color: LudoGlobalColors.textPrimary,
+        ),
+        bodySmall: TextStyle(
+          color: LudoGlobalColors.textSecondary,
+        ),
+      ),
+      iconTheme: const IconThemeData(
+        color: Colors.white,
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: LudoGlobalColors.surface,
+        surfaceTintColor: Colors.transparent,
       ),
     );
   }
