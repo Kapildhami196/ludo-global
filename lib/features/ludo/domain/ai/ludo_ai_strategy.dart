@@ -20,6 +20,8 @@ class LudoAiStrategy {
     required LudoGameState state,
     required LudoGameEngine engine,
     required AiDifficulty difficulty,
+    int? movementDistance,
+    Set<int> protectedTokenIds = const <int>{},
   }) {
     if (state.movableTokenIds.isEmpty) {
       throw StateError('AI cannot choose a move without legal tokens.');
@@ -42,6 +44,8 @@ class LudoAiStrategy {
             engine: engine,
             tokenId: tokenId,
             difficulty: difficulty,
+            movementDistance: movementDistance,
+            protectedTokenIds: protectedTokenIds,
           ),
         )
         .toList(growable: false)
