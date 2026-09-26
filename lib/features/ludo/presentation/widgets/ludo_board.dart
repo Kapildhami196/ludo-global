@@ -19,6 +19,7 @@ class LudoBoard extends StatelessWidget {
     this.visualPathOverrides = const <int, int>{},
     this.movingTokenId,
     this.capturedTokenIds = const <int>{},
+    this.shieldedTokenIds = const <int>{},
     this.onTokenTap,
     super.key,
   });
@@ -29,6 +30,7 @@ class LudoBoard extends StatelessWidget {
   final Map<int, int> visualPathOverrides;
   final int? movingTokenId;
   final Set<int> capturedTokenIds;
+  final Set<int> shieldedTokenIds;
   final ValueChanged<int>? onTokenTap;
 
   @override
@@ -73,6 +75,8 @@ class LudoBoard extends StatelessWidget {
                         moving: movingTokenId == placement.tokenId,
                         captured:
                             capturedTokenIds.contains(placement.tokenId),
+                        shielded:
+                            shieldedTokenIds.contains(placement.tokenId),
                         onTap: movableTokenIds.contains(placement.tokenId) &&
                                 onTokenTap != null
                             ? () => onTokenTap!(placement.tokenId)
