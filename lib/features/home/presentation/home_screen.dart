@@ -37,7 +37,7 @@ class HomeScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Spacer(),
+                      const SizedBox(height: 10),
                       const _HomeLogo(),
                       const SizedBox(height: 30),
                       LudoModeCard(
@@ -61,7 +61,7 @@ class HomeScreen extends StatelessWidget {
                           LudoGameMode.power,
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
