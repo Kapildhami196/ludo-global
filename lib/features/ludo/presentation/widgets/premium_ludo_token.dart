@@ -10,6 +10,7 @@ class PremiumLudoToken extends StatefulWidget {
     this.highlighted = false,
     this.moving = false,
     this.captured = false,
+    this.shielded = false,
     this.onTap,
     super.key,
   });
@@ -20,6 +21,7 @@ class PremiumLudoToken extends StatefulWidget {
   final bool highlighted;
   final bool moving;
   final bool captured;
+  final bool shielded;
   final VoidCallback? onTap;
 
   @override
@@ -129,16 +131,19 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                 child: Stack(
                   alignment: Alignment.bottomCenter,
                   children: [
-                    if (widget.highlighted)
+                    if (widget.highlighted || widget.shielded)
                       Positioned.fill(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: widget.color.withValues(alpha: 0.78),
-                                blurRadius: widget.size * 0.65,
-                                spreadRadius: 2,
+                                color: (widget.shielded
+                                        ? const Color(0xFF42D9FF)
+                                        : widget.color)
+                                    .withValues(alpha: 0.78),
+                                blurRadius: widget.size * 0.68,
+                                spreadRadius: widget.shielded ? 3 : 2,
                               ),
                             ],
                           ),
@@ -163,6 +168,24 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                         ],
                       ),
                     ),
+                    if (widget.shielded)
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Container(
+                          width: widget.size * 0.42,
+                          height: widget.size * 0.42,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFF0B78D1),
+                          ),
+                          child: Icon(
+                            Icons.shield_rounded,
+                            size: widget.size * 0.25,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     Positioned(
                       bottom: widget.size * 0.12,
                       child: Container(
