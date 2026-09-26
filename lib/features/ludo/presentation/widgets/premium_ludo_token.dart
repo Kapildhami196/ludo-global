@@ -16,10 +16,10 @@ class PremiumLudoToken extends StatelessWidget {
   Widget build(BuildContext context) {
     final HSLColor hsl = HSLColor.fromColor(color);
     final Color highlight = hsl
-        .withLightness((hsl.lightness + 0.25).clamp(0, 1))
+        .withLightness((hsl.lightness + 0.25).clamp(0.0, 1.0).toDouble())
         .toColor();
     final Color shadow = hsl
-        .withLightness((hsl.lightness - 0.18).clamp(0, 1))
+        .withLightness((hsl.lightness - 0.18).clamp(0.0, 1.0).toDouble())
         .toColor();
 
     return Opacity(
