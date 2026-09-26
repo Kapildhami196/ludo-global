@@ -68,4 +68,36 @@ void main() {
     expect(find.text('Roll the dice to begin.'), findsNothing);
     expect(find.byKey(const Key('roll_dice_button')), findsOneWidget);
   });
+
+  testWidgets('Power Ludo local flow exposes all four powers', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const LudoGlobalApp());
+    await tester.pump(const Duration(milliseconds: 1800));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Play Now').at(1));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Play Now').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Local / Pass-and-Play'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('2'));
+    await tester.pumpAndSettle();
+
+    final Finder startGame = find.text('Start Game');
+    await tester.ensureVisible(startGame);
+    await tester.tap(startGame);
+    await tester.pumpAndSettle();
+
+    expect(find.text('POWER LUDO'), findsWidgets);
+    expect(find.text('DOUBLE'), findsOneWidget);
+    expect(find.text('SHIELD'), findsOneWidget);
+    expect(find.text('CONTROL'), findsOneWidget);
+    expect(find.text('BONUS'), findsOneWidget);
+    expect(find.byKey(const Key('roll_dice_button')), findsOneWidget);
+  });
 }
