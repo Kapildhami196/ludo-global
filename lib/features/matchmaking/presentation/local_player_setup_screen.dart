@@ -5,6 +5,7 @@ import '../../../core/widgets/game_background.dart';
 import '../../../core/widgets/glossy_game_button.dart';
 import '../../ludo/domain/entities/game_config.dart';
 import '../../ludo/presentation/screens/local_game_screen.dart';
+import '../../ludo/presentation/screens/power_local_game_screen.dart';
 
 class LocalPlayerSetupScreen extends StatefulWidget {
   const LocalPlayerSetupScreen({
@@ -70,10 +71,18 @@ class _LocalPlayerSetupScreenState extends State<LocalPlayerSetupScreen> {
 
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => LocalGameScreen(
-          mode: widget.mode,
-          playerNames: names,
-        ),
+        builder: (_) {
+          if (widget.mode == LudoGameMode.power) {
+            return PowerLocalGameScreen(
+              playerNames: names,
+            );
+          }
+
+          return LocalGameScreen(
+            mode: widget.mode,
+            playerNames: names,
+          );
+        },
       ),
     );
   }
