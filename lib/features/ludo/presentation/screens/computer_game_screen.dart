@@ -51,8 +51,8 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
   bool _isRolling = false;
   bool _isMoving = false;
   bool _computerLoopRunning = false;
-  bool _soundEnabled = true;
-  bool _hapticsEnabled = true;
+  final bool _soundEnabled = true;
+  final bool _hapticsEnabled = true;
 
   String _message = '';
 
