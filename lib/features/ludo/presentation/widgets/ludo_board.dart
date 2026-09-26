@@ -3,15 +3,27 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/ludo_global_tokens.dart';
+import '../../domain/engine/ludo_board_map.dart';
+import '../../domain/entities/ludo_game_state.dart';
+import '../../domain/entities/ludo_player.dart';
+import '../../domain/entities/ludo_token.dart';
+import '../../domain/entities/player_color.dart';
+import '../../domain/entities/token_status.dart';
 import 'premium_ludo_token.dart';
 
 class LudoBoard extends StatelessWidget {
   const LudoBoard({
     this.activePlayerCount = 4,
+    this.gameState,
+    this.movableTokenIds = const <int>{},
+    this.onTokenTap,
     super.key,
   });
 
   final int activePlayerCount;
+  final LudoGameState? gameState;
+  final Set<int> movableTokenIds;
+  final ValueChanged<int>? onTokenTap;
 
   @override
   Widget build(BuildContext context) {
@@ -24,29 +36,38 @@ class LudoBoard extends StatelessWidget {
             constraints.maxHeight,
           );
           final double cell = size / 15;
-          final double tokenSize = cell * 0.78;
+          final double tokenSize = cell * 0.9;
+          final List<_TokenPlacement> placements =
+              _placements(cell);
 
           return RepaintBoundary(
             child: SizedBox.square(
               dimension: size,
               child: Stack(
+                clipBehavior: Clip.none,
                 children: [
                   const Positioned.fill(
                     child: CustomPaint(
                       painter: _LudoBoardPainter(),
                     ),
                   ),
-                  ..._tokenAnchors(cell).map(
-                    (anchor) => Positioned(
-                      left: anchor.x - (tokenSize / 2),
-                      top: anchor.y - (tokenSize * 0.58),
+                  for (final _TokenPlacement placement in placements)
+                    Positioned(
+                      left: placement.center.dx - (tokenSize / 2),
+                      top: placement.center.dy - (tokenSize * 0.58),
                       child: PremiumLudoToken(
-                        color: anchor.color,
+                        key: ValueKey<int>(placement.tokenId),
+                        color: placement.color,
                         size: tokenSize,
-                        dimmed: anchor.playerIndex >= activePlayerCount,
+                        dimmed: placement.dimmed,
+                        highlighted:
+                            movableTokenIds.contains(placement.tokenId),
+                        onTap: movableTokenIds.contains(placement.tokenId) &&
+                                onTokenTap != null
+                            ? () => onTokenTap!(placement.tokenId)
+                            : null,
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -56,81 +77,163 @@ class LudoBoard extends StatelessWidget {
     );
   }
 
-  List<_TokenAnchor> _tokenAnchors(double cell) {
-    List<_TokenAnchor> four(
-      int playerIndex,
-      Color color,
-      List<Offset> cells,
-    ) {
-      return cells
-          .map(
-            (point) => _TokenAnchor(
-              playerIndex: playerIndex,
-              color: color,
-              x: point.dx * cell,
-              y: point.dy * cell,
-            ),
-          )
-          .toList();
+  List<_TokenPlacement> _placements(double cell) {
+    if (gameState == null) {
+      return _previewPlacements(cell);
     }
 
-    return [
-      ...four(
-        0,
-        LudoGlobalColors.red,
-        const [
+    final List<_TokenPlacement> result = <_TokenPlacement>[];
+    final Map<String, int> stackCounts = <String, int>{};
+
+    for (final LudoPlayer player in gameState!.players) {
+      for (int tokenIndex = 0;
+          tokenIndex < player.tokens.length;
+          tokenIndex++) {
+        final LudoToken token = player.tokens[tokenIndex];
+        Offset center;
+
+        if (token.status == TokenStatus.base) {
+          center = _baseAnchor(
+            player.color,
+            tokenIndex,
+            cell,
+          );
+        } else {
+          final boardCell = LudoBoardMap.cellFor(
+            color: player.color,
+            pathPosition: token.pathPosition,
+          );
+          center = Offset(
+            (boardCell.column + 0.5) * cell,
+            (boardCell.row + 0.5) * cell,
+          );
+
+          final String key =
+              '${boardCell.row}:${boardCell.column}';
+          final int stackIndex = stackCounts[key] ?? 0;
+          stackCounts[key] = stackIndex + 1;
+
+          if (stackIndex > 0) {
+            const List<Offset> offsets = <Offset>[
+              Offset(-0.13, -0.10),
+              Offset(0.13, -0.10),
+              Offset(-0.13, 0.12),
+              Offset(0.13, 0.12),
+            ];
+            final Offset delta =
+                offsets[stackIndex % offsets.length];
+            center += Offset(delta.dx * cell, delta.dy * cell);
+          }
+        }
+
+        result.add(
+          _TokenPlacement(
+            tokenId: token.id,
+            color: _colorFor(player.color),
+            center: center,
+          ),
+        );
+      }
+    }
+
+    return result;
+  }
+
+  List<_TokenPlacement> _previewPlacements(double cell) {
+    final List<_TokenPlacement> result = <_TokenPlacement>[];
+    const List<PlayerColor> colors = <PlayerColor>[
+      PlayerColor.red,
+      PlayerColor.green,
+      PlayerColor.yellow,
+      PlayerColor.blue,
+    ];
+
+    int tokenId = 0;
+    for (int playerIndex = 0;
+        playerIndex < colors.length;
+        playerIndex++) {
+      for (int tokenIndex = 0; tokenIndex < 4; tokenIndex++) {
+        result.add(
+          _TokenPlacement(
+            tokenId: tokenId++,
+            color: _colorFor(colors[playerIndex]),
+            center: _baseAnchor(
+              colors[playerIndex],
+              tokenIndex,
+              cell,
+            ),
+            dimmed: playerIndex >= activePlayerCount,
+          ),
+        );
+      }
+    }
+
+    return result;
+  }
+
+  Offset _baseAnchor(
+    PlayerColor color,
+    int tokenIndex,
+    double cell,
+  ) {
+    final List<Offset> positions;
+    switch (color) {
+      case PlayerColor.red:
+        positions = const <Offset>[
           Offset(2, 2),
           Offset(4, 2),
           Offset(2, 4),
           Offset(4, 4),
-        ],
-      ),
-      ...four(
-        1,
-        LudoGlobalColors.green,
-        const [
+        ];
+      case PlayerColor.green:
+        positions = const <Offset>[
           Offset(11, 2),
           Offset(13, 2),
           Offset(11, 4),
           Offset(13, 4),
-        ],
-      ),
-      ...four(
-        2,
-        LudoGlobalColors.gold,
-        const [
+        ];
+      case PlayerColor.yellow:
+        positions = const <Offset>[
           Offset(11, 11),
           Offset(13, 11),
           Offset(11, 13),
           Offset(13, 13),
-        ],
-      ),
-      ...four(
-        3,
-        LudoGlobalColors.electricBlue,
-        const [
+        ];
+      case PlayerColor.blue:
+        positions = const <Offset>[
           Offset(2, 11),
           Offset(4, 11),
           Offset(2, 13),
           Offset(4, 13),
-        ],
-      ),
-    ];
+        ];
+    }
+
+    final Offset point = positions[tokenIndex % positions.length];
+    return Offset(point.dx * cell, point.dy * cell);
+  }
+
+  Color _colorFor(PlayerColor color) {
+    return switch (color) {
+      PlayerColor.red => LudoGlobalColors.red,
+      PlayerColor.green => LudoGlobalColors.green,
+      PlayerColor.yellow => LudoGlobalColors.gold,
+      PlayerColor.blue => LudoGlobalColors.electricBlue,
+    };
   }
 }
 
-class _TokenAnchor {
-  const _TokenAnchor({
-    required this.playerIndex,
+class _TokenPlacement {
+  const _TokenPlacement({
+    required this.tokenId,
     required this.color,
-    required this.x,
-    required this.y,
+    required this.center,
+    this.dimmed = false,
   });
 
-  final int playerIndex;
+  final int tokenId;
   final Color color;
-  final double x;
-  final double y;
+  final Offset center;
+  final bool dimmed;
 }
 
 class _LudoBoardPainter extends CustomPainter {
@@ -153,34 +256,14 @@ class _LudoBoardPainter extends CustomPainter {
       Paint()..color = const Color(0xFFEAF4FF),
     );
 
-    _drawBase(
-      canvas,
-      cell,
-      const Offset(0, 0),
-      LudoGlobalColors.red,
-      borderPaint,
-    );
-    _drawBase(
-      canvas,
-      cell,
-      const Offset(9, 0),
-      LudoGlobalColors.green,
-      borderPaint,
-    );
-    _drawBase(
-      canvas,
-      cell,
-      const Offset(9, 9),
-      LudoGlobalColors.gold,
-      borderPaint,
-    );
-    _drawBase(
-      canvas,
-      cell,
-      const Offset(0, 9),
-      LudoGlobalColors.electricBlue,
-      borderPaint,
-    );
+    _drawBase(canvas, cell, const Offset(0, 0),
+        LudoGlobalColors.red, borderPaint);
+    _drawBase(canvas, cell, const Offset(9, 0),
+        LudoGlobalColors.green, borderPaint);
+    _drawBase(canvas, cell, const Offset(9, 9),
+        LudoGlobalColors.gold, borderPaint);
+    _drawBase(canvas, cell, const Offset(0, 9),
+        LudoGlobalColors.electricBlue, borderPaint);
 
     for (int row = 0; row < 15; row++) {
       for (int column = 0; column < 15; column++) {
@@ -208,7 +291,8 @@ class _LudoBoardPainter extends CustomPainter {
       canvas,
       cell,
       cells: [
-        for (int column = 1; column <= 5; column++) Offset(column.toDouble(), 7),
+        for (int column = 1; column <= 5; column++)
+          Offset(column.toDouble(), 7),
       ],
       color: LudoGlobalColors.red,
       borderPaint: borderPaint,
@@ -217,7 +301,8 @@ class _LudoBoardPainter extends CustomPainter {
       canvas,
       cell,
       cells: [
-        for (int row = 1; row <= 5; row++) Offset(7, row.toDouble()),
+        for (int row = 1; row <= 5; row++)
+          Offset(7, row.toDouble()),
       ],
       color: LudoGlobalColors.green,
       borderPaint: borderPaint,
@@ -236,23 +321,26 @@ class _LudoBoardPainter extends CustomPainter {
       canvas,
       cell,
       cells: [
-        for (int row = 9; row <= 13; row++) Offset(7, row.toDouble()),
+        for (int row = 9; row <= 13; row++)
+          Offset(7, row.toDouble()),
       ],
       color: LudoGlobalColors.electricBlue,
       borderPaint: borderPaint,
     );
 
-    _drawStartCell(canvas, cell, 1, 6, LudoGlobalColors.red, borderPaint);
-    _drawStartCell(canvas, cell, 8, 1, LudoGlobalColors.green, borderPaint);
-    _drawStartCell(canvas, cell, 13, 8, LudoGlobalColors.gold, borderPaint);
-    _drawStartCell(
-      canvas,
-      cell,
-      6,
-      13,
-      LudoGlobalColors.electricBlue,
-      borderPaint,
-    );
+    _drawStartCell(canvas, cell, 1, 6,
+        LudoGlobalColors.red, borderPaint);
+    _drawStartCell(canvas, cell, 8, 1,
+        LudoGlobalColors.green, borderPaint);
+    _drawStartCell(canvas, cell, 13, 8,
+        LudoGlobalColors.gold, borderPaint);
+    _drawStartCell(canvas, cell, 6, 13,
+        LudoGlobalColors.electricBlue, borderPaint);
+
+    _drawSafeCell(canvas, cell, 6, 2);
+    _drawSafeCell(canvas, cell, 12, 6);
+    _drawSafeCell(canvas, cell, 8, 12);
+    _drawSafeCell(canvas, cell, 2, 8);
 
     _drawCenter(canvas, cell);
     _drawOuterBorder(canvas, size, cell);
@@ -280,15 +368,21 @@ class _LudoBoardPainter extends CustomPainter {
       cell * 4,
     );
     canvas.drawRRect(
-      RRect.fromRectAndRadius(innerRect, Radius.circular(cell * 0.55)),
+      RRect.fromRectAndRadius(
+        innerRect,
+        Radius.circular(cell * 0.55),
+      ),
       Paint()..color = const Color(0xFFF8FBFF),
     );
     canvas.drawRRect(
-      RRect.fromRectAndRadius(innerRect, Radius.circular(cell * 0.55)),
+      RRect.fromRectAndRadius(
+        innerRect,
+        Radius.circular(cell * 0.55),
+      ),
       borderPaint,
     );
 
-    final List<Offset> holes = [
+    final List<Offset> holes = <Offset>[
       Offset(origin.dx + 2, origin.dy + 2),
       Offset(origin.dx + 4, origin.dy + 2),
       Offset(origin.dx + 2, origin.dy + 4),
@@ -350,11 +444,43 @@ class _LudoBoardPainter extends CustomPainter {
     );
     canvas.drawRect(rect, Paint()..color = color);
     canvas.drawRect(rect, borderPaint);
-
     canvas.drawCircle(
       rect.center,
       cell * 0.16,
       Paint()..color = Colors.white.withValues(alpha: 0.9),
+    );
+  }
+
+  void _drawSafeCell(
+    Canvas canvas,
+    double cell,
+    int column,
+    int row,
+  ) {
+    final Offset center = Offset(
+      (column + 0.5) * cell,
+      (row + 0.5) * cell,
+    );
+    final Path star = Path();
+    const int points = 5;
+    for (int index = 0; index < points * 2; index++) {
+      final double radius =
+          index.isEven ? cell * 0.28 : cell * 0.12;
+      final double angle =
+          (-math.pi / 2) + (index * math.pi / points);
+      final Offset p = center +
+          Offset(math.cos(angle), math.sin(angle)) * radius;
+      if (index == 0) {
+        star.moveTo(p.dx, p.dy);
+      } else {
+        star.lineTo(p.dx, p.dy);
+      }
+    }
+    star.close();
+
+    canvas.drawPath(
+      star,
+      Paint()..color = const Color(0xFF7E9AB8),
     );
   }
 
@@ -407,7 +533,11 @@ class _LudoBoardPainter extends CustomPainter {
     }
   }
 
-  void _drawOuterBorder(Canvas canvas, Size size, double cell) {
+  void _drawOuterBorder(
+    Canvas canvas,
+    Size size,
+    double cell,
+  ) {
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Offset.zero & size,
