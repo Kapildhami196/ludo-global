@@ -31,4 +31,39 @@ void main() {
     expect(find.text('CHOOSE YOUR MODE'), findsOneWidget);
     expect(find.text('Selected from Home: Normal Ludo'), findsOneWidget);
   });
+
+  testWidgets('local pass-and-play reaches the board preview', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const LudoGlobalApp());
+    await tester.pump(const Duration(milliseconds: 1800));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Play Now').first);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Play Now').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('SELECT MATCH TYPE'), findsOneWidget);
+    expect(find.text('Local / Pass-and-Play'), findsOneWidget);
+
+    await tester.tap(find.text('Local / Pass-and-Play'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('LOCAL PLAYERS'), findsOneWidget);
+
+    await tester.tap(find.text('2'));
+    await tester.pumpAndSettle();
+
+    final startGame = find.text('Start Game');
+    await tester.ensureVisible(startGame);
+    await tester.tap(startGame);
+    await tester.pumpAndSettle();
+
+    expect(find.text('GAME BOARD'), findsOneWidget);
+    expect(find.text('Normal Ludo • Local Pass-and-Play'), findsOneWidget);
+    expect(find.text('Player 1'), findsOneWidget);
+    expect(find.text('Player 2'), findsOneWidget);
+  });
 }
