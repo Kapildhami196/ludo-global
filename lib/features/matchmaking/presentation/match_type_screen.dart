@@ -4,6 +4,7 @@ import '../../../core/theme/ludo_global_tokens.dart';
 import '../../../core/widgets/game_background.dart';
 import '../../../core/widgets/game_icon_tile.dart';
 import '../../ludo/domain/entities/game_config.dart';
+import 'computer_setup_screen.dart';
 import 'local_player_setup_screen.dart';
 
 class MatchTypeScreen extends StatelessWidget {
@@ -21,6 +22,14 @@ class MatchTypeScreen extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => LocalPlayerSetupScreen(mode: mode),
+      ),
+    );
+  }
+
+  void _openComputer(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ComputerSetupScreen(mode: mode),
       ),
     );
   }
@@ -71,11 +80,8 @@ class MatchTypeScreen extends StatelessWidget {
                       Color(0xFF5628CE),
                     ],
                   ),
-                  badge: 'LATER',
-                  onTap: () => _showPlanned(
-                    context,
-                    'Computer mode',
-                  ),
+                  badge: 'READY',
+                  onTap: () => _openComputer(context),
                 ),
                 const SizedBox(height: 12),
                 _MatchTypeCard(
