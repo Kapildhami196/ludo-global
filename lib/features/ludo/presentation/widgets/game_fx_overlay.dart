@@ -61,8 +61,8 @@ class _GameFxOverlayState extends State<GameFxOverlay>
       return const SizedBox.shrink();
     }
 
-    return IgnorePointer(
-      child: Positioned.fill(
+    return Positioned.fill(
+      child: IgnorePointer(
         child: AnimatedBuilder(
           animation: _controller,
           builder: (context, _) {
@@ -183,7 +183,7 @@ class _ConfettiPainter extends CustomPainter {
           ((progress * speed + ((index * 0.137) % 1)) % 1.15) * size.height;
       final double sway = math.sin((progress * 8) + index) * 16;
       paint.color = _colors[index % _colors.length].withValues(
-        alpha: (1 - progress * 0.25).clamp(0.0, 1.0),
+        alpha: (1 - progress * 0.25).clamp(0.0, 1.0).toDouble(),
       );
 
       canvas.save();
