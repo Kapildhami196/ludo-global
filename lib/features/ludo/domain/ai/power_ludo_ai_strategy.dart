@@ -6,7 +6,6 @@ import '../entities/game_phase.dart';
 import '../entities/ludo_game_state.dart';
 import '../entities/ludo_player.dart';
 import '../entities/ludo_token.dart';
-import '../entities/power_type.dart';
 import '../entities/token_status.dart';
 import '../power/power_ludo_engine.dart';
 import '../power/power_ludo_state.dart';
