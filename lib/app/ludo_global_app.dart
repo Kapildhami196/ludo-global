@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/ludo_global_theme.dart';
-import '../features/home/presentation/home_screen.dart';
+import '../features/splash/presentation/splash_screen.dart';
 
 class LudoGlobalApp extends StatelessWidget {
   const LudoGlobalApp({super.key});
@@ -12,7 +12,7 @@ class LudoGlobalApp extends StatelessWidget {
       title: 'Ludo Global',
       debugShowCheckedModeBanner: false,
       theme: LudoGlobalTheme.dark,
-      home: const HomeScreen(),
+      home: const SplashScreen(),
     );
   }
 }

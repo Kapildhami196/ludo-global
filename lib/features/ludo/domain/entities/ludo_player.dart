@@ -13,4 +13,19 @@ class LudoPlayer {
   final String name;
   final PlayerColor color;
   final List<LudoToken> tokens;
+
+  bool get hasFinished =>
+      tokens.isNotEmpty && tokens.every((token) => token.isFinished);
+
+  LudoPlayer copyWith({
+    String? name,
+    List<LudoToken>? tokens,
+  }) {
+    return LudoPlayer(
+      id: id,
+      name: name ?? this.name,
+      color: color,
+      tokens: tokens ?? this.tokens,
+    );
+  }
 }

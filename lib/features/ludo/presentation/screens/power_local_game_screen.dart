@@ -1,0 +1,1370 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+import '../../../../core/theme/ludo_global_tokens.dart';
+import '../../../../core/widgets/game_background.dart';
+import '../../domain/entities/game_config.dart';
+import '../../domain/entities/game_phase.dart';
+import '../../domain/entities/ludo_game_event.dart';
+import '../../domain/entities/ludo_game_state.dart';
+import '../../domain/entities/ludo_player.dart';
+import '../../domain/entities/ludo_token.dart';
+import '../../domain/entities/player_color.dart';
+import '../../domain/entities/power_type.dart';
+import '../../domain/entities/token_status.dart';
+import '../../domain/power/power_game_event.dart';
+import '../../domain/power/power_inventory.dart';
+import '../../domain/power/power_ludo_action_result.dart';
+import '../../domain/power/power_ludo_engine.dart';
+import '../../domain/power/power_ludo_state.dart';
+import '../services/game_feedback_service.dart';
+import '../widgets/animated_dice.dart';
+import '../widgets/game_fx_overlay.dart';
+import '../widgets/ludo_board.dart';
+import '../widgets/power_action_bar.dart';
+
+class PowerLocalGameScreen extends StatefulWidget {
+  const PowerLocalGameScreen({
+    required this.playerNames,
+    super.key,
+  });
+
+  final List<String> playerNames;
+
+  @override
+  State<PowerLocalGameScreen> createState() =>
+      _PowerLocalGameScreenState();
+}
+
+class _PowerLocalGameScreenState
+    extends State<PowerLocalGameScreen> {
+  final PowerLudoEngine _engine = PowerLudoEngine();
+  final Map<int, int> _visualPathOverrides = <int, int>{};
+
+  late PowerLudoState _powerState;
+
+  int _lastDiceValue = 1;
+  int _fxSequence = 0;
+  int? _movingTokenId;
+  Set<int> _capturedTokenIds = const <int>{};
+  GameFxType? _fxType;
+  String? _fxLabel;
+
+  bool _isRolling = false;
+  bool _isMoving = false;
+  bool _handoffVisible = false;
+  bool _soundEnabled = true;
+  bool _hapticsEnabled = true;
+
+  String _message = '';
+
+  LudoGameState get _state => _powerState.gameState;
+
+  bool get _isBusy => _isRolling || _isMoving;
+
+  GameFeedbackService get _feedback => GameFeedbackService(
+        soundEnabled: _soundEnabled,
+        hapticsEnabled: _hapticsEnabled,
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    _resetGame();
+  }
+
+  void _resetGame() {
+    _powerState = _engine.createGame(
+      config: LudoGameConfig(
+        mode: LudoGameMode.power,
+        matchType: LudoMatchType.localPassAndPlay,
+        playerCount: widget.playerNames.length,
+      ),
+      playerNames: widget.playerNames,
+    );
+
+    _lastDiceValue = 1;
+    _fxSequence = 0;
+    _movingTokenId = null;
+    _capturedTokenIds = const <int>{};
+    _fxType = null;
+    _fxLabel = null;
+    _isRolling = false;
+    _isMoving = false;
+    _handoffVisible = false;
+    _visualPathOverrides.clear();
+    _message = '${_state.currentPlayer.name}, choose a power or roll.';
+  }
+
+  Future<void> _rollDice() async {
+    if (!_canRoll) {
+      return;
+    }
+
+    final int previousPlayerIndex = _state.currentPlayerIndex;
+
+    setState(() {
+      _isRolling = true;
+      _message = 'Rolling...';
+    });
+
+    unawaited(_feedback.diceRoll());
+    await Future<void>.delayed(const Duration(milliseconds: 650));
+
+    if (!mounted) {
+      return;
+    }
+
+    final PowerLudoActionResult result =
+        _engine.rollDice(_powerState);
+
+    _applyActionResult(
+      result,
+      previousPlayerIndex: previousPlayerIndex,
+      updateDice: true,
+    );
+
+    if (_state.currentPlayerIndex != previousPlayerIndex) {
+      await _showTurnHandoff();
+    }
+  }
+
+  Future<void> _useDiceControl() async {
+    if (_isBusy || _handoffVisible) {
+      return;
+    }
+
+    final int? value = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: LudoGlobalColors.surface,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'DICE CONTROL',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Choose the exact dice value for this roll.',
+                  style: TextStyle(
+                    color: LudoGlobalColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    for (int face = 1; face <= 6; face++)
+                      SizedBox(
+                        width: 82,
+                        height: 54,
+                        child: FilledButton(
+                          onPressed: () =>
+                              Navigator.of(sheetContext).pop(face),
+                          child: Text(
+                            '$face',
+                            style: const TextStyle(
+                              fontSize: 21,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (value == null || !mounted) {
+      return;
+    }
+
+    final int previousPlayerIndex = _state.currentPlayerIndex;
+
+    setState(() {
+      _isRolling = true;
+      _message = 'Dice Control: $value';
+    });
+
+    unawaited(_feedback.diceRoll());
+    await Future<void>.delayed(const Duration(milliseconds: 650));
+
+    if (!mounted) {
+      return;
+    }
+
+    final PowerLudoActionResult result =
+        _engine.useDiceControl(_powerState, value);
+
+    _applyActionResult(
+      result,
+      previousPlayerIndex: previousPlayerIndex,
+      updateDice: true,
+      fallbackMessage: 'Dice Control selected $value.',
+    );
+
+    if (_state.currentPlayerIndex != previousPlayerIndex) {
+      await _showTurnHandoff();
+    }
+  }
+
+  void _useDoubleDistance() {
+    if (_isBusy || _handoffVisible) {
+      return;
+    }
+
+    try {
+      final PowerLudoActionResult result =
+          _engine.armDoubleDistance(_powerState);
+
+      unawaited(_feedback.tap());
+      setState(() {
+        _powerState = result.state;
+        _message = 'Double Distance armed. Tap a glowing token.';
+      });
+    } on StateError catch (error) {
+      _showRuleMessage(error.message);
+    }
+  }
+
+  Future<void> _useShield() async {
+    if (_isBusy || _handoffVisible) {
+      return;
+    }
+
+    final List<LudoToken> eligible = _state.currentPlayer.tokens
+        .where(
+          (token) =>
+              token.status == TokenStatus.active &&
+              !_powerState.isShielded(token.id),
+        )
+        .toList(growable: false);
+
+    if (eligible.isEmpty) {
+      _showRuleMessage(
+        'Move a token onto the shared track before using Shield.',
+      );
+      return;
+    }
+
+    final int? tokenId = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: LudoGlobalColors.surface,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'SHIELD A TOKEN',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Protection lasts until your next turn begins.',
+                  style: TextStyle(
+                    color: LudoGlobalColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                for (int index = 0;
+                    index < eligible.length;
+                    index++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      tileColor: LudoGlobalColors.surfaceBright,
+                      leading: const Icon(
+                        Icons.shield_rounded,
+                        color: LudoGlobalColors.electricBlue,
+                      ),
+                      title: Text('Token ${index + 1}'),
+                      subtitle: Text(
+                        'Track position ${eligible[index].pathPosition + 1}',
+                      ),
+                      trailing:
+                          const Icon(Icons.chevron_right_rounded),
+                      onTap: () => Navigator.of(sheetContext)
+                          .pop(eligible[index].id),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (tokenId == null || !mounted) {
+      return;
+    }
+
+    try {
+      final PowerLudoActionResult result =
+          _engine.applyShield(_powerState, tokenId);
+
+      unawaited(_feedback.home());
+      setState(() {
+        _powerState = result.state;
+        _message = 'Shield active. This token cannot be captured.';
+      });
+    } on StateError catch (error) {
+      _showRuleMessage(error.message);
+    }
+  }
+
+  void _useBonusRoll() {
+    if (_isBusy || _handoffVisible) {
+      return;
+    }
+
+    try {
+      final PowerLudoActionResult result =
+          _engine.queueBonusRoll(_powerState);
+
+      unawaited(_feedback.tap());
+      setState(() {
+        _powerState = result.state;
+        _message = 'Bonus Roll queued for this turn.';
+      });
+    } on StateError catch (error) {
+      _showRuleMessage(error.message);
+    }
+  }
+
+  void _onPowerTap(PowerType type) {
+    switch (type) {
+      case PowerType.doubleDistance:
+        _useDoubleDistance();
+      case PowerType.shield:
+        unawaited(_useShield());
+      case PowerType.diceControl:
+        unawaited(_useDiceControl());
+      case PowerType.bonusRoll:
+        _useBonusRoll();
+    }
+  }
+
+  void _onTokenTap(int tokenId) {
+    if (_isBusy ||
+        _handoffVisible ||
+        _state.phase != GamePhase.selectingToken) {
+      return;
+    }
+
+    unawaited(_moveToken(tokenId));
+  }
+
+  Future<void> _moveToken(int tokenId) async {
+    final int previousPlayerIndex = _state.currentPlayerIndex;
+
+    PowerLudoActionResult result;
+    try {
+      result = _engine.moveToken(_powerState, tokenId);
+    } on StateError catch (error) {
+      _showRuleMessage(error.message);
+      return;
+    }
+
+    final LudoGameEvent moveEvent = result.gameEvents.firstWhere(
+      (event) =>
+          event.type == LudoGameEventType.tokenMoved ||
+          event.type == LudoGameEventType.tokenReleased,
+    );
+
+    final int from = moveEvent.fromPosition ?? -1;
+    final int to = moveEvent.toPosition ?? from;
+
+    final LudoGameEvent? captureEvent = _eventOfType(
+      result.gameEvents,
+      LudoGameEventType.tokenCaptured,
+    );
+
+    final bool reachedHome = result.gameEvents.any(
+      (event) => event.type == LudoGameEventType.tokenFinished,
+    );
+    final bool won = result.gameEvents.any(
+      (event) => event.type == LudoGameEventType.playerWon,
+    );
+
+    setState(() {
+      _isMoving = true;
+      _movingTokenId = tokenId;
+      _message = _powerState.doubleDistanceArmed
+          ? 'Double Distance!'
+          : 'Moving token...';
+    });
+
+    for (int progress = from + 1; progress <= to; progress++) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _visualPathOverrides[tokenId] = progress;
+      });
+
+      unawaited(_feedback.tokenStep());
+      await Future<void>.delayed(const Duration(milliseconds: 145));
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    if (captureEvent != null) {
+      setState(() {
+        _capturedTokenIds = captureEvent.otherTokenIds.toSet();
+      });
+      unawaited(_feedback.capture());
+      await _triggerFx(GameFxType.capture, durationMs: 520);
+    }
+
+    if (reachedHome) {
+      unawaited(_feedback.home());
+      await _triggerFx(GameFxType.home, durationMs: 520);
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _visualPathOverrides.remove(tokenId);
+      _capturedTokenIds = const <int>{};
+      _movingTokenId = null;
+      _powerState = result.state;
+      _isMoving = false;
+      _message = _messageForResult(result);
+    });
+
+    if (won) {
+      unawaited(_feedback.win());
+      await _triggerFx(
+        GameFxType.winner,
+        label: '${_winnerName(_state)} wins!',
+        durationMs: 900,
+      );
+      if (mounted) {
+        await _showWinner();
+      }
+      return;
+    }
+
+    if (_state.currentPlayerIndex != previousPlayerIndex) {
+      await _showTurnHandoff();
+    }
+  }
+
+  bool get _canRoll =>
+      !_isBusy &&
+      !_handoffVisible &&
+      _state.phase == GamePhase.waitingForRoll &&
+      !_state.isGameOver;
+
+  Set<PowerType> get _enabledPowers {
+    final Set<PowerType> enabled = <PowerType>{};
+
+    if (_engine.canUseDoubleDistance(_powerState)) {
+      enabled.add(PowerType.doubleDistance);
+    }
+    if (_engine.canUseShield(_powerState)) {
+      enabled.add(PowerType.shield);
+    }
+    if (_engine.canUseDiceControl(_powerState)) {
+      enabled.add(PowerType.diceControl);
+    }
+    if (_engine.canUseBonusRoll(_powerState)) {
+      enabled.add(PowerType.bonusRoll);
+    }
+
+    return enabled;
+  }
+
+  Set<PowerType> get _activePowers {
+    final Set<PowerType> active = <PowerType>{};
+
+    if (_powerState.doubleDistanceArmed) {
+      active.add(PowerType.doubleDistance);
+    }
+
+    if (_powerState.bonusRollQueued) {
+      active.add(PowerType.bonusRoll);
+    }
+
+    final bool currentHasShield = _state.currentPlayer.tokens.any(
+      (token) => _powerState.isShielded(token.id),
+    );
+    if (currentHasShield) {
+      active.add(PowerType.shield);
+    }
+
+    return active;
+  }
+
+  Map<PowerType, int> get _powerCounts {
+    final PowerInventory inventory =
+        _powerState.inventoryFor(_state.currentPlayer.id);
+
+    return <PowerType, int>{
+      for (final PowerType type in PowerType.values)
+        type: inventory.count(type),
+    };
+  }
+
+  void _applyActionResult(
+    PowerLudoActionResult result, {
+    required int previousPlayerIndex,
+    bool updateDice = false,
+    String? fallbackMessage,
+  }) {
+    final LudoGameEvent? diceEvent = _eventOfType(
+      result.gameEvents,
+      LudoGameEventType.diceRolled,
+    );
+
+    setState(() {
+      _powerState = result.state;
+      _isRolling = false;
+
+      if (updateDice && diceEvent?.value != null) {
+        _lastDiceValue = diceEvent!.value!;
+      }
+
+      _message = _messageForResult(
+        result,
+        fallbackMessage: fallbackMessage,
+      );
+    });
+  }
+
+  String _messageForResult(
+    PowerLudoActionResult result, {
+    String? fallbackMessage,
+  }) {
+    if (result.powerEvents.any(
+      (event) =>
+          event.type == PowerGameEventType.bonusRollGranted,
+    )) {
+      return 'Bonus Roll activated! Roll again.';
+    }
+
+    if (result.gameEvents.any(
+      (event) =>
+          event.type == LudoGameEventType.threeSixesForfeit,
+    )) {
+      return 'Three consecutive sixes — turn forfeited.';
+    }
+
+    if (result.gameEvents.any(
+      (event) => event.type == LudoGameEventType.playerWon,
+    )) {
+      return '${_winnerName(result.state.gameState)} wins!';
+    }
+
+    if (result.gameEvents.any(
+      (event) => event.type == LudoGameEventType.tokenCaptured,
+    )) {
+      return 'Capture! Extra roll awarded.';
+    }
+
+    if (result.gameEvents.any(
+      (event) => event.type == LudoGameEventType.tokenFinished,
+    )) {
+      return 'Token reached home.';
+    }
+
+    if (result.gameEvents.any(
+      (event) => event.type == LudoGameEventType.noLegalMove,
+    )) {
+      if (result.gameEvents.any(
+        (event) => event.type == LudoGameEventType.extraTurn,
+      )) {
+        return 'No legal move. Roll again.';
+      }
+      return 'No legal move.';
+    }
+
+    if (_state.phase == GamePhase.selectingToken) {
+      return fallbackMessage ??
+          'Rolled $_lastDiceValue. Tap a glowing token.';
+    }
+
+    if (result.gameEvents.any(
+      (event) => event.type == LudoGameEventType.extraTurn,
+    )) {
+      return '${result.state.gameState.currentPlayer.name}, roll again.';
+    }
+
+    return fallbackMessage ?? 'Turn complete.';
+  }
+
+  LudoGameEvent? _eventOfType(
+    List<LudoGameEvent> events,
+    LudoGameEventType type,
+  ) {
+    for (final LudoGameEvent event in events) {
+      if (event.type == type) {
+        return event;
+      }
+    }
+    return null;
+  }
+
+  String _winnerName(LudoGameState state) {
+    final String? winnerId = state.winnerPlayerId;
+    if (winnerId == null) {
+      return 'Player';
+    }
+
+    return state.players
+        .firstWhere((player) => player.id == winnerId)
+        .name;
+  }
+
+  Future<void> _triggerFx(
+    GameFxType type, {
+    String? label,
+    int durationMs = 650,
+  }) async {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _fxType = type;
+      _fxSequence++;
+      _fxLabel = label;
+    });
+
+    await Future<void>.delayed(Duration(milliseconds: durationMs));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _fxType = null;
+      _fxLabel = null;
+    });
+  }
+
+  Future<void> _showTurnHandoff() async {
+    if (!mounted || _state.isGameOver) {
+      return;
+    }
+
+    setState(() {
+      _handoffVisible = true;
+    });
+    unawaited(_feedback.tap());
+  }
+
+  void _dismissHandoff() {
+    if (!_handoffVisible) {
+      return;
+    }
+
+    unawaited(_feedback.tap());
+    setState(() {
+      _handoffVisible = false;
+      _message =
+          '${_state.currentPlayer.name}, choose a power or roll.';
+    });
+  }
+
+  void _showRuleMessage(String message) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+  }
+
+  Future<void> _showWinner() async {
+    final String winner = _winnerName(_state);
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: LudoGlobalColors.surface,
+          icon: const Icon(
+            Icons.emoji_events_rounded,
+            size: 64,
+            color: LudoGlobalColors.gold,
+          ),
+          title: Text(
+            '$winner wins Power Ludo!',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+          content: const Text(
+            'All four tokens reached the center.',
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                setState(_resetGame);
+              },
+              icon: const Icon(Icons.replay_rounded),
+              label: const Text('Play Again'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Back'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _openGameMenu() async {
+    if (_isBusy) {
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: LudoGlobalColors.surface,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'POWER GAME MENU',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      value: _soundEnabled,
+                      secondary: const Icon(Icons.volume_up_rounded),
+                      title: const Text('Sound'),
+                      onChanged: (value) {
+                        setState(() => _soundEnabled = value);
+                        setSheetState(() {});
+                      },
+                    ),
+                    SwitchListTile(
+                      value: _hapticsEnabled,
+                      secondary: const Icon(Icons.vibration_rounded),
+                      title: const Text('Haptics'),
+                      onChanged: (value) {
+                        setState(() => _hapticsEnabled = value);
+                        setSheetState(() {});
+                      },
+                    ),
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(Icons.restart_alt_rounded),
+                      title: const Text('Restart Match'),
+                      onTap: () async {
+                        Navigator.of(sheetContext).pop();
+                        await _confirmRestart();
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.exit_to_app_rounded,
+                        color: LudoGlobalColors.red,
+                      ),
+                      title: const Text(
+                        'Quit Match',
+                        style: TextStyle(
+                          color: LudoGlobalColors.red,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.of(sheetContext).pop();
+                        _confirmQuit();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmRestart() async {
+    final bool restart = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text('Restart Power Ludo?'),
+              content: const Text(
+                'Token positions and all power charges will reset.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(dialogContext).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () =>
+                      Navigator.of(dialogContext).pop(true),
+                  child: const Text('Restart'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (restart && mounted) {
+      setState(_resetGame);
+    }
+  }
+
+  Future<void> _confirmQuit() async {
+    if (_isBusy) {
+      return;
+    }
+
+    final bool quit = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text('Quit match?'),
+              content: const Text(
+                'Your current Power Ludo match progress will be lost.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(dialogContext).pop(false),
+                  child: const Text('Stay'),
+                ),
+                FilledButton(
+                  onPressed: () =>
+                      Navigator.of(dialogContext).pop(true),
+                  child: const Text('Quit'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (quit && mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  Color _playerColor(PlayerColor color) {
+    return switch (color) {
+      PlayerColor.red => LudoGlobalColors.red,
+      PlayerColor.green => LudoGlobalColors.green,
+      PlayerColor.yellow => LudoGlobalColors.gold,
+      PlayerColor.blue => LudoGlobalColors.electricBlue,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final LudoPlayer current = _state.currentPlayer;
+    final Color currentColor = _playerColor(current.color);
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          GameBackground(
+            child: SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(LudoGlobalSpacing.sm),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight -
+                            (LudoGlobalSpacing.sm * 2),
+                      ),
+                      child: Column(
+                        children: [
+                          _PowerHeader(
+                            onBack: _confirmQuit,
+                            onMenu: _openGameMenu,
+                          ),
+                          const SizedBox(height: 8),
+                          _PowerTurnCard(
+                            player: current,
+                            color: currentColor,
+                            consecutiveSixes: _state.consecutiveSixes,
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF061127),
+                              borderRadius: BorderRadius.circular(
+                                LudoGlobalRadius.large,
+                              ),
+                              border: Border.all(
+                                color:
+                                    currentColor.withValues(alpha: 0.75),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: currentColor.withValues(alpha: 0.2),
+                                  blurRadius: 20,
+                                ),
+                                BoxShadow(
+                                  color: LudoGlobalColors.purple
+                                      .withValues(alpha: 0.12),
+                                  blurRadius: 28,
+                                ),
+                              ],
+                            ),
+                            child: LudoBoard(
+                              gameState: _state,
+                              activePlayerCount: _state.players.length,
+                              movableTokenIds:
+                                  _state.movableTokenIds.toSet(),
+                              visualPathOverrides:
+                                  _visualPathOverrides,
+                              movingTokenId: _movingTokenId,
+                              capturedTokenIds: _capturedTokenIds,
+                              shieldedTokenIds:
+                                  _powerState.shields.keys.toSet(),
+                              onTokenTap: _onTokenTap,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _PowerStatusBanner(
+                            message: _message,
+                            color: currentColor,
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _PowerSmallControl(
+                                icon: Icons.chat_bubble_rounded,
+                                label: 'Chat',
+                                onTap: () {},
+                              ),
+                              const SizedBox(width: 18),
+                              AnimatedDice(
+                                value: _lastDiceValue,
+                                enabled: _canRoll,
+                                rolling: _isRolling,
+                                onTap: () => unawaited(_rollDice()),
+                              ),
+                              const SizedBox(width: 18),
+                              _PowerSmallControl(
+                                icon: Icons.emoji_emotions_rounded,
+                                label: 'Emotes',
+                                onTap: () {},
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          PowerActionBar(
+                            counts: _powerCounts,
+                            enabledPowers: _enabledPowers,
+                            activePowers: _activePowers,
+                            onPowerTap: _onPowerTap,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          GameFxOverlay(
+            type: _fxType,
+            sequence: _fxSequence,
+            label: _fxLabel,
+          ),
+          if (_handoffVisible)
+            _PowerHandoffOverlay(
+              player: _state.currentPlayer,
+              color: currentColor,
+              onReady: _dismissHandoff,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PowerHeader extends StatelessWidget {
+  const _PowerHeader({
+    required this.onBack,
+    required this.onMenu,
+  });
+
+  final VoidCallback onBack;
+  final VoidCallback onMenu;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        IconButton.filledTonal(
+          onPressed: onBack,
+          icon: const Icon(Icons.arrow_back_rounded),
+        ),
+        const SizedBox(width: 8),
+        const Expanded(
+          child: Row(
+            children: [
+              Icon(
+                Icons.bolt_rounded,
+                color: LudoGlobalColors.gold,
+                size: 22,
+              ),
+              SizedBox(width: 5),
+              Text(
+                'POWER LUDO',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Text(
+          'LOCAL',
+          style: TextStyle(
+            color: LudoGlobalColors.textSecondary,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(width: 4),
+        IconButton(
+          key: const Key('power_game_menu_button'),
+          onPressed: onMenu,
+          icon: const Icon(Icons.more_vert_rounded),
+        ),
+      ],
+    );
+  }
+}
+
+class _PowerTurnCard extends StatelessWidget {
+  const _PowerTurnCard({
+    required this.player,
+    required this.color,
+    required this.consecutiveSixes,
+  });
+
+  final LudoPlayer player;
+  final Color color;
+  final int consecutiveSixes;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 260),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: <Color>[
+            color.withValues(alpha: 0.2),
+            LudoGlobalColors.purple.withValues(alpha: 0.12),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(LudoGlobalRadius.medium),
+        border: Border.all(
+          color: color.withValues(alpha: 0.8),
+          width: 1.4,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.35),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+            child: const Icon(Icons.person_rounded, color: Colors.white),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  player.name,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const Text(
+                  'YOUR POWER TURN',
+                  style: TextStyle(
+                    color: LudoGlobalColors.textSecondary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (consecutiveSixes > 0)
+            Text(
+              '6 × $consecutiveSixes',
+              style: const TextStyle(
+                color: LudoGlobalColors.gold,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PowerStatusBanner extends StatelessWidget {
+  const _PowerStatusBanner({
+    required this.message,
+    required this.color,
+  });
+
+  final String message;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: color.withValues(alpha: 0.42),
+        ),
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 180),
+        child: Text(
+          message,
+          key: ValueKey<String>(message),
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PowerSmallControl extends StatelessWidget {
+  const _PowerSmallControl({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 58,
+        height: 54,
+        decoration: BoxDecoration(
+          color: LudoGlobalColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: LudoGlobalColors.border),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 21, color: LudoGlobalColors.cyan),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PowerHandoffOverlay extends StatelessWidget {
+  const _PowerHandoffOverlay({
+    required this.player,
+    required this.color,
+    required this.onReady,
+  });
+
+  final LudoPlayer player;
+  final Color color;
+  final VoidCallback onReady;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: ColoredBox(
+        color: const Color(0xEB031024),
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(maxWidth: 360),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: LudoGlobalColors.surface,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: color.withValues(alpha: 0.85),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.32),
+                      blurRadius: 32,
+                      spreadRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.bolt_rounded,
+                      size: 40,
+                      color: LudoGlobalColors.gold,
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'PASS THE PHONE',
+                      style: TextStyle(
+                        color: LudoGlobalColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: color,
+                      ),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        size: 44,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      "${player.name}'s Power turn",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        key: const Key('power_handoff_ready_button'),
+                        onPressed: onReady,
+                        icon: const Icon(Icons.check_circle_rounded),
+                        label: const Text("I'm Ready"),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: color,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
