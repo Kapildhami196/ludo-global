@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/ludo_global_tokens.dart';
+import '../../../../core/theme/ludo_global_tokens.dart';
 import 'premium_ludo_token.dart';
 
 class LudoBoard extends StatelessWidget {
