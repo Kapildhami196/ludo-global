@@ -180,8 +180,10 @@ class LudoGameEngine {
 
   LudoGameActionResult moveToken(
     LudoGameState state,
-    int tokenId,
-  ) {
+    int tokenId, {
+    int? movementDistance,
+    Set<int> protectedTokenIds = const <int>{},
+  }) {
     _requirePhase(state, GamePhase.selectingToken);
 
     final int diceValue = state.diceValue ??
@@ -201,10 +203,30 @@ class LudoGameEngine {
     }
 
     final LudoToken token = player.tokens[tokenIndex];
+    final int steps = movementDistance ?? diceValue;
+    if (steps < 1) {
+      throw ArgumentError.value(
+        steps,
+        'movementDistance',
+        'Movement distance must be positive.',
+      );
+    }
+
+    if (!canMoveToken(
+      state: state,
+      token: token,
+      diceValue: diceValue,
+      movementDistance: steps,
+    )) {
+      throw StateError(
+        'Token $tokenId cannot legally move $steps spaces.',
+      );
+    }
+
     final int fromPosition = token.pathPosition;
     final int toPosition = token.isInBase
         ? 0
-        : token.pathPosition + diceValue;
+        : token.pathPosition + steps;
 
     final TokenStatus targetStatus = _statusForProgress(toPosition);
     final LudoToken movedToken = token.copyWith(
@@ -246,7 +268,8 @@ class LudoGameEngine {
             final LudoToken opponentToken =
                 opponentTokens[otherTokenIndex];
 
-            if (opponentToken.status != TokenStatus.active) {
+            if (opponentToken.status != TokenStatus.active ||
+                protectedTokenIds.contains(opponentToken.id)) {
               continue;
             }
 
@@ -397,6 +420,7 @@ class LudoGameEngine {
     required LudoGameState state,
     required LudoToken token,
     required int diceValue,
+    int? movementDistance,
   }) {
     if (token.isFinished || diceValue < 1 || diceValue > 6) {
       return false;
@@ -406,7 +430,12 @@ class LudoGameEngine {
       return diceValue == ClassicRules.rollRequiredToLeaveBase;
     }
 
-    final int targetPosition = token.pathPosition + diceValue;
+    final int steps = movementDistance ?? diceValue;
+    if (steps < 1) {
+      return false;
+    }
+
+    final int targetPosition = token.pathPosition + steps;
     if (targetPosition > ClassicRules.finishProgress) {
       return false;
     }
