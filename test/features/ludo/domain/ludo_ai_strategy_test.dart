@@ -12,7 +12,9 @@ import 'package:ludo_global/features/ludo/domain/entities/ludo_game_state.dart';
 import 'package:ludo_global/features/ludo/domain/entities/ludo_player.dart';
 import 'package:ludo_global/features/ludo/domain/entities/ludo_token.dart';
 import 'package:ludo_global/features/ludo/domain/entities/player_color.dart';
+import 'package:ludo_global/features/ludo/domain/entities/power_type.dart';
 import 'package:ludo_global/features/ludo/domain/entities/token_status.dart';
+import 'package:ludo_global/features/ludo/domain/power/board_power_pickup.dart';
 import 'package:ludo_global/features/ludo/domain/power/power_inventory.dart';
 import 'package:ludo_global/features/ludo/domain/power/power_ludo_engine.dart';
 import 'package:ludo_global/features/ludo/domain/power/power_ludo_state.dart';
@@ -131,13 +133,20 @@ void main() {
         classicEngine: LudoGameEngine(random: Random(3)),
       );
       final strategy = PowerLudoAiStrategy(random: Random(3));
-      final state = engine.createGame(
+      final initial = engine.createGame(
         config: const LudoGameConfig(
           mode: LudoGameMode.power,
           matchType: LudoMatchType.computer,
           playerCount: 2,
         ),
         playerNames: const <String>['You', 'Computer 1'],
+        startingPlayerIndex: 0,
+      );
+      final state = initial.copyWith(
+        inventories: <String, PowerInventory>{
+          ...initial.inventories,
+          'player_0': _inventory(diceControl: 1),
+        },
       );
 
       final decision = strategy.choosePreRollAction(
@@ -182,9 +191,10 @@ void main() {
           movableTokenIds: const <int>[0],
         ),
         inventories: <String, PowerInventory>{
-          'player_0': PowerInventory.initial(),
+          'player_0': _inventory(doubleDistance: 1),
           'player_1': PowerInventory.initial(),
         },
+        pickups: _pickups(),
       );
 
       final decision = strategy.shouldUseDoubleDistance(
@@ -227,4 +237,41 @@ LudoGameState _normalState({
     phase: GamePhase.selectingToken,
     mode: mode,
   );
+}
+
+
+PowerInventory _inventory({
+  int doubleDistance = 0,
+  int shield = 0,
+  int diceControl = 0,
+}) {
+  return PowerInventory(
+    charges: <PowerType, int>{
+      PowerType.doubleDistance: doubleDistance,
+      PowerType.shield: shield,
+      PowerType.diceControl: diceControl,
+      PowerType.bonusRoll: 0,
+    },
+  );
+}
+
+Map<PowerType, BoardPowerPickup> _pickups() {
+  return const <PowerType, BoardPowerPickup>{
+    PowerType.doubleDistance: BoardPowerPickup(
+      type: PowerType.doubleDistance,
+      globalIndex: 4,
+    ),
+    PowerType.shield: BoardPowerPickup(
+      type: PowerType.shield,
+      globalIndex: 10,
+    ),
+    PowerType.diceControl: BoardPowerPickup(
+      type: PowerType.diceControl,
+      globalIndex: 15,
+    ),
+    PowerType.bonusRoll: BoardPowerPickup(
+      type: PowerType.bonusRoll,
+      globalIndex: 18,
+    ),
+  };
 }
