@@ -166,7 +166,7 @@ class _DiceFace extends StatelessWidget {
       builder: (context, _) {
         final int previewValue = rolling
             ? ((tick.value * 17).floor() % 6) + 1
-            : value.clamp(1, 6);
+            : value.clamp(1, 6).toInt();
 
         return CustomPaint(
           size: const Size.square(48),
