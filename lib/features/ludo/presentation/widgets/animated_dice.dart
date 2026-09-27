@@ -120,7 +120,7 @@ class _AnimatedDiceState extends State<AnimatedDice>
 
               if (widget.rolling) {
                 travel = math.sin(t * math.pi).abs();
-                scale = 1 + travel * 0.46;
+                scale = 1 + travel * 0.95;
                 zRotation = t * math.pi * 4.8;
                 xRotation = math.sin(t * math.pi * 3.6) * 0.38;
                 yRotation = math.cos(t * math.pi * 4.2) * 0.34;
@@ -139,7 +139,7 @@ class _AnimatedDiceState extends State<AnimatedDice>
                 widget.launchDirection.dy * widget.size * travel,
               );
               final double arc =
-                  -travel * widget.size * 0.18;
+                  -travel * widget.size * 0.14;
 
               final Matrix4 transform = Matrix4.identity()
                 ..setEntry(3, 2, 0.0022)
