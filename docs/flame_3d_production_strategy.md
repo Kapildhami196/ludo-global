@@ -7,13 +7,16 @@ and dice outcomes in the existing domain engine.
 
 `flame_3d` is experimental, so it must never be the only renderer.
 
-The production path initializes the GPU backend once before `runApp`. If that initialization fails, the app stays usable and selects the 2D renderer. The production path is:
+The production path initializes the GPU backend once before `runApp`. If that initialization fails, the app stays usable and selects the 2D renderer.
 
 ```text
-PlayerDiceSlot
+Local Classic
   -> ProductionDice
       -> supported Android/iOS/macOS: FlameDice3D
-      -> unsupported/error path: AnimatedDice (existing SVG)
+      -> unsupported/init-error path: AnimatedDice
+  -> LudoBoard
+      -> supported Android/iOS/macOS: one shared FlamePawnBoard3D world
+      -> unsupported/render-error path: existing PremiumLudoToken SVG layer
 ```
 
 The game still works if 3D rendering is unavailable.
@@ -65,6 +68,25 @@ It uses:
 - a short vertical/forward launch arc;
 - the existing SVG dice if Flame 3D cannot be used.
 
+## Current 3D pawns
+
+Local Classic now renders all active pawns in one shared `World3D`.
+
+The scene uses:
+
+- a single orthographic camera aligned to the existing 15x15 Flutter board;
+- one shared GPU scene for all pawns, rather than one GameWidget per pawn;
+- procedural pawn geometry made from CylinderMesh, ConeMesh, and SphereMesh;
+- glossy SpatialMaterial surfaces and shared scene lighting;
+- real Z-depth lift during movement;
+- a curved hop between board cells;
+- longer spinning return motion after capture;
+- a pulse/lift treatment for selectable pawns;
+- transparent Flutter hit targets above the 3D layer so existing tap behavior remains reliable;
+- the complete existing SVG pawn layer as the render-error fallback.
+
+The board painter, labels, rules, token placement calculations, and domain state remain Flutter/domain-owned.
+
 ## Supported runtime policy
 
 3D is enabled only for Android, iOS, and macOS.
@@ -95,16 +117,22 @@ Validate at minimum:
 1. Android physical devices across low/mid/high tiers.
 2. iPhone physical device.
 3. Dice roll repeated at least 500 times without GPU/resource failure.
-4. App background/resume during and after a roll.
-5. Rotation/resize if supported by the app.
-6. Memory behavior across repeated rematches.
-7. 60 fps target during dice roll on supported devices.
-8. Forced 2D fallback build.
-9. Existing Ludo domain tests.
-10. Visual verification that values 1 through 6 settle on the correct face.
+4. Move all 16 pawns repeatedly through long matches/rematches and verify memory stays stable.
+5. Verify capture return, highlighted pawn pulse, stacked positions, and every board-edge cell visually.
+6. App background/resume during and after a roll.
+7. Rotation/resize if supported by the app.
+8. Memory behavior across repeated rematches.
+9. 60 fps target during dice and pawn animation on supported devices.
+10. Forced 2D fallback build.
+11. Existing Ludo domain tests.
+12. Visual verification that values 1 through 6 settle on the correct face.
 
-## Next migration
+## Rollout scope
 
-After the dice passes the release gate, build one shared Flame 3D board scene
-for all pawns. Do not create one GameWidget per pawn. All pawn meshes should
-live in a single World3D so camera, lights, resources, and effects are shared.
+The 3D pawn layer is currently enabled only for Normal Local Human matches.
+Computer and Power modes intentionally retain the existing 2D pawn renderer
+until Local Classic passes physical-device profiling.
+
+Do not expand the 3D renderer to additional modes solely because CI is green.
+The package itself remains experimental, so each rollout step must preserve
+the automatic 2D fallback and the `LUDO_FORCE_2D` kill switch.
