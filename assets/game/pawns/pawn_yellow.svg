@@ -1,35 +1,56 @@
-<svg width="96" height="128" viewBox="0 0 96 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="96" height="112" viewBox="0 0 96 112" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="body" x1="20" y1="30" x2="76" y2="112" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFF39B"/>
-      <stop offset="0.46" stop-color="#F5C433"/>
-      <stop offset="1" stop-color="#B77400"/>
-    </linearGradient>
-    <radialGradient id="head" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(39 22) rotate(45) scale(32)">
+    <radialGradient id="head" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(39 23) rotate(47) scale(33)">
       <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="0.16" stop-color="#FFF39B"/>
+      <stop offset="0.16" stop-color="#FFF8A9"/>
       <stop offset="0.62" stop-color="#F5C433"/>
       <stop offset="1" stop-color="#B77400"/>
     </radialGradient>
-    <linearGradient id="base" x1="24" y1="88" x2="72" y2="116" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFF39B"/>
-      <stop offset="0.45" stop-color="#F5C433"/>
+    <linearGradient id="body" x1="28" y1="46" x2="69" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF8A9"/>
+      <stop offset="0.38" stop-color="#F5C433"/>
       <stop offset="1" stop-color="#B77400"/>
     </linearGradient>
+    <linearGradient id="rim" x1="18" y1="78" x2="79" y2="102" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF8A9"/>
+      <stop offset="0.48" stop-color="#F5C433"/>
+      <stop offset="1" stop-color="#B77400"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.8"/>
+    </filter>
   </defs>
 
-  <ellipse cx="48" cy="112" rx="34" ry="8" fill="#001120" fill-opacity="0.45"/>
+  <ellipse cx="48" cy="101" rx="35" ry="7.5" fill="#001120" fill-opacity="0.33" filter="url(#soft)"/>
 
-  <path d="M38 39C40 47 38 54 32 62C24 72 19 81 22 93H74C77 81 72 72 64 62C58 54 56 47 58 39H38Z"
-        fill="url(#body)" stroke="#B77400" stroke-width="2"/>
-  <path d="M29 68C34 58 39 52 40 42"
-        stroke="#FFFFFF" stroke-opacity="0.33" stroke-width="5" stroke-linecap="round"/>
+  <path d="M31 48
+           C36 53 36 58 30 65
+           C23 73 20 80 23 86
+           C27 93 36 96 48 96
+           C60 96 69 93 73 86
+           C76 80 73 73 66 65
+           C60 58 60 53 65 48
+           Z"
+        fill="url(#body)" stroke="#885600" stroke-width="1.8"/>
 
-  <ellipse cx="48" cy="94" rx="30" ry="12" fill="url(#base)" stroke="#B77400" stroke-width="2"/>
-  <ellipse cx="48" cy="90" rx="28" ry="8" fill="#FFF5C7" fill-opacity="0.18"/>
-  <ellipse cx="48" cy="94" rx="22" ry="7" fill="#FFFFFF" fill-opacity="0.08"/>
+  <path d="M28 62C34 54 39 50 41 46"
+        stroke="#FFFFFF" stroke-opacity="0.38" stroke-width="5" stroke-linecap="round"/>
 
-  <circle cx="48" cy="27" r="18" fill="url(#head)" stroke="#B77400" stroke-width="2"/>
-  <ellipse cx="41" cy="20" rx="7" ry="4.5" fill="#FFFFFF" fill-opacity="0.72"/>
-  <path d="M29 92C35 99 61 99 67 92" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="2.2" stroke-linecap="round"/>
+  <ellipse cx="48" cy="86" rx="32" ry="13" fill="#B77400" fill-opacity="0.42"/>
+  <path d="M17 84
+           C17 77 29 72 48 72
+           C67 72 79 77 79 84
+           L79 91
+           C79 100 66 105 48 105
+           C30 105 17 100 17 91
+           Z"
+        fill="url(#rim)" stroke="#885600" stroke-width="1.8"/>
+  <ellipse cx="48" cy="84" rx="31" ry="10.5" fill="#F5C433" fill-opacity="0.70"/>
+  <ellipse cx="48" cy="82" rx="27" ry="7.5" fill="#FFF8A9" fill-opacity="0.20"/>
+
+  <ellipse cx="48" cy="49" rx="14" ry="7" fill="#B77400" fill-opacity="0.58"/>
+
+  <circle cx="48" cy="31" r="19" fill="url(#head)" stroke="#885600" stroke-width="1.8"/>
+  <ellipse cx="40" cy="23" rx="6.2" ry="4.2" fill="#FFFFFF" fill-opacity="0.58"/>
+  <path d="M32 31C34 21 41 15 50 13" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="3.2" stroke-linecap="round"/>
 </svg>
