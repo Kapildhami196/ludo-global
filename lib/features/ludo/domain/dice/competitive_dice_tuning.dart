@@ -17,7 +17,25 @@ class CompetitiveDiceTuning {
     this.maxSingleFaceProbability = 0.40,
     this.cooldownBoostMultiplier = 0.35,
     this.strongAssistCooldownRolls = 2,
-  });
+  })  : assert(baseWeight > 0),
+        assert(sixDroughtStartBoost >= 0),
+        assert(sixDroughtMediumBoost >= 0),
+        assert(sixDroughtLongBoost >= 0),
+        assert(allTokensInBaseBoost >= 0),
+        assert(captureBoost >= 0),
+        assert(escapeBoost >= 0),
+        assert(homeEntryBoost >= 0),
+        assert(finishBoost >= 0),
+        assert(blockadeBoost >= 0),
+        assert(staleActionBoost >= 0),
+        assert(behindActionBoost >= 0),
+        assert(endgameDefenseBoost >= 0),
+        assert(endgameFinishBoost >= 0),
+        assert(maxSingleFaceProbability >= 1 / 6),
+        assert(maxSingleFaceProbability < 1),
+        assert(cooldownBoostMultiplier >= 0),
+        assert(cooldownBoostMultiplier <= 1),
+        assert(strongAssistCooldownRolls >= 0);
 
   static const CompetitiveDiceTuning balanced =
       CompetitiveDiceTuning();
