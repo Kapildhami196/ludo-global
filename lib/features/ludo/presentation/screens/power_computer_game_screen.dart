@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/audio/game_audio_service.dart';
+import '../../../../core/settings/game_preferences.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../../../core/widgets/game_background.dart';
 import '../../domain/ai/ai_difficulty.dart';
@@ -66,8 +68,8 @@ class _PowerComputerGameScreenState
   bool _isRolling = false;
   bool _isMoving = false;
   bool _computerLoopRunning = false;
-  final bool _soundEnabled = true;
-  final bool _hapticsEnabled = true;
+  bool _soundEnabled = true;
+  bool _hapticsEnabled = true;
 
   String _message = '';
 
@@ -84,6 +86,20 @@ class _PowerComputerGameScreenState
   void initState() {
     super.initState();
     _resetGame();
+    unawaited(GameAudioService.instance.preload());
+    unawaited(_loadPreferences());
+  }
+
+  Future<void> _loadPreferences() async {
+    final settings = await GamePreferences.load();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _soundEnabled = settings.soundEnabled;
+      _hapticsEnabled = settings.hapticsEnabled;
+    });
   }
 
   void _resetGame() {
@@ -199,6 +215,8 @@ class _PowerComputerGameScreenState
     required bool isComputer,
     String? prefix,
   }) {
+    _playPowerEventFeedback(result);
+
     final LudoGameEvent? diceEvent = _eventOfType(
       result.gameEvents,
       LudoGameEventType.diceRolled,
@@ -231,6 +249,24 @@ class _PowerComputerGameScreenState
         _message = prefix ?? 'Turn resolved.';
       }
     });
+  }
+
+  void _playPowerEventFeedback(PowerLudoActionResult result) {
+    final bool bonusTriggered = result.powerEvents.any(
+      (event) =>
+          event.type == PowerGameEventType.bonusRollTriggered,
+    );
+
+    if (bonusTriggered) {
+      unawaited(_feedback.bonusRoll());
+      return;
+    }
+
+    if (result.powerEvents.any(
+      (event) => event.type == PowerGameEventType.powerCollected,
+    )) {
+      unawaited(_feedback.powerPickup());
+    }
   }
 
   void _onHumanTokenTap(int tokenId) {
@@ -302,7 +338,7 @@ class _PowerComputerGameScreenState
             _message =
                 'Double Distance armed. Tap a glowing token.';
           });
-          unawaited(_feedback.tap());
+          unawaited(_feedback.doubleDistance());
         } on StateError catch (error) {
           _showRuleMessage(error.message);
         }
@@ -393,7 +429,7 @@ class _PowerComputerGameScreenState
         _powerState = result.state;
         _message = 'Shield active on your token.';
       });
-      unawaited(_feedback.home());
+      unawaited(_feedback.shield());
     } on StateError catch (error) {
       _showRuleMessage(error.message);
     }
@@ -448,6 +484,7 @@ class _PowerComputerGameScreenState
       _isRolling = true;
       _message = 'Controlling dice to $value...';
     });
+    unawaited(_feedback.diceControl());
     unawaited(_feedback.diceRoll());
     await Future<void>.delayed(const Duration(milliseconds: 650));
 
@@ -525,7 +562,7 @@ class _PowerComputerGameScreenState
               _powerState = result.state;
               _message = '$computerName used Shield.';
             });
-            unawaited(_feedback.home());
+            unawaited(_feedback.shield());
             await Future<void>.delayed(
               const Duration(milliseconds: 330),
             );
@@ -542,6 +579,7 @@ class _PowerComputerGameScreenState
               _message =
                   '$computerName used Dice Control: $value.';
             });
+            unawaited(_feedback.diceControl());
             unawaited(_feedback.diceRoll());
             await Future<void>.delayed(
               const Duration(milliseconds: 650),
@@ -586,7 +624,7 @@ class _PowerComputerGameScreenState
             _message =
                 '${_state.currentPlayer.name} used Double Distance.';
           });
-          unawaited(_feedback.tap());
+          unawaited(_feedback.doubleDistance());
           await Future<void>.delayed(
             const Duration(milliseconds: 350),
           );
@@ -640,6 +678,8 @@ class _PowerComputerGameScreenState
     required int tokenId,
     required String? computerReason,
   }) async {
+    _playPowerEventFeedback(result);
+
     final LudoGameEvent moveEvent = result.gameEvents.firstWhere(
       (event) =>
           event.type == LudoGameEventType.tokenMoved ||
@@ -671,7 +711,12 @@ class _PowerComputerGameScreenState
       setState(() {
         _visualPathOverrides[tokenId] = progress;
       });
-      unawaited(_feedback.tokenStep());
+      if (moveEvent.type == LudoGameEventType.tokenReleased &&
+          progress == to) {
+        unawaited(_feedback.pawnRelease());
+      } else {
+        unawaited(_feedback.tokenStep());
+      }
       await Future<void>.delayed(const Duration(milliseconds: 125));
     }
 
@@ -693,6 +738,8 @@ class _PowerComputerGameScreenState
       }
 
       final Set<int> returning = capture.otherTokenIds.toSet();
+
+      unawaited(_feedback.returnHome());
 
       setState(() {
         _visualPathOverrides.remove(tokenId);

@@ -43,9 +43,11 @@ class _GameBackgroundState extends State<GameBackground>
               child: AnimatedBuilder(
                 animation: _controller,
                 builder: (context, _) {
-                  return CustomPaint(
-                    painter: _GameAtmospherePainter(
-                      progress: _controller.value,
+                  return RepaintBoundary(
+                    child: CustomPaint(
+                      painter: _GameAtmospherePainter(
+                        progress: _controller.value,
+                      ),
                     ),
                   );
                 },

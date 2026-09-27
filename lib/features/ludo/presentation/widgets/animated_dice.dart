@@ -34,7 +34,7 @@ class _AnimatedDiceState extends State<AnimatedDice>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 680),
+    duration: const Duration(milliseconds: 720),
   );
 
   @override
@@ -85,17 +85,25 @@ class _AnimatedDiceState extends State<AnimatedDice>
                   ? (eased * math.pi * 4.5) - 0.08
                   : -0.08;
               final double jump = widget.rolling
-                  ? -math.sin(t * math.pi).abs() * widget.size * 0.15
+                  ? -math.sin(t * math.pi).abs() * widget.size * 0.16
+                  : 0;
+              final double wobbleX = widget.rolling
+                  ? math.sin(t * math.pi * 8) *
+                      (1 - t) *
+                      widget.size *
+                      0.035
                   : 0;
               final double scale = widget.rolling
-                  ? 0.94 + math.sin(t * math.pi).abs() * 0.10
+                  ? 1 +
+                      math.sin(t * math.pi).abs() * 0.08 -
+                      math.sin(t * math.pi * 2) * 0.018
                   : 1;
               final int previewValue = widget.rolling
                   ? ((t * 23).floor() % 6) + 1
                   : widget.value.clamp(1, 6).toInt();
 
               return Transform.translate(
-                offset: Offset(0, jump),
+                offset: Offset(wobbleX, jump),
                 child: Transform.scale(
                   scale: scale,
                   child: Transform.rotate(

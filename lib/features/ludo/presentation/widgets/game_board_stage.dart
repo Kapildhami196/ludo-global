@@ -88,7 +88,9 @@ class GameBoardStage extends StatelessWidget {
                     duration: const Duration(milliseconds: 180),
                     curve: Curves.easeOutCubic,
                     scale: diceRolling ? 0.996 : 1,
-                    child: board,
+                    child: RepaintBoundary(
+                      child: board,
+                    ),
                   ),
                 ),
               ),
