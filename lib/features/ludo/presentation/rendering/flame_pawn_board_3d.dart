@@ -214,9 +214,11 @@ class LudoPawn3DComponent extends MeshComponent {
         super(
           position: _positionFor(visual),
           scale: Vector3.all(_visualScale(visual)),
+          // Keep the foot slightly wider than the body, but still inside
+          // one board cell after the pawn's presentation scale is applied.
           mesh: CylinderMesh(
-            radius: 0.48,
-            height: 0.18,
+            radius: 0.40,
+            height: 0.15,
             segments: 24,
             material: material,
           ),
