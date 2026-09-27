@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../widgets/animated_dice.dart';
 import 'flame_dice_3d.dart';
-import 'ludo_renderer_capabilities.dart';
+import 'flame_3d_runtime.dart';
 
 class ProductionDice extends StatelessWidget {
   const ProductionDice({
@@ -26,7 +26,7 @@ class ProductionDice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!LudoRendererCapabilities.supportsFlame3D) {
+    if (!Flame3DRuntime.isAvailable) {
       return AnimatedDice(
         value: value,
         enabled: enabled,
