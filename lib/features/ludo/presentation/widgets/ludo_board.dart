@@ -88,36 +88,46 @@ class LudoBoard extends StatelessWidget {
                       ),
                     ),
                   for (final _TokenPlacement placement in placements)
-                    AnimatedPositioned(
-                      duration: returningTokenIds.contains(placement.tokenId)
-                          ? const Duration(milliseconds: 520)
-                          : const Duration(milliseconds: 155),
-                      curve: returningTokenIds.contains(placement.tokenId)
-                          ? Curves.easeInOutCubic
-                          : Curves.easeOutCubic,
-                      left: placement.center.dx - (tokenSize / 2),
-                      top: placement.center.dy - (tokenSize * 1.12),
-                      child: PremiumLudoToken(
-                        key: ValueKey<int>(placement.tokenId),
-                        playerColor: placement.playerColor,
-                        size: tokenSize,
-                        dimmed: placement.dimmed,
-                        highlighted:
-                            movableTokenIds.contains(placement.tokenId),
-                        moving: movingTokenId == placement.tokenId,
-                        movementStep:
-                            visualPathOverrides[placement.tokenId],
-                        captured:
-                            capturedTokenIds.contains(placement.tokenId),
-                        returning:
-                            returningTokenIds.contains(placement.tokenId),
-                        shielded:
-                            shieldedTokenIds.contains(placement.tokenId),
-                        onTap: movableTokenIds.contains(placement.tokenId) &&
-                                onTokenTap != null
-                            ? () => onTokenTap!(placement.tokenId)
-                            : null,
-                      ),
+                    Builder(
+                      builder: (context) {
+                        final double placementSize =
+                            tokenSize * placement.scale;
+
+                        return AnimatedPositioned(
+                          duration:
+                              returningTokenIds.contains(placement.tokenId)
+                                  ? const Duration(milliseconds: 520)
+                                  : const Duration(milliseconds: 155),
+                          curve:
+                              returningTokenIds.contains(placement.tokenId)
+                                  ? Curves.easeInOutCubic
+                                  : Curves.easeOutCubic,
+                          left: placement.center.dx - (placementSize / 2),
+                          top: placement.center.dy - (placementSize * 1.12),
+                          child: PremiumLudoToken(
+                            key: ValueKey<int>(placement.tokenId),
+                            playerColor: placement.playerColor,
+                            size: placementSize,
+                            dimmed: placement.dimmed,
+                            highlighted:
+                                movableTokenIds.contains(placement.tokenId),
+                            moving: movingTokenId == placement.tokenId,
+                            movementStep:
+                                visualPathOverrides[placement.tokenId],
+                            captured:
+                                capturedTokenIds.contains(placement.tokenId),
+                            returning:
+                                returningTokenIds.contains(placement.tokenId),
+                            shielded:
+                                shieldedTokenIds.contains(placement.tokenId),
+                            onTap:
+                                movableTokenIds.contains(placement.tokenId) &&
+                                        onTokenTap != null
+                                    ? () => onTokenTap!(placement.tokenId)
+                                    : null,
+                          ),
+                        );
+                      },
                     ),
                 ],
               ),
@@ -209,6 +219,8 @@ class LudoBoard extends StatelessWidget {
 
         final int? visualProgress = visualPathOverrides[token.id];
 
+        double scale = 1;
+
         if (visualProgress == null && token.status == TokenStatus.base) {
           center = _baseAnchor(
             player.color,
@@ -216,6 +228,7 @@ class LudoBoard extends StatelessWidget {
             cell,
           );
         } else {
+          scale = 0.88;
           final int pathPosition = visualProgress ?? token.pathPosition;
           final boardCell = LudoBoardMap.cellFor(
             color: player.color,
@@ -231,13 +244,15 @@ class LudoBoard extends StatelessWidget {
           stackCounts[key] = stackIndex + 1;
 
           if (stackIndex > 0) {
+            scale = 0.74;
             const List<Offset> offsets = <Offset>[
-              Offset(-0.17, -0.12),
-              Offset(0.17, -0.12),
-              Offset(-0.17, 0.13),
-              Offset(0.17, 0.13),
+              Offset(0.20, -0.10),
+              Offset(-0.20, 0.11),
+              Offset(0.20, 0.13),
+              Offset(-0.20, -0.12),
             ];
-            final Offset delta = offsets[stackIndex % offsets.length];
+            final Offset delta =
+                offsets[(stackIndex - 1) % offsets.length];
             center += Offset(delta.dx * cell, delta.dy * cell);
           }
         }
@@ -247,6 +262,7 @@ class LudoBoard extends StatelessWidget {
             tokenId: token.id,
             playerColor: player.color,
             center: center,
+            scale: scale,
           ),
         );
       }
@@ -396,12 +412,14 @@ class _TokenPlacement {
     required this.playerColor,
     required this.center,
     this.dimmed = false,
+    this.scale = 1,
   });
 
   final int tokenId;
   final PlayerColor playerColor;
   final Offset center;
   final bool dimmed;
+  final double scale;
 }
 
 class _LudoBoardPainter extends CustomPainter {
