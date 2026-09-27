@@ -975,18 +975,7 @@ class _PowerComputerGameScreenState
                       onBack: _confirmQuit,
                     ),
                     const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF061127),
-                        borderRadius:
-                            BorderRadius.circular(LudoGlobalRadius.large),
-                        border: Border.all(
-                          color: currentColor.withValues(alpha: 0.75),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: GameBoardStage(
+                    GameBoardStage(
                         gameState: _state,
                         diceValue: _lastDiceValue,
                         diceRolling: _isRolling,
@@ -1015,8 +1004,7 @@ class _PowerComputerGameScreenState
                           },
                           onTokenTap: _onHumanTokenTap,
                         ),
-                      ),
-                    ),
+                      ),\n
                     const SizedBox(height: 6),
                     GameplayCallout(
                       message: _message,
