@@ -28,7 +28,7 @@ class GameFeedbackService {
       unawaited(
         GameAudioService.instance.playSequence(
           const <(GameSound, Duration)>[
-            (GameSound.diceRoll, Duration(milliseconds: 560)),
+            (GameSound.diceRoll, Duration(milliseconds: 620)),
             (GameSound.diceLand, Duration.zero),
           ],
         ),
