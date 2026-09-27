@@ -14,6 +14,7 @@ class PremiumLudoToken extends StatefulWidget {
     this.highlighted = false,
     this.moving = false,
     this.captured = false,
+    this.returning = false,
     this.shielded = false,
     this.onTap,
     super.key,
@@ -25,6 +26,7 @@ class PremiumLudoToken extends StatefulWidget {
   final bool highlighted;
   final bool moving;
   final bool captured;
+  final bool returning;
   final bool shielded;
   final VoidCallback? onTap;
 
@@ -49,7 +51,8 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
   void didUpdateWidget(covariant PremiumLudoToken oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.moving != widget.moving ||
-        oldWidget.captured != widget.captured) {
+        oldWidget.captured != widget.captured ||
+        oldWidget.returning != widget.returning) {
       _syncMotion();
     }
   }
@@ -58,6 +61,13 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
     if (widget.captured) {
       _controller
         ..duration = const Duration(milliseconds: 420)
+        ..forward(from: 0);
+      return;
+    }
+
+    if (widget.returning) {
+      _controller
+        ..duration = const Duration(milliseconds: 520)
         ..forward(from: 0);
       return;
     }
@@ -100,12 +110,16 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
           animation: _controller,
           builder: (context, child) {
             final double t = _controller.value;
-            final double hop = widget.moving
-                ? -math.sin(t * math.pi).abs() * widget.size * 0.30
-                : 0;
-            final double squash = widget.moving
-                ? 1 - math.sin(t * math.pi).abs() * 0.035
-                : 1;
+            final double hop = widget.returning
+                ? -math.sin(t * math.pi).abs() * widget.size * 0.72
+                : widget.moving
+                    ? -math.sin(t * math.pi).abs() * widget.size * 0.30
+                    : 0;
+            final double squash = widget.returning
+                ? 1 - math.sin(t * math.pi).abs() * 0.05
+                : widget.moving
+                    ? 1 - math.sin(t * math.pi).abs() * 0.035
+                    : 1;
             final double shake = widget.captured
                 ? math.sin(t * math.pi * 10) *
                     widget.size *
@@ -114,7 +128,9 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                 : 0;
             final double captureScale = widget.captured
                 ? 1 - (0.28 * Curves.easeIn.transform(t))
-                : 1;
+                : widget.returning
+                    ? 0.92 + (math.sin(t * math.pi).abs() * 0.12)
+                    : 1;
 
             return Transform.translate(
               offset: Offset(shake, hop),
