@@ -56,17 +56,19 @@ class GameFeedbackService {
 
   Future<void> capture() async {
     if (soundEnabled) {
-      unawaited(
-        GameAudioService.instance.playSequence(
-          const <(GameSound, Duration)>[
-            (GameSound.capture, Duration(milliseconds: 120)),
-            (GameSound.returnWhoosh, Duration.zero),
-          ],
-        ),
-      );
+      unawaited(GameAudioService.instance.play(GameSound.capture));
     }
     if (hapticsEnabled) {
       await HapticFeedback.heavyImpact();
+    }
+  }
+
+  Future<void> returnHome() async {
+    if (soundEnabled) {
+      unawaited(GameAudioService.instance.play(GameSound.returnWhoosh));
+    }
+    if (hapticsEnabled) {
+      await HapticFeedback.lightImpact();
     }
   }
 
