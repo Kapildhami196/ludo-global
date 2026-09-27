@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/audio/game_audio_service.dart';
+import '../../../../core/settings/game_preferences.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../../../core/widgets/game_background.dart';
 import '../../domain/ai/ai_difficulty.dart';
@@ -66,8 +68,8 @@ class _PowerComputerGameScreenState
   bool _isRolling = false;
   bool _isMoving = false;
   bool _computerLoopRunning = false;
-  final bool _soundEnabled = true;
-  final bool _hapticsEnabled = true;
+  bool _soundEnabled = true;
+  bool _hapticsEnabled = true;
 
   String _message = '';
 
@@ -84,6 +86,20 @@ class _PowerComputerGameScreenState
   void initState() {
     super.initState();
     _resetGame();
+    unawaited(GameAudioService.instance.preload());
+    unawaited(_loadPreferences());
+  }
+
+  Future<void> _loadPreferences() async {
+    final settings = await GamePreferences.load();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _soundEnabled = settings.soundEnabled;
+      _hapticsEnabled = settings.hapticsEnabled;
+    });
   }
 
   void _resetGame() {
