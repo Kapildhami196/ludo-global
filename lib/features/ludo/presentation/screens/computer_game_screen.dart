@@ -686,7 +686,7 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
                           returningTokenIds: _returningTokenIds,
                           onTokenTap: _onHumanTokenTap,
                         ),
-                      ),\n
+                      ),
                     const SizedBox(height: 6),
                     GameplayCallout(
                       message: _message,
