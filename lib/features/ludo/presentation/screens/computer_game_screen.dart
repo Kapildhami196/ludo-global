@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/audio/game_audio_service.dart';
+import '../../../../core/settings/game_preferences.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../../../core/widgets/game_background.dart';
 import '../../domain/ai/ai_difficulty.dart';
@@ -17,9 +19,12 @@ import '../../domain/entities/ludo_player.dart';
 import '../../domain/entities/player_color.dart';
 import '../../domain/rules/classic_rules.dart';
 import '../services/game_feedback_service.dart';
-import '../widgets/animated_dice.dart';
+import '../widgets/game_board_stage.dart';
 import '../widgets/game_fx_overlay.dart';
+import '../widgets/gameplay_callout.dart';
+import '../widgets/gameplay_header.dart';
 import '../widgets/ludo_board.dart';
+import '../widgets/match_result_dialog.dart';
 
 class ComputerGameScreen extends StatefulWidget {
   const ComputerGameScreen({
@@ -47,14 +52,15 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
   int _autoMoveSequence = 0;
   int? _movingTokenId;
   Set<int> _capturedTokenIds = const <int>{};
+  Set<int> _returningTokenIds = const <int>{};
   GameFxType? _fxType;
   String? _fxLabel;
 
   bool _isRolling = false;
   bool _isMoving = false;
   bool _computerLoopRunning = false;
-  final bool _soundEnabled = true;
-  final bool _hapticsEnabled = true;
+  bool _soundEnabled = true;
+  bool _hapticsEnabled = true;
 
   String _message = '';
 
@@ -70,6 +76,20 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
   void initState() {
     super.initState();
     _resetGame();
+    unawaited(GameAudioService.instance.preload());
+    unawaited(_loadPreferences());
+  }
+
+  Future<void> _loadPreferences() async {
+    final settings = await GamePreferences.load();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _soundEnabled = settings.soundEnabled;
+      _hapticsEnabled = settings.hapticsEnabled;
+    });
   }
 
   void _resetGame() {
@@ -85,6 +105,7 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
     _fxSequence = 0;
     _movingTokenId = null;
     _capturedTokenIds = const <int>{};
+    _returningTokenIds = const <int>{};
     _fxType = null;
     _fxLabel = null;
     _isRolling = false;
@@ -330,8 +351,13 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
       setState(() {
         _visualPathOverrides[tokenId] = progress;
       });
-      unawaited(_feedback.tokenStep());
-      await Future<void>.delayed(const Duration(milliseconds: 145));
+      if (moveEvent.type == LudoGameEventType.tokenReleased &&
+          progress == to) {
+        unawaited(_feedback.pawnRelease());
+      } else {
+        unawaited(_feedback.tokenStep());
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 125));
     }
 
     if (!mounted) {
@@ -346,26 +372,61 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
       await _triggerFx(GameFxType.capture, durationMs: 480);
     }
 
-    if (reachedHome) {
-      unawaited(_feedback.home());
-      await _triggerFx(GameFxType.home, durationMs: 480);
-    }
+    if (capture != null) {
+      if (!mounted) {
+        return;
+      }
 
-    if (!mounted) {
-      return;
-    }
+      final Set<int> returning = capture.otherTokenIds.toSet();
 
-    setState(() {
-      _visualPathOverrides.remove(tokenId);
-      _movingTokenId = null;
-      _capturedTokenIds = const <int>{};
-      _state = result.state;
-      _isMoving = false;
-      _message = _messageForMove(
-        result,
-        computerReason: computerReason,
+      unawaited(_feedback.returnHome());
+
+      setState(() {
+        _visualPathOverrides.remove(tokenId);
+        _movingTokenId = null;
+        _capturedTokenIds = const <int>{};
+        _returningTokenIds = returning;
+        _state = result.state;
+        _message = _messageForMove(
+          result,
+          computerReason: computerReason,
+        );
+      });
+
+      await Future<void>.delayed(
+        const Duration(milliseconds: 540),
       );
-    });
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _returningTokenIds = const <int>{};
+        _isMoving = false;
+      });
+    } else {
+      if (reachedHome) {
+        unawaited(_feedback.home());
+        await _triggerFx(GameFxType.home, durationMs: 480);
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _visualPathOverrides.remove(tokenId);
+        _movingTokenId = null;
+        _capturedTokenIds = const <int>{};
+        _state = result.state;
+        _isMoving = false;
+        _message = _messageForMove(
+          result,
+          computerReason: computerReason,
+        );
+      });
+    }
 
     if (won) {
       unawaited(_feedback.win());
@@ -513,49 +574,26 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: LudoGlobalColors.surface,
-          icon: Icon(
-            humanWon
-                ? Icons.emoji_events_rounded
-                : Icons.smart_toy_rounded,
-            size: 62,
-            color: humanWon
-                ? LudoGlobalColors.gold
-                : LudoGlobalColors.purple,
-          ),
-          title: Text(
-            humanWon ? 'You win!' : '$winner wins',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
-          content: Text(
-            humanWon
-                ? 'Great match against the computer.'
-                : 'Try again or change the AI difficulty.',
-            textAlign: TextAlign.center,
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                setState(_resetGame);
-              },
-              icon: const Icon(Icons.replay_rounded),
-              label: const Text('Play Again'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                Navigator.of(context).pop();
-              },
-              child: const Text('Back'),
-            ),
-          ],
-        );
-      },
+      builder: (dialogContext) => MatchResultDialog(
+        title: humanWon ? 'You win!' : '$winner wins',
+        subtitle: humanWon
+            ? 'Great match against the computer.'
+            : 'Try again or change the AI difficulty.',
+        accentColor: humanWon
+            ? LudoGlobalColors.gold
+            : LudoGlobalColors.purple,
+        icon: humanWon
+            ? Icons.emoji_events_rounded
+            : Icons.smart_toy_rounded,
+        onPlayAgain: () {
+          Navigator.of(dialogContext).pop();
+          setState(_resetGame);
+        },
+        onBack: () {
+          Navigator.of(dialogContext).pop();
+          Navigator.of(context).pop();
+        },
+      ),
     );
   }
 
@@ -616,111 +654,18 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
           GameBackground(
             child: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(LudoGlobalSpacing.sm),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 child: Column(
                   children: [
-                    Row(
-                      children: [
-                        IconButton.filledTonal(
-                          onPressed: _confirmQuit,
-                          icon: const Icon(Icons.arrow_back_rounded),
-                        ),
-                        const SizedBox(width: 8),
-                        const Expanded(
-                          child: Text(
-                            'VS COMPUTER',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: LudoGlobalColors.purple
-                                .withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            widget.difficulty.label.toUpperCase(),
-                            style: const TextStyle(
-                              color: LudoGlobalColors.gold,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ],
+                    GameplayHeader(
+                      title: 'VS COMPUTER',
+                      badge: widget.difficulty.label.toUpperCase(),
+                      accentColor: LudoGlobalColors.gold,
+                      onBack: _confirmQuit,
                     ),
-                    const SizedBox(height: 8),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: LudoGlobalColors.surface
-                            .withValues(alpha: 0.94),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: currentColor.withValues(alpha: 0.72),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: currentColor,
-                            child: Icon(
-                              _isHumanTurn
-                                  ? Icons.person_rounded
-                                  : Icons.smart_toy_rounded,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  current.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                Text(
-                                  _isHumanTurn
-                                      ? 'YOUR TURN'
-                                      : 'COMPUTER TURN',
-                                  style: const TextStyle(
-                                    color:
-                                        LudoGlobalColors.textSecondary,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (!_isHumanTurn &&
-                              (_computerLoopRunning || _isBusy))
-                            const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.all(7),
+                      padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
                         color: const Color(0xFF061127),
                         borderRadius:
@@ -730,58 +675,34 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
                           width: 1.5,
                         ),
                       ),
-                      child: LudoBoard(
+                      child: GameBoardStage(
                         gameState: _state,
-                        activePlayerCount: _state.players.length,
-                        movableTokenIds: _isHumanTurn
-                            ? _state.movableTokenIds.toSet()
-                            : const <int>{},
-                        visualPathOverrides: _visualPathOverrides,
-                        movingTokenId: _movingTokenId,
-                        capturedTokenIds: _capturedTokenIds,
-                        onTokenTap: _onHumanTokenTap,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 9,
-                      ),
-                      decoration: BoxDecoration(
-                        color: currentColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: currentColor.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: Text(
-                        _message,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                        diceValue: _lastDiceValue,
+                        diceRolling: _isRolling,
+                        diceEnabled: canHumanRoll,
+                        onRoll: () => unawaited(_humanRoll()),
+                        computerPlayerIds: <String>{
+                          for (final player in _state.players.skip(1))
+                            player.id,
+                        },
+                        board: LudoBoard(
+                          gameState: _state,
+                          activePlayerCount: _state.players.length,
+                          movableTokenIds: _isHumanTurn
+                              ? _state.movableTokenIds.toSet()
+                              : const <int>{},
+                          visualPathOverrides: _visualPathOverrides,
+                          movingTokenId: _movingTokenId,
+                          capturedTokenIds: _capturedTokenIds,
+                          returningTokenIds: _returningTokenIds,
+                          onTokenTap: _onHumanTokenTap,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    AnimatedDice(
-                      value: _lastDiceValue,
-                      enabled: canHumanRoll,
-                      rolling: _isRolling,
-                      accentColor: currentColor,
-                      onTap: () => unawaited(_humanRoll()),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      _isHumanTurn
-                          ? 'Tap the dice when it is your turn.'
-                          : 'Computer moves automatically.',
-                      style: const TextStyle(
-                        color: LudoGlobalColors.textSecondary,
-                        fontSize: 10,
-                      ),
+                    const SizedBox(height: 6),
+                    GameplayCallout(
+                      message: _message,
+                      color: currentColor,
                     ),
                   ],
                 ),

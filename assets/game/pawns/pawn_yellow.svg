@@ -1,0 +1,35 @@
+<svg width="96" height="128" viewBox="0 0 96 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="body" x1="20" y1="30" x2="76" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF39B"/>
+      <stop offset="0.46" stop-color="#F5C433"/>
+      <stop offset="1" stop-color="#B77400"/>
+    </linearGradient>
+    <radialGradient id="head" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(39 22) rotate(45) scale(32)">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.16" stop-color="#FFF39B"/>
+      <stop offset="0.62" stop-color="#F5C433"/>
+      <stop offset="1" stop-color="#B77400"/>
+    </radialGradient>
+    <linearGradient id="base" x1="24" y1="88" x2="72" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF39B"/>
+      <stop offset="0.45" stop-color="#F5C433"/>
+      <stop offset="1" stop-color="#B77400"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="48" cy="112" rx="34" ry="8" fill="#001120" fill-opacity="0.45"/>
+
+  <path d="M38 39C40 47 38 54 32 62C24 72 19 81 22 93H74C77 81 72 72 64 62C58 54 56 47 58 39H38Z"
+        fill="url(#body)" stroke="#B77400" stroke-width="2"/>
+  <path d="M29 68C34 58 39 52 40 42"
+        stroke="#FFFFFF" stroke-opacity="0.33" stroke-width="5" stroke-linecap="round"/>
+
+  <ellipse cx="48" cy="94" rx="30" ry="12" fill="url(#base)" stroke="#B77400" stroke-width="2"/>
+  <ellipse cx="48" cy="90" rx="28" ry="8" fill="#FFF5C7" fill-opacity="0.18"/>
+  <ellipse cx="48" cy="94" rx="22" ry="7" fill="#FFFFFF" fill-opacity="0.08"/>
+
+  <circle cx="48" cy="27" r="18" fill="url(#head)" stroke="#B77400" stroke-width="2"/>
+  <ellipse cx="41" cy="20" rx="7" ry="4.5" fill="#FFFFFF" fill-opacity="0.72"/>
+  <path d="M29 92C35 99 61 99 67 92" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

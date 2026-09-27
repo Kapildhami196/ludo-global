@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/audio/game_audio_service.dart';
+import '../../../../core/settings/game_preferences.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../../../core/widgets/game_background.dart';
 import '../../domain/ai/ai_difficulty.dart';
@@ -23,9 +25,12 @@ import '../../domain/power/power_ludo_engine.dart';
 import '../../domain/power/power_ludo_state.dart';
 import '../../domain/rules/classic_rules.dart';
 import '../services/game_feedback_service.dart';
-import '../widgets/animated_dice.dart';
+import '../widgets/game_board_stage.dart';
 import '../widgets/game_fx_overlay.dart';
+import '../widgets/gameplay_callout.dart';
+import '../widgets/gameplay_header.dart';
 import '../widgets/ludo_board.dart';
+import '../widgets/match_result_dialog.dart';
 import '../widgets/power_action_bar.dart';
 
 class PowerComputerGameScreen extends StatefulWidget {
@@ -56,14 +61,15 @@ class _PowerComputerGameScreenState
   int _autoMoveSequence = 0;
   int? _movingTokenId;
   Set<int> _capturedTokenIds = const <int>{};
+  Set<int> _returningTokenIds = const <int>{};
   GameFxType? _fxType;
   String? _fxLabel;
 
   bool _isRolling = false;
   bool _isMoving = false;
   bool _computerLoopRunning = false;
-  final bool _soundEnabled = true;
-  final bool _hapticsEnabled = true;
+  bool _soundEnabled = true;
+  bool _hapticsEnabled = true;
 
   String _message = '';
 
@@ -80,6 +86,20 @@ class _PowerComputerGameScreenState
   void initState() {
     super.initState();
     _resetGame();
+    unawaited(GameAudioService.instance.preload());
+    unawaited(_loadPreferences());
+  }
+
+  Future<void> _loadPreferences() async {
+    final settings = await GamePreferences.load();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _soundEnabled = settings.soundEnabled;
+      _hapticsEnabled = settings.hapticsEnabled;
+    });
   }
 
   void _resetGame() {
@@ -95,6 +115,7 @@ class _PowerComputerGameScreenState
     _fxSequence = 0;
     _movingTokenId = null;
     _capturedTokenIds = const <int>{};
+    _returningTokenIds = const <int>{};
     _fxType = null;
     _fxLabel = null;
     _isRolling = false;
@@ -194,6 +215,8 @@ class _PowerComputerGameScreenState
     required bool isComputer,
     String? prefix,
   }) {
+    _playPowerEventFeedback(result);
+
     final LudoGameEvent? diceEvent = _eventOfType(
       result.gameEvents,
       LudoGameEventType.diceRolled,
@@ -226,6 +249,24 @@ class _PowerComputerGameScreenState
         _message = prefix ?? 'Turn resolved.';
       }
     });
+  }
+
+  void _playPowerEventFeedback(PowerLudoActionResult result) {
+    final bool bonusTriggered = result.powerEvents.any(
+      (event) =>
+          event.type == PowerGameEventType.bonusRollTriggered,
+    );
+
+    if (bonusTriggered) {
+      unawaited(_feedback.bonusRoll());
+      return;
+    }
+
+    if (result.powerEvents.any(
+      (event) => event.type == PowerGameEventType.powerCollected,
+    )) {
+      unawaited(_feedback.powerPickup());
+    }
   }
 
   void _onHumanTokenTap(int tokenId) {
@@ -297,7 +338,7 @@ class _PowerComputerGameScreenState
             _message =
                 'Double Distance armed. Tap a glowing token.';
           });
-          unawaited(_feedback.tap());
+          unawaited(_feedback.doubleDistance());
         } on StateError catch (error) {
           _showRuleMessage(error.message);
         }
@@ -388,7 +429,7 @@ class _PowerComputerGameScreenState
         _powerState = result.state;
         _message = 'Shield active on your token.';
       });
-      unawaited(_feedback.home());
+      unawaited(_feedback.shield());
     } on StateError catch (error) {
       _showRuleMessage(error.message);
     }
@@ -443,6 +484,7 @@ class _PowerComputerGameScreenState
       _isRolling = true;
       _message = 'Controlling dice to $value...';
     });
+    unawaited(_feedback.diceControl());
     unawaited(_feedback.diceRoll());
     await Future<void>.delayed(const Duration(milliseconds: 650));
 
@@ -520,7 +562,7 @@ class _PowerComputerGameScreenState
               _powerState = result.state;
               _message = '$computerName used Shield.';
             });
-            unawaited(_feedback.home());
+            unawaited(_feedback.shield());
             await Future<void>.delayed(
               const Duration(milliseconds: 330),
             );
@@ -537,6 +579,7 @@ class _PowerComputerGameScreenState
               _message =
                   '$computerName used Dice Control: $value.';
             });
+            unawaited(_feedback.diceControl());
             unawaited(_feedback.diceRoll());
             await Future<void>.delayed(
               const Duration(milliseconds: 650),
@@ -581,7 +624,7 @@ class _PowerComputerGameScreenState
             _message =
                 '${_state.currentPlayer.name} used Double Distance.';
           });
-          unawaited(_feedback.tap());
+          unawaited(_feedback.doubleDistance());
           await Future<void>.delayed(
             const Duration(milliseconds: 350),
           );
@@ -635,6 +678,8 @@ class _PowerComputerGameScreenState
     required int tokenId,
     required String? computerReason,
   }) async {
+    _playPowerEventFeedback(result);
+
     final LudoGameEvent moveEvent = result.gameEvents.firstWhere(
       (event) =>
           event.type == LudoGameEventType.tokenMoved ||
@@ -666,8 +711,13 @@ class _PowerComputerGameScreenState
       setState(() {
         _visualPathOverrides[tokenId] = progress;
       });
-      unawaited(_feedback.tokenStep());
-      await Future<void>.delayed(const Duration(milliseconds: 140));
+      if (moveEvent.type == LudoGameEventType.tokenReleased &&
+          progress == to) {
+        unawaited(_feedback.pawnRelease());
+      } else {
+        unawaited(_feedback.tokenStep());
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 125));
     }
 
     if (!mounted) {
@@ -682,22 +732,21 @@ class _PowerComputerGameScreenState
       await _triggerFx(GameFxType.capture, durationMs: 480);
     }
 
-    if (reachedHome) {
-      unawaited(_feedback.home());
-      await _triggerFx(GameFxType.home, durationMs: 480);
-    }
+    if (capture != null) {
+      if (!mounted) {
+        return;
+      }
 
-    if (!mounted) {
-      return;
-    }
+      final Set<int> returning = capture.otherTokenIds.toSet();
 
-    setState(() {
-      _visualPathOverrides.remove(tokenId);
-      _movingTokenId = null;
-      _capturedTokenIds = const <int>{};
-      _powerState = result.state;
-      _isMoving = false;
+      unawaited(_feedback.returnHome());
 
+      setState(() {
+        _visualPathOverrides.remove(tokenId);
+        _movingTokenId = null;
+        _capturedTokenIds = const <int>{};
+        _returningTokenIds = returning;
+        _powerState = result.state;
       if (result.powerEvents.any(
         (event) =>
             event.type == PowerGameEventType.bonusRollTriggered,
@@ -712,7 +761,52 @@ class _PowerComputerGameScreenState
       } else {
         _message = 'Move complete.';
       }
-    });
+      });
+
+      await Future<void>.delayed(
+        const Duration(milliseconds: 540),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _returningTokenIds = const <int>{};
+        _isMoving = false;
+      });
+    } else {
+      if (reachedHome) {
+        unawaited(_feedback.home());
+        await _triggerFx(GameFxType.home, durationMs: 480);
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _visualPathOverrides.remove(tokenId);
+        _movingTokenId = null;
+        _capturedTokenIds = const <int>{};
+        _powerState = result.state;
+        _isMoving = false;
+      if (result.powerEvents.any(
+        (event) =>
+            event.type == PowerGameEventType.bonusRollTriggered,
+      )) {
+        _message = 'Bonus Roll activated!';
+      } else if (computerReason != null) {
+        _message = 'Computer used $computerReason.';
+      } else if (result.gameEvents.any(
+        (event) => event.type == LudoGameEventType.extraTurn,
+      )) {
+        _message = 'You earned another roll.';
+      } else {
+        _message = 'Move complete.';
+      }
+      });
+    }
 
     if (won) {
       unawaited(_feedback.win());
@@ -792,42 +886,27 @@ class _PowerComputerGameScreenState
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: LudoGlobalColors.surface,
-        icon: Icon(
-          humanWon
-              ? Icons.emoji_events_rounded
-              : Icons.smart_toy_rounded,
-          size: 62,
-          color: humanWon
-              ? LudoGlobalColors.gold
-              : LudoGlobalColors.purple,
-        ),
-        title: Text(
-          humanWon
-              ? 'You win Power Ludo!'
-              : '$winner wins Power Ludo',
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontWeight: FontWeight.w900),
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          FilledButton.icon(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              setState(_resetGame);
-            },
-            icon: const Icon(Icons.replay_rounded),
-            label: const Text('Play Again'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              Navigator.of(context).pop();
-            },
-            child: const Text('Back'),
-          ),
-        ],
+      builder: (dialogContext) => MatchResultDialog(
+        title: humanWon
+            ? 'You win Power Ludo!'
+            : '$winner wins Power Ludo',
+        subtitle: humanWon
+            ? 'You finished all four tokens first.'
+            : 'The computer finished all four tokens first.',
+        accentColor: humanWon
+            ? LudoGlobalColors.gold
+            : LudoGlobalColors.purple,
+        icon: humanWon
+            ? Icons.emoji_events_rounded
+            : Icons.smart_toy_rounded,
+        onPlayAgain: () {
+          Navigator.of(dialogContext).pop();
+          setState(_resetGame);
+        },
+        onBack: () {
+          Navigator.of(dialogContext).pop();
+          Navigator.of(context).pop();
+        },
       ),
     );
   }
@@ -885,114 +964,19 @@ class _PowerComputerGameScreenState
           GameBackground(
             child: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(LudoGlobalSpacing.sm),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 child: Column(
                   children: [
-                    Row(
-                      children: [
-                        IconButton.filledTonal(
-                          onPressed: _confirmQuit,
-                          icon: const Icon(Icons.arrow_back_rounded),
-                        ),
-                        const SizedBox(width: 7),
-                        const Icon(
-                          Icons.bolt_rounded,
-                          color: LudoGlobalColors.gold,
-                        ),
-                        const SizedBox(width: 4),
-                        const Expanded(
-                          child: Text(
-                            'POWER VS AI',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: LudoGlobalColors.purple
-                                .withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            widget.difficulty.label.toUpperCase(),
-                            style: const TextStyle(
-                              color: LudoGlobalColors.gold,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ],
+                    GameplayHeader(
+                      title: 'POWER VS AI',
+                      badge: widget.difficulty.label.toUpperCase(),
+                      leadingIcon: Icons.bolt_rounded,
+                      accentColor: LudoGlobalColors.gold,
+                      onBack: _confirmQuit,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: LudoGlobalColors.surface
-                            .withValues(alpha: 0.94),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: currentColor.withValues(alpha: 0.72),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: currentColor,
-                            child: Icon(
-                              _isHumanTurn
-                                  ? Icons.person_rounded
-                                  : Icons.smart_toy_rounded,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  current.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                Text(
-                                  _isHumanTurn
-                                      ? 'YOUR POWER TURN'
-                                      : 'AI POWER TURN',
-                                  style: const TextStyle(
-                                    color:
-                                        LudoGlobalColors.textSecondary,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (!_isHumanTurn &&
-                              (_computerLoopRunning || _isBusy))
-                            const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(7),
+                      padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
                         color: const Color(0xFF061127),
                         borderRadius:
@@ -1002,57 +986,44 @@ class _PowerComputerGameScreenState
                           width: 1.5,
                         ),
                       ),
-                      child: LudoBoard(
+                      child: GameBoardStage(
                         gameState: _state,
-                        activePlayerCount: _state.players.length,
-                        movableTokenIds: _isHumanTurn
-                            ? _state.movableTokenIds.toSet()
-                            : const <int>{},
-                        visualPathOverrides: _visualPathOverrides,
-                        movingTokenId: _movingTokenId,
-                        capturedTokenIds: _capturedTokenIds,
-                        shieldedTokenIds:
-                            _powerState.shields.keys.toSet(),
-                        powerPickupPositions: <PowerType, int>{
-                          for (final entry
-                              in _powerState.pickups.entries)
-                            entry.key: entry.value.globalIndex,
+                        diceValue: _lastDiceValue,
+                        diceRolling: _isRolling,
+                        diceEnabled: _canHumanRoll,
+                        onRoll: () => unawaited(_humanRoll()),
+                        computerPlayerIds: <String>{
+                          for (final player in _state.players.skip(1))
+                            player.id,
                         },
-                        onTokenTap: _onHumanTokenTap,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 9,
-                      ),
-                      decoration: BoxDecoration(
-                        color: currentColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: currentColor.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: Text(
-                        _message,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                        board: LudoBoard(
+                          gameState: _state,
+                          activePlayerCount: _state.players.length,
+                          movableTokenIds: _isHumanTurn
+                              ? _state.movableTokenIds.toSet()
+                              : const <int>{},
+                          visualPathOverrides: _visualPathOverrides,
+                          movingTokenId: _movingTokenId,
+                          capturedTokenIds: _capturedTokenIds,
+                          returningTokenIds: _returningTokenIds,
+                          shieldedTokenIds:
+                              _powerState.shields.keys.toSet(),
+                          powerPickupPositions: <PowerType, int>{
+                            for (final entry
+                                in _powerState.pickups.entries)
+                              entry.key: entry.value.globalIndex,
+                          },
+                          onTokenTap: _onHumanTokenTap,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    AnimatedDice(
-                      value: _lastDiceValue,
-                      enabled: _canHumanRoll,
-                      rolling: _isRolling,
-                      accentColor: currentColor,
-                      onTap: () => unawaited(_humanRoll()),
+                    const SizedBox(height: 6),
+                    GameplayCallout(
+                      message: _message,
+                      color: currentColor,
                     ),
-                    const SizedBox(height: 12),
+
+                    const SizedBox(height: 8),
                     PowerActionBar(
                       counts: _humanPowerCounts,
                       enabledPowers: _enabledHumanPowers,

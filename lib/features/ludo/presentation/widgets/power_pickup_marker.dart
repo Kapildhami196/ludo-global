@@ -1,9 +1,13 @@
-import 'package:flutter/material.dart';
+import 'dart:math' as math;
 
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+import '../../../../core/assets/game_asset_paths.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../domain/entities/power_type.dart';
 
-class PowerPickupMarker extends StatelessWidget {
+class PowerPickupMarker extends StatefulWidget {
   const PowerPickupMarker({
     required this.type,
     required this.size,
@@ -14,101 +18,105 @@ class PowerPickupMarker extends StatelessWidget {
   final double size;
 
   @override
+  State<PowerPickupMarker> createState() => _PowerPickupMarkerState();
+}
+
+class _PowerPickupMarkerState extends State<PowerPickupMarker>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1500),
+  )..repeat();
+
+  Color get _glowColor => switch (widget.type) {
+        PowerType.doubleDistance => LudoGlobalColors.red,
+        PowerType.shield => LudoGlobalColors.electricBlue,
+        PowerType.diceControl => LudoGlobalColors.purple,
+        PowerType.bonusRoll => LudoGlobalColors.gold,
+      };
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final (IconData icon, Color color) = switch (type) {
-      PowerType.doubleDistance => (
-          Icons.double_arrow_rounded,
-          LudoGlobalColors.red,
-        ),
-      PowerType.shield => (
-          Icons.shield_rounded,
-          LudoGlobalColors.electricBlue,
-        ),
-      PowerType.diceControl => (
-          Icons.casino_rounded,
-          LudoGlobalColors.purple,
-        ),
-      PowerType.bonusRoll => (
-          Icons.add_rounded,
-          LudoGlobalColors.gold,
-        ),
-    };
-
-    final HSLColor hsl = HSLColor.fromColor(color);
-    final Color light = hsl
-        .withLightness(
-          (hsl.lightness + 0.20).clamp(0.0, 1.0).toDouble(),
-        )
-        .toColor();
-    final Color dark = hsl
-        .withLightness(
-          (hsl.lightness - 0.18).clamp(0.0, 1.0).toDouble(),
-        )
-        .toColor();
-
     return IgnorePointer(
-      child: Transform.rotate(
-        angle: -0.06,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0.62, end: 1),
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutBack,
+        builder: (context, entranceScale, child) {
+          return AnimatedBuilder(
+            animation: _controller,
+            child: child,
+            builder: (context, child) {
+              final double wave =
+                  (math.sin(_controller.value * math.pi * 2) + 1) / 2;
+              final double scale =
+                  entranceScale * (0.96 + wave * 0.07);
+              final double lift =
+                  -widget.size * (0.025 + wave * 0.035);
+
+              return Transform.translate(
+                offset: Offset(0, lift),
+                child: Transform.scale(
+                  scale: scale,
+                  child: Opacity(
+                    opacity: entranceScale.clamp(0.0, 1.0).toDouble(),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: widget.size * (0.82 + wave * 0.32),
+                          height: widget.size * (0.82 + wave * 0.32),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: <BoxShadow>[
+                              BoxShadow(
+                                color: _glowColor.withValues(
+                                  alpha: 0.22 + wave * 0.28,
+                                ),
+                                blurRadius:
+                                    widget.size * (0.30 + wave * 0.38),
+                                spreadRadius: wave * widget.size * 0.035,
+                              ),
+                            ],
+                          ),
+                        ),
+                        child!,
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
         child: Container(
-          width: size,
-          height: size,
+          width: widget.size,
+          height: widget.size,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(size * 0.22),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: <Color>[
-                light,
-                color,
-                dark,
-              ],
-            ),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.82),
-              width: 1.1,
-            ),
+            borderRadius: BorderRadius.circular(widget.size * 0.24),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: color.withValues(alpha: 0.78),
-                blurRadius: size * 0.52,
-                spreadRadius: 1,
+                color: _glowColor.withValues(alpha: 0.58),
+                blurRadius: widget.size * 0.44,
+                spreadRadius: widget.size * 0.02,
               ),
               BoxShadow(
                 color: const Color(0x99000000),
-                blurRadius: size * 0.18,
-                offset: Offset(0, size * 0.10),
+                blurRadius: widget.size * 0.20,
+                offset: Offset(0, widget.size * 0.10),
               ),
             ],
           ),
-          child: Stack(
-            children: [
-              Positioned(
-                left: size * 0.13,
-                right: size * 0.13,
-                top: size * 0.10,
-                child: Container(
-                  height: size * 0.08,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.48),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              Center(
-                child: Icon(
-                  icon,
-                  size: size * 0.63,
-                  color: Colors.white,
-                  shadows: const <Shadow>[
-                    Shadow(
-                      color: Color(0x88000000),
-                      blurRadius: 3,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          child: SvgPicture.asset(
+            GameAssetPaths.powerFor(widget.type),
+            fit: BoxFit.contain,
           ),
         ),
       ),
