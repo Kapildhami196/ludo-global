@@ -6,6 +6,7 @@ import '../../../../core/audio/game_audio_service.dart';
 import '../../../../core/settings/game_preferences.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../../../core/widgets/game_background.dart';
+import '../../domain/dice/competitive_dice_engine.dart';
 import '../../domain/engine/ludo_game_engine.dart';
 import '../../domain/entities/game_config.dart';
 import '../../domain/entities/game_phase.dart';
@@ -38,7 +39,8 @@ class LocalGameScreen extends StatefulWidget {
 }
 
 class _LocalGameScreenState extends State<LocalGameScreen> {
-  final LudoGameEngine _engine = LudoGameEngine();
+  late final CompetitiveDiceEngine _diceEngine;
+  late final LudoGameEngine _engine;
   final Map<int, int> _visualPathOverrides = <int, int>{};
 
   late LudoGameState _state;
@@ -68,6 +70,8 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
   @override
   void initState() {
     super.initState();
+    _diceEngine = CompetitiveDiceEngine();
+    _engine = LudoGameEngine(dicePolicy: _diceEngine);
     _resetGame();
     unawaited(GameAudioService.instance.preload());
     unawaited(_loadPreferences());
@@ -86,6 +90,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
   }
 
   void _resetGame() {
+    _diceEngine.reset();
     _state = _engine.createGame(
       config: LudoGameConfig(
         mode: widget.mode,
@@ -129,6 +134,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
     }
 
     final LudoGameActionResult result = _engine.rollDice(_state);
+    _diceEngine.recordGameEvents(result.events);
     final LudoGameEvent diceEvent = result.events.firstWhere(
       (event) => event.type == LudoGameEventType.diceRolled,
     );
@@ -184,6 +190,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
   Future<void> _moveToken(int tokenId) async {
     final LudoGameActionResult result =
         _engine.moveToken(_state, tokenId);
+    _diceEngine.recordGameEvents(result.events);
 
     final LudoGameEvent moveEvent = result.events.firstWhere(
       (event) =>
