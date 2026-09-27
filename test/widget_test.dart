@@ -14,7 +14,7 @@ void main() {
     expect(find.text('GLOBAL'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 1800));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(find.text('NORMAL\nLUDO'), findsOneWidget);
     expect(find.text('POWER\nLUDO'), findsOneWidget);
@@ -34,10 +34,10 @@ void main() {
   ) async {
     await tester.pumpWidget(const LudoGlobalApp());
     await tester.pump(const Duration(milliseconds: 1800));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     await tester.tap(find.text('Play Now').first);
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(find.text('SELECT MATCH TYPE'), findsOneWidget);
     expect(find.text('Normal Ludo'), findsOneWidget);
@@ -49,26 +49,26 @@ void main() {
   ) async {
     await tester.pumpWidget(const LudoGlobalApp());
     await tester.pump(const Duration(milliseconds: 1800));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     await tester.tap(find.text('Play Now').first);
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(find.text('SELECT MATCH TYPE'), findsOneWidget);
     expect(find.text('Local / Pass-and-Play'), findsOneWidget);
 
     await tester.tap(find.text('Local / Pass-and-Play'));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(find.text('LOCAL PLAYERS'), findsOneWidget);
 
     await tester.tap(find.text('2'));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     final startGame = find.text('Start Game');
     await tester.ensureVisible(startGame);
     await tester.tap(startGame);
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(find.text('NORMAL LUDO'), findsOneWidget);
     expect(find.text('LOCAL'), findsOneWidget);
@@ -81,26 +81,26 @@ void main() {
   ) async {
     await tester.pumpWidget(const LudoGlobalApp());
     await tester.pump(const Duration(milliseconds: 1800));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     final Finder powerPlay = find.text('Play Now').at(1);
     await tester.ensureVisible(powerPlay);
     await tester.tap(powerPlay);
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(find.text('SELECT MATCH TYPE'), findsOneWidget);
     expect(find.text('Power Ludo'), findsOneWidget);
 
     await tester.tap(find.text('Local / Pass-and-Play'));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     await tester.tap(find.text('2'));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     final Finder startGame = find.text('Start Game');
     await tester.ensureVisible(startGame);
     await tester.tap(startGame);
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(find.text('POWER LUDO'), findsWidgets);
     expect(find.text('DOUBLE\nDISTANCE'), findsOneWidget);
@@ -130,9 +130,15 @@ void main() {
     final Finder start = find.text('Start vs Computer');
     await tester.ensureVisible(start);
     await tester.tap(start);
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(find.text('VS COMPUTER'), findsOneWidget);
     expect(find.byKey(const Key('roll_dice_button')), findsOneWidget);
   });
+}
+
+
+Future<void> _pumpUi(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 650));
 }
