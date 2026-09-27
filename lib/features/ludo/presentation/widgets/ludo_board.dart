@@ -10,6 +10,7 @@ import '../../domain/entities/ludo_token.dart';
 import '../../domain/entities/player_color.dart';
 import '../../domain/entities/power_type.dart';
 import '../../domain/entities/token_status.dart';
+import 'board_decoration_layer.dart';
 import 'power_pickup_marker.dart';
 import 'premium_ludo_token.dart';
 
@@ -48,7 +49,7 @@ class LudoBoard extends StatelessWidget {
             constraints.maxHeight,
           );
           final double cell = size / 15;
-          final double tokenSize = cell * 0.70;
+          final double tokenSize = cell * 0.62;
           final List<_TokenPlacement> placements =
               _placements(cell);
 
@@ -63,9 +64,15 @@ class LudoBoard extends StatelessWidget {
                       painter: _LudoBoardPainter(),
                     ),
                   ),
+                  const Positioned.fill(
+                    child: BoardDecorationLayer(),
+                  ),
                   for (final MapEntry<PowerType, int> entry
                       in powerPickupPositions.entries)
                     Positioned(
+                      key: ValueKey<String>(
+                        '${entry.key.name}-${entry.value}',
+                      ),
                       left: (LudoBoardMap.commonPath[entry.value].column + 0.5) *
                               cell -
                           (cell * 0.3),
@@ -79,13 +86,13 @@ class LudoBoard extends StatelessWidget {
                     ),
                   for (final _TokenPlacement placement in placements)
                     AnimatedPositioned(
-                      duration: const Duration(milliseconds: 125),
-                      curve: Curves.easeOut,
+                      duration: const Duration(milliseconds: 120),
+                      curve: Curves.easeOutCubic,
                       left: placement.center.dx - (tokenSize / 2),
-                      top: placement.center.dy - (tokenSize * 0.58),
+                      top: placement.center.dy - (tokenSize * 1.12),
                       child: PremiumLudoToken(
                         key: ValueKey<int>(placement.tokenId),
-                        color: placement.color,
+                        playerColor: placement.playerColor,
                         size: tokenSize,
                         dimmed: placement.dimmed,
                         highlighted:
@@ -168,7 +175,7 @@ class LudoBoard extends StatelessWidget {
         result.add(
           _TokenPlacement(
             tokenId: token.id,
-            color: _colorFor(player.color),
+            playerColor: player.color,
             center: center,
           ),
         );
@@ -195,7 +202,7 @@ class LudoBoard extends StatelessWidget {
         result.add(
           _TokenPlacement(
             tokenId: tokenId++,
-            color: _colorFor(colors[playerIndex]),
+            playerColor: colors[playerIndex],
             center: _baseAnchor(
               colors[playerIndex],
               tokenIndex,
@@ -246,26 +253,18 @@ class LudoBoard extends StatelessWidget {
     return Offset(point.dx * cell, point.dy * cell);
   }
 
-  Color _colorFor(PlayerColor color) {
-    return switch (color) {
-      PlayerColor.red => LudoGlobalColors.red,
-      PlayerColor.green => LudoGlobalColors.green,
-      PlayerColor.yellow => LudoGlobalColors.gold,
-      PlayerColor.blue => LudoGlobalColors.electricBlue,
-    };
-  }
-}
+
 
 class _TokenPlacement {
   const _TokenPlacement({
     required this.tokenId,
-    required this.color,
+    required this.playerColor,
     required this.center,
     this.dimmed = false,
   });
 
   final int tokenId;
-  final Color color;
+  final PlayerColor playerColor;
   final Offset center;
   final bool dimmed;
 }
