@@ -21,6 +21,7 @@ import '../../domain/power/power_inventory.dart';
 import '../../domain/power/power_ludo_action_result.dart';
 import '../../domain/power/power_ludo_engine.dart';
 import '../../domain/power/power_ludo_state.dart';
+import '../../domain/rules/classic_rules.dart';
 import '../services/game_feedback_service.dart';
 import '../widgets/animated_dice.dart';
 import '../widgets/game_fx_overlay.dart';
@@ -52,6 +53,7 @@ class _PowerComputerGameScreenState
 
   int _lastDiceValue = 1;
   int _fxSequence = 0;
+  int _autoMoveSequence = 0;
   int? _movingTokenId;
   Set<int> _capturedTokenIds = const <int>{};
   GameFxType? _fxType;
@@ -99,7 +101,12 @@ class _PowerComputerGameScreenState
     _isMoving = false;
     _computerLoopRunning = false;
     _visualPathOverrides.clear();
-    _message = 'Your Power turn. Choose a power or roll.';
+    _message = _isHumanTurn
+        ? 'Your Power turn. Choose a power or roll.'
+        : '${_state.currentPlayer.name} starts.';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startComputerIfNeeded();
+    });
   }
 
   bool get _canHumanRoll =>
@@ -123,9 +130,6 @@ class _PowerComputerGameScreenState
     if (_engine.canUseDiceControl(_powerState)) {
       enabled.add(PowerType.diceControl);
     }
-    if (_engine.canUseBonusRoll(_powerState)) {
-      enabled.add(PowerType.bonusRoll);
-    }
     return enabled;
   }
 
@@ -133,9 +137,6 @@ class _PowerComputerGameScreenState
     final Set<PowerType> active = <PowerType>{};
     if (_powerState.doubleDistanceArmed && _isHumanTurn) {
       active.add(PowerType.doubleDistance);
-    }
-    if (_powerState.bonusRollQueued && _isHumanTurn) {
-      active.add(PowerType.bonusRoll);
     }
     if (_isHumanTurn &&
         _state.currentPlayer.tokens.any(
@@ -183,6 +184,9 @@ class _PowerComputerGameScreenState
         _engine.rollDice(_powerState);
 
     _applyRollResult(result, isComputer: isComputer);
+    if (!isComputer) {
+      _scheduleHumanSingleAutoMove();
+    }
   }
 
   void _applyRollResult(
@@ -209,7 +213,7 @@ class _PowerComputerGameScreenState
                 : 'You rolled $_lastDiceValue. Tap a glowing token.');
       } else if (result.powerEvents.any(
         (event) =>
-            event.type == PowerGameEventType.bonusRollGranted,
+            event.type == PowerGameEventType.bonusRollTriggered,
       )) {
         _message = 'Bonus Roll activated!';
       } else if (result.gameEvents.any(
@@ -230,7 +234,37 @@ class _PowerComputerGameScreenState
         _state.phase != GamePhase.selectingToken) {
       return;
     }
+    _autoMoveSequence++;
     unawaited(_humanMove(tokenId));
+  }
+
+  void _scheduleHumanSingleAutoMove() {
+    if (!ClassicRules.autoMoveSingleLegalToken ||
+        !_isHumanTurn ||
+        _state.phase != GamePhase.selectingToken ||
+        _state.movableTokenIds.length != 1 ||
+        _isBusy) {
+      return;
+    }
+
+    final int tokenId = _state.movableTokenIds.single;
+    final int sequence = ++_autoMoveSequence;
+
+    Future<void>.delayed(
+      ClassicRules.singleLegalTokenAutoMoveDelay,
+      () {
+        if (!mounted ||
+            sequence != _autoMoveSequence ||
+            !_isHumanTurn ||
+            _isBusy ||
+            _state.phase != GamePhase.selectingToken ||
+            _state.movableTokenIds.length != 1 ||
+            _state.movableTokenIds.single != tokenId) {
+          return;
+        }
+        unawaited(_humanMove(tokenId));
+      },
+    );
   }
 
   Future<void> _humanMove(int tokenId) async {
@@ -278,16 +312,9 @@ class _PowerComputerGameScreenState
         break;
 
       case PowerType.bonusRoll:
-        try {
-          final result = _engine.queueBonusRoll(_powerState);
-          setState(() {
-            _powerState = result.state;
-            _message = 'Bonus Roll queued.';
-          });
-          unawaited(_feedback.tap());
-        } on StateError catch (error) {
-          _showRuleMessage(error.message);
-        }
+        _showRuleMessage(
+          'Bonus Roll activates automatically when you land on it.',
+        );
         break;
     }
   }
@@ -431,6 +458,7 @@ class _PowerComputerGameScreenState
         isComputer: false,
         prefix: 'Dice Control selected $value.',
       );
+      _scheduleHumanSingleAutoMove();
       _startComputerIfNeeded();
     } on StateError catch (error) {
       setState(() => _isRolling = false);
@@ -524,23 +552,6 @@ class _PowerComputerGameScreenState
               prefix:
                   '$computerName controlled the dice to $value.',
             );
-            break;
-
-          case PowerAiPreRollActionType.bonusRoll:
-            final result =
-                _engine.queueBonusRoll(_powerState);
-            setState(() {
-              _powerState = result.state;
-              _message = '$computerName queued Bonus Roll.';
-            });
-            unawaited(_feedback.tap());
-            await Future<void>.delayed(
-              const Duration(milliseconds: 300),
-            );
-            if (!mounted || _isHumanTurn) {
-              continue;
-            }
-            await _rollNormally(isComputer: true);
             break;
 
           case PowerAiPreRollActionType.normalRoll:
@@ -689,7 +700,7 @@ class _PowerComputerGameScreenState
 
       if (result.powerEvents.any(
         (event) =>
-            event.type == PowerGameEventType.bonusRollGranted,
+            event.type == PowerGameEventType.bonusRollTriggered,
       )) {
         _message = 'Bonus Roll activated!';
       } else if (computerReason != null) {
@@ -1002,6 +1013,11 @@ class _PowerComputerGameScreenState
                         capturedTokenIds: _capturedTokenIds,
                         shieldedTokenIds:
                             _powerState.shields.keys.toSet(),
+                        powerPickupPositions: <PowerType, int>{
+                          for (final entry
+                              in _powerState.pickups.entries)
+                            entry.key: entry.value.globalIndex,
+                        },
                         onTokenTap: _onHumanTokenTap,
                       ),
                     ),
@@ -1033,6 +1049,7 @@ class _PowerComputerGameScreenState
                       value: _lastDiceValue,
                       enabled: _canHumanRoll,
                       rolling: _isRolling,
+                      accentColor: currentColor,
                       onTap: () => unawaited(_humanRoll()),
                     ),
                     const SizedBox(height: 12),

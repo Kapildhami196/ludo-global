@@ -1,5 +1,6 @@
 import '../entities/ludo_game_state.dart';
 import '../entities/power_type.dart';
+import 'board_power_pickup.dart';
 import 'power_inventory.dart';
 import 'shield_effect.dart';
 
@@ -7,23 +8,18 @@ class PowerLudoState {
   const PowerLudoState({
     required this.gameState,
     required this.inventories,
+    required this.pickups,
     this.shields = const <int, ShieldEffect>{},
     this.turnSerial = 0,
     this.doubleDistancePlayerId,
-    this.bonusRollPlayerId,
   });
 
   final LudoGameState gameState;
   final Map<String, PowerInventory> inventories;
+  final Map<PowerType, BoardPowerPickup> pickups;
   final Map<int, ShieldEffect> shields;
   final int turnSerial;
-
-  /// Player who armed Double Distance for the current selected move.
   final String? doubleDistancePlayerId;
-
-  /// Player whose queued Bonus Roll will preserve their turn when it would
-  /// otherwise pass.
-  final String? bonusRollPlayerId;
 
   PowerInventory inventoryFor(String playerId) {
     return inventories[playerId] ??
@@ -35,30 +31,33 @@ class PowerLudoState {
   bool get doubleDistanceArmed =>
       doubleDistancePlayerId == gameState.currentPlayer.id;
 
-  bool get bonusRollQueued =>
-      bonusRollPlayerId == gameState.currentPlayer.id;
+  BoardPowerPickup? pickupAtGlobalIndex(int globalIndex) {
+    for (final BoardPowerPickup pickup in pickups.values) {
+      if (pickup.globalIndex == globalIndex) {
+        return pickup;
+      }
+    }
+    return null;
+  }
 
   PowerLudoState copyWith({
     LudoGameState? gameState,
     Map<String, PowerInventory>? inventories,
+    Map<PowerType, BoardPowerPickup>? pickups,
     Map<int, ShieldEffect>? shields,
     int? turnSerial,
     String? doubleDistancePlayerId,
     bool clearDoubleDistancePlayerId = false,
-    String? bonusRollPlayerId,
-    bool clearBonusRollPlayerId = false,
   }) {
     return PowerLudoState(
       gameState: gameState ?? this.gameState,
       inventories: inventories ?? this.inventories,
+      pickups: pickups ?? this.pickups,
       shields: shields ?? this.shields,
       turnSerial: turnSerial ?? this.turnSerial,
       doubleDistancePlayerId: clearDoubleDistancePlayerId
           ? null
           : doubleDistancePlayerId ?? this.doubleDistancePlayerId,
-      bonusRollPlayerId: clearBonusRollPlayerId
-          ? null
-          : bonusRollPlayerId ?? this.bonusRollPlayerId,
     );
   }
 

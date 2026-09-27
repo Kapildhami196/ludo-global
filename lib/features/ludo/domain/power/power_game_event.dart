@@ -2,13 +2,14 @@ import '../entities/power_type.dart';
 
 enum PowerGameEventType {
   powerActivated,
+  powerCollected,
+  powerRelocated,
   doubleDistanceArmed,
   doubleDistanceUsed,
   shieldApplied,
   shieldExpired,
   diceControlled,
-  bonusRollQueued,
-  bonusRollGranted,
+  bonusRollTriggered,
 }
 
 class PowerGameEvent {
@@ -18,6 +19,8 @@ class PowerGameEvent {
     this.powerType,
     this.tokenId,
     this.value,
+    this.globalIndex,
+    this.previousGlobalIndex,
   });
 
   final PowerGameEventType type;
@@ -25,4 +28,6 @@ class PowerGameEvent {
   final PowerType? powerType;
   final int? tokenId;
   final int? value;
+  final int? globalIndex;
+  final int? previousGlobalIndex;
 }

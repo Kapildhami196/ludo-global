@@ -12,6 +12,7 @@ import '../../domain/entities/ludo_game_event.dart';
 import '../../domain/entities/ludo_game_state.dart';
 import '../../domain/entities/ludo_player.dart';
 import '../../domain/entities/player_color.dart';
+import '../../domain/rules/classic_rules.dart';
 import '../services/game_feedback_service.dart';
 import '../widgets/animated_dice.dart';
 import '../widgets/game_fx_overlay.dart';
@@ -39,13 +40,13 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
 
   int _lastDiceValue = 1;
   int _fxSequence = 0;
+  int _autoMoveSequence = 0;
   int? _movingTokenId;
   Set<int> _capturedTokenIds = const <int>{};
   GameFxType? _fxType;
 
   bool _isRolling = false;
   bool _isMoving = false;
-  bool _handoffVisible = false;
   bool _soundEnabled = true;
   bool _hapticsEnabled = true;
 
@@ -81,20 +82,18 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
     _fxType = null;
     _isRolling = false;
     _isMoving = false;
-    _handoffVisible = false;
     _visualPathOverrides.clear();
     _message = '${_state.currentPlayer.name}, roll the dice.';
   }
 
   Future<void> _rollDice() async {
     if (_isBusy ||
-        _handoffVisible ||
         _state.phase != GamePhase.waitingForRoll ||
         _state.isGameOver) {
       return;
     }
 
-    final int previousPlayerIndex = _state.currentPlayerIndex;
+    _autoMoveSequence++;
 
     setState(() {
       _isRolling = true;
@@ -120,23 +119,48 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
       _message = _messageForRoll(result);
     });
 
-    if (_state.currentPlayerIndex != previousPlayerIndex) {
-      await _showTurnHandoff();
-    }
+    _scheduleSingleLegalAutoMove();
   }
 
   void _onTokenTap(int tokenId) {
     if (_isBusy ||
-        _handoffVisible ||
         _state.phase != GamePhase.selectingToken) {
       return;
     }
 
+    _autoMoveSequence++;
     unawaited(_moveToken(tokenId));
   }
 
+  void _scheduleSingleLegalAutoMove() {
+    if (!ClassicRules.autoMoveSingleLegalToken ||
+        _state.phase != GamePhase.selectingToken ||
+        _state.movableTokenIds.length != 1 ||
+        _isBusy) {
+      return;
+    }
+
+    final int tokenId = _state.movableTokenIds.single;
+    final int sequence = ++_autoMoveSequence;
+
+    Future<void>.delayed(
+      ClassicRules.singleLegalTokenAutoMoveDelay,
+      () {
+        if (!mounted ||
+            sequence != _autoMoveSequence ||
+            _isBusy ||
+            _state.phase != GamePhase.selectingToken ||
+            _state.movableTokenIds.length != 1 ||
+            _state.movableTokenIds.single != tokenId) {
+          return;
+        }
+
+        unawaited(_moveToken(tokenId));
+      },
+    );
+  }
+
   Future<void> _moveToken(int tokenId) async {
-    final int previousPlayerIndex = _state.currentPlayerIndex;
     final LudoGameActionResult result =
         _engine.moveToken(_state, tokenId);
 
@@ -223,9 +247,6 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
       return;
     }
 
-    if (_state.currentPlayerIndex != previousPlayerIndex) {
-      await _showTurnHandoff();
-    }
   }
 
   LudoGameEvent? _eventOfType(
@@ -269,30 +290,6 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
 
   String? _fxLabel;
 
-  Future<void> _showTurnHandoff() async {
-    if (!mounted || _state.isGameOver) {
-      return;
-    }
-
-    setState(() {
-      _handoffVisible = true;
-    });
-
-    unawaited(_feedback.tap());
-  }
-
-  void _dismissHandoff() {
-    if (!_handoffVisible) {
-      return;
-    }
-
-    unawaited(_feedback.tap());
-    setState(() {
-      _handoffVisible = false;
-      _message = '${_state.currentPlayer.name}, roll the dice.';
-    });
-  }
-
   String _messageForRoll(LudoGameActionResult result) {
     if (result.events.any(
       (event) =>
@@ -309,7 +306,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
       )) {
         return 'No legal move. Roll again.';
       }
-      return 'No legal move.';
+      return '${_state.currentPlayer.name}, roll the dice.';
     }
 
     return 'Rolled $_lastDiceValue. Tap a glowing token.';
@@ -345,7 +342,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
       return '${result.state.currentPlayer.name}, roll again.';
     }
 
-    return 'Turn complete.';
+    return '${result.state.currentPlayer.name}, roll the dice.';
   }
 
   String _winnerName(LudoGameState state) {
@@ -573,7 +570,6 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
     final Color currentColor = _playerColor(current.color);
 
     final bool canRoll = !_isBusy &&
-        !_handoffVisible &&
         _state.phase == GamePhase.waitingForRoll &&
         !_state.isGameOver;
 
@@ -644,35 +640,15 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
                             color: currentColor,
                           ),
                           const SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _SmallControl(
-                                icon: Icons.chat_bubble_rounded,
-                                label: 'Chat',
-                                onTap: () {},
-                              ),
-                              const SizedBox(width: 18),
-                              AnimatedDice(
-                                value: _lastDiceValue,
-                                enabled: canRoll,
-                                rolling: _isRolling,
-                                onTap: () {
-                                  unawaited(_rollDice());
-                                },
-                              ),
-                              const SizedBox(width: 18),
-                              _SmallControl(
-                                icon: Icons.emoji_emotions_rounded,
-                                label: 'Emotes',
-                                onTap: () {},
-                              ),
-                            ],
+                          AnimatedDice(
+                            value: _lastDiceValue,
+                            enabled: canRoll,
+                            rolling: _isRolling,
+                            accentColor: currentColor,
+                            onTap: () {
+                              unawaited(_rollDice());
+                            },
                           ),
-                          if (widget.mode == LudoGameMode.power) ...[
-                            const SizedBox(height: 12),
-                            const _PowerComingNext(),
-                          ],
                         ],
                       ),
                     ),
@@ -686,12 +662,6 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
             sequence: _fxSequence,
             label: _fxLabel,
           ),
-          if (_handoffVisible)
-            _TurnHandoffOverlay(
-              player: _state.currentPlayer,
-              color: currentColor,
-              onReady: _dismissHandoff,
-            ),
         ],
       ),
     );
@@ -816,7 +786,7 @@ class _TurnCard extends StatelessWidget {
                   ),
                 ),
                 const Text(
-                  'YOUR TURN',
+                  'CURRENT TURN',
                   style: TextStyle(
                     color: LudoGlobalColors.textSecondary,
                     fontSize: 9,
@@ -885,207 +855,6 @@ class _StatusBanner extends StatelessWidget {
             fontSize: 11,
             fontWeight: FontWeight.w700,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TurnHandoffOverlay extends StatelessWidget {
-  const _TurnHandoffOverlay({
-    required this.player,
-    required this.color,
-    required this.onReady,
-  });
-
-  final LudoPlayer player;
-  final Color color;
-  final VoidCallback onReady;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: ColoredBox(
-        color: const Color(0xEB031024),
-        child: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(28),
-              child: Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(maxWidth: 360),
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: LudoGlobalColors.surface,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: color.withValues(alpha: 0.85),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.32),
-                      blurRadius: 32,
-                      spreadRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.phone_android_rounded,
-                      size: 40,
-                      color: LudoGlobalColors.textSecondary,
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'PASS THE PHONE',
-                      style: TextStyle(
-                        color: LudoGlobalColors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: color,
-                        boxShadow: [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.42),
-                            blurRadius: 20,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.person_rounded,
-                        size: 44,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      "${player.name}'s turn",
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Keep the board covered until the next player is ready.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: LudoGlobalColors.textSecondary,
-                        fontSize: 12,
-                        height: 1.35,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        key: const Key('handoff_ready_button'),
-                        onPressed: onReady,
-                        icon: const Icon(Icons.check_circle_rounded),
-                        label: const Text("I'm Ready"),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: color,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SmallControl extends StatelessWidget {
-  const _SmallControl({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: 58,
-        height: 54,
-        decoration: BoxDecoration(
-          color: LudoGlobalColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: LudoGlobalColors.border,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 21,
-              color: LudoGlobalColors.cyan,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 8,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PowerComingNext extends StatelessWidget {
-  const _PowerComingNext();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: LudoGlobalColors.purple.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: LudoGlobalColors.purple.withValues(alpha: 0.45),
-        ),
-      ),
-      child: const Text(
-        '⚡ Power controls use this same Normal Ludo engine and '
-        'will be enabled in the Power phase.',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: LudoGlobalColors.textSecondary,
-          fontSize: 10,
         ),
       ),
     );

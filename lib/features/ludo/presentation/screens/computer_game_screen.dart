@@ -15,6 +15,7 @@ import '../../domain/entities/ludo_game_event.dart';
 import '../../domain/entities/ludo_game_state.dart';
 import '../../domain/entities/ludo_player.dart';
 import '../../domain/entities/player_color.dart';
+import '../../domain/rules/classic_rules.dart';
 import '../services/game_feedback_service.dart';
 import '../widgets/animated_dice.dart';
 import '../widgets/game_fx_overlay.dart';
@@ -43,6 +44,7 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
 
   int _lastDiceValue = 1;
   int _fxSequence = 0;
+  int _autoMoveSequence = 0;
   int? _movingTokenId;
   Set<int> _capturedTokenIds = const <int>{};
   GameFxType? _fxType;
@@ -89,7 +91,12 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
     _isMoving = false;
     _computerLoopRunning = false;
     _visualPathOverrides.clear();
-    _message = 'Your turn. Roll the dice.';
+    _message = _isHumanTurn
+        ? 'Your turn. Roll the dice.'
+        : '${_state.currentPlayer.name} starts.';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startComputerIfNeeded();
+    });
   }
 
   Future<void> _humanRoll() async {
@@ -101,6 +108,7 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
     }
 
     await _performRoll(isComputer: false);
+    _scheduleHumanSingleAutoMove();
     _startComputerIfNeeded();
   }
 
@@ -111,7 +119,37 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
       return;
     }
 
+    _autoMoveSequence++;
     unawaited(_humanMove(tokenId));
+  }
+
+  void _scheduleHumanSingleAutoMove() {
+    if (!ClassicRules.autoMoveSingleLegalToken ||
+        !_isHumanTurn ||
+        _state.phase != GamePhase.selectingToken ||
+        _state.movableTokenIds.length != 1 ||
+        _isBusy) {
+      return;
+    }
+
+    final int tokenId = _state.movableTokenIds.single;
+    final int sequence = ++_autoMoveSequence;
+
+    Future<void>.delayed(
+      ClassicRules.singleLegalTokenAutoMoveDelay,
+      () {
+        if (!mounted ||
+            sequence != _autoMoveSequence ||
+            !_isHumanTurn ||
+            _isBusy ||
+            _state.phase != GamePhase.selectingToken ||
+            _state.movableTokenIds.length != 1 ||
+            _state.movableTokenIds.single != tokenId) {
+          return;
+        }
+        unawaited(_humanMove(tokenId));
+      },
+    );
   }
 
   Future<void> _humanMove(int tokenId) async {
@@ -732,6 +770,7 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
                       value: _lastDiceValue,
                       enabled: canHumanRoll,
                       rolling: _isRolling,
+                      accentColor: currentColor,
                       onTap: () => unawaited(_humanRoll()),
                     ),
                     const SizedBox(height: 10),

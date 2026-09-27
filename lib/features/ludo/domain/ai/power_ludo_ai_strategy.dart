@@ -55,13 +55,6 @@ class PowerLudoAiStrategy {
       if (shield != null) {
         return shield;
       }
-      if (_shouldQueueBonus(state, engine, difficulty)) {
-        return const PowerAiPreRollDecision(
-          type: PowerAiPreRollActionType.bonusRoll,
-          score: 120,
-          reason: 'extends a productive turn',
-        );
-      }
       if (diceControl != null && diceControl.score > 60) {
         return diceControl;
       }
@@ -71,13 +64,6 @@ class PowerLudoAiStrategy {
       }
       if (shield != null && shield.score >= 300) {
         return shield;
-      }
-      if (_shouldQueueBonus(state, engine, difficulty)) {
-        return const PowerAiPreRollDecision(
-          type: PowerAiPreRollActionType.bonusRoll,
-          score: 80,
-          reason: 'adds another chance to move',
-        );
       }
     }
 
@@ -216,15 +202,6 @@ class PowerLudoAiStrategy {
       );
     }
 
-    if (engine.canUseBonusRoll(state)) {
-      available.add(
-        const PowerAiPreRollDecision(
-          type: PowerAiPreRollActionType.bonusRoll,
-          reason: 'random Bonus Roll use',
-        ),
-      );
-    }
-
     if (available.isEmpty) {
       return const PowerAiPreRollDecision(
         type: PowerAiPreRollActionType.normalRoll,
@@ -310,32 +287,6 @@ class PowerLudoAiStrategy {
       score: 250 + (threats * 100) + token.pathPosition.toDouble(),
       reason: 'protects a threatened advanced token',
     );
-  }
-
-  bool _shouldQueueBonus(
-    PowerLudoState state,
-    PowerLudoEngine engine,
-    AiDifficulty difficulty,
-  ) {
-    if (!engine.canUseBonusRoll(state)) {
-      return false;
-    }
-
-    final bool hasActiveToken = state.gameState.currentPlayer.tokens.any(
-      (token) =>
-          token.status == TokenStatus.active ||
-          token.status == TokenStatus.homePath,
-    );
-
-    if (!hasActiveToken) {
-      return false;
-    }
-
-    if (difficulty == AiDifficulty.hard) {
-      return state.turnSerial >= 1;
-    }
-
-    return _random.nextInt(100) < 28;
   }
 
   double _shieldPriority(
