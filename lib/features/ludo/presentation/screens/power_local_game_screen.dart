@@ -130,7 +130,6 @@ class _PowerLocalGameScreenState
       _message = 'Rolling...';
     });
 
-    unawaited(_feedback.diceControl());
     unawaited(_feedback.diceRoll());
     await Future<void>.delayed(const Duration(milliseconds: 650));
 
@@ -221,6 +220,7 @@ class _PowerLocalGameScreenState
       _message = 'Dice Control: $value';
     });
 
+    unawaited(_feedback.diceControl());
     unawaited(_feedback.diceRoll());
     await Future<void>.delayed(const Duration(milliseconds: 650));
 
