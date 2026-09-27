@@ -7,10 +7,12 @@ import '../theme/ludo_global_tokens.dart';
 class GameBackground extends StatefulWidget {
   const GameBackground({
     required this.child,
+    this.referencePurple = false,
     super.key,
   });
 
   final Widget child;
+  final bool referencePurple;
 
   @override
   State<GameBackground> createState() => _GameBackgroundState();
@@ -31,9 +33,23 @@ class _GameBackgroundState extends State<GameBackground>
 
   @override
   Widget build(BuildContext context) {
+    final Gradient backgroundGradient = widget.referencePurple
+        ? const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: <Color>[
+              Color(0xFF343A8E),
+              Color(0xFF4743A2),
+              Color(0xFF5847AC),
+              Color(0xFF443990),
+            ],
+            stops: <double>[0, 0.34, 0.72, 1],
+          )
+        : LudoGlobalGradients.background;
+
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LudoGlobalGradients.background,
+      decoration: BoxDecoration(
+        gradient: backgroundGradient,
       ),
       child: Stack(
         fit: StackFit.expand,
@@ -47,6 +63,7 @@ class _GameBackgroundState extends State<GameBackground>
                     child: CustomPaint(
                       painter: _GameAtmospherePainter(
                         progress: _controller.value,
+                        referencePurple: widget.referencePurple,
                       ),
                     ),
                   );
@@ -54,20 +71,26 @@ class _GameBackgroundState extends State<GameBackground>
               ),
             ),
           ),
-          const Positioned(
+          Positioned(
             top: -90,
             right: -70,
             child: _GlowOrb(
               size: 220,
-              color: LudoGlobalColors.electricBlue,
+              color: widget.referencePurple
+                  ? const Color(0xFF796CFF)
+                  : LudoGlobalColors.electricBlue,
+              opacity: widget.referencePurple ? 0.10 : 0.22,
             ),
           ),
-          const Positioned(
+          Positioned(
             bottom: 20,
             left: -100,
             child: _GlowOrb(
               size: 240,
-              color: LudoGlobalColors.purple,
+              color: widget.referencePurple
+                  ? const Color(0xFFA34FEA)
+                  : LudoGlobalColors.purple,
+              opacity: widget.referencePurple ? 0.12 : 0.22,
             ),
           ),
           widget.child,
@@ -81,10 +104,12 @@ class _GlowOrb extends StatelessWidget {
   const _GlowOrb({
     required this.size,
     required this.color,
+    required this.opacity,
   });
 
   final double size;
   final Color color;
+  final double opacity;
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +121,7 @@ class _GlowOrb extends StatelessWidget {
           shape: BoxShape.circle,
           gradient: RadialGradient(
             colors: <Color>[
-              color.withValues(alpha: 0.22),
+              color.withValues(alpha: opacity),
               color.withValues(alpha: 0),
             ],
           ),
@@ -109,9 +134,11 @@ class _GlowOrb extends StatelessWidget {
 class _GameAtmospherePainter extends CustomPainter {
   const _GameAtmospherePainter({
     required this.progress,
+    required this.referencePurple,
   });
 
   final double progress;
+  final bool referencePurple;
 
   static const List<Offset> _sparkles = <Offset>[
     Offset(0.08, 0.14),
@@ -162,10 +189,14 @@ class _GameAtmospherePainter extends CustomPainter {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: <Color>[
-              const Color(0xFF2A8FFF).withValues(
-                alpha: 0.055 +
-                    ((wave + 1) * 0.5) * 0.025 -
-                    index * 0.006,
+              (referencePurple
+                      ? const Color(0xFF8A79FF)
+                      : const Color(0xFF2A8FFF))
+                  .withValues(
+                alpha: (referencePurple ? 0.025 : 0.055) +
+                    ((wave + 1) * 0.5) *
+                        (referencePurple ? 0.012 : 0.025) -
+                    index * 0.004,
               ),
               Colors.transparent,
             ],
@@ -183,8 +214,13 @@ class _GameAtmospherePainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: <Color>[
-            const Color(0xFF147CFF).withValues(
-              alpha: 0.08 + ((wave + 1) * 0.5) * 0.04,
+            (referencePurple
+                    ? const Color(0xFF7166E8)
+                    : const Color(0xFF147CFF))
+                .withValues(
+              alpha: referencePurple
+                  ? 0.045
+                  : 0.08 + ((wave + 1) * 0.5) * 0.04,
             ),
             Colors.transparent,
           ],
@@ -209,13 +245,17 @@ class _GameAtmospherePainter extends CustomPainter {
       final double radius = index.isEven ? 1.35 : 0.85;
       final Color color = index % 4 == 0
           ? LudoGlobalColors.gold
-          : LudoGlobalColors.cyan;
+          : (referencePurple
+              ? const Color(0xFF9BD4FF)
+              : LudoGlobalColors.cyan);
 
       canvas.drawCircle(
         point,
         radius * 3.2,
         Paint()
-          ..color = color.withValues(alpha: 0.08 * pulse)
+          ..color = color.withValues(
+            alpha: (referencePurple ? 0.045 : 0.08) * pulse,
+          )
           ..maskFilter = const MaskFilter.blur(
             BlurStyle.normal,
             4,
@@ -224,13 +264,17 @@ class _GameAtmospherePainter extends CustomPainter {
       canvas.drawCircle(
         point,
         radius,
-        Paint()..color = color.withValues(alpha: 0.55 * pulse),
+        Paint()
+          ..color = color.withValues(
+            alpha: (referencePurple ? 0.34 : 0.55) * pulse,
+          ),
       );
     }
   }
 
   @override
   bool shouldRepaint(covariant _GameAtmospherePainter oldDelegate) {
-    return oldDelegate.progress != progress;
+    return oldDelegate.progress != progress ||
+        oldDelegate.referencePurple != referencePurple;
   }
 }
