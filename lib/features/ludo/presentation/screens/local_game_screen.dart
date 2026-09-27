@@ -14,7 +14,7 @@ import '../../domain/entities/ludo_player.dart';
 import '../../domain/entities/player_color.dart';
 import '../../domain/rules/classic_rules.dart';
 import '../services/game_feedback_service.dart';
-import '../widgets/animated_dice.dart';
+import '../widgets/game_board_stage.dart';
 import '../widgets/game_fx_overlay.dart';
 import '../widgets/ludo_board.dart';
 
@@ -200,7 +200,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
       });
 
       unawaited(_feedback.tokenStep());
-      await Future<void>.delayed(const Duration(milliseconds: 155));
+      await Future<void>.delayed(const Duration(milliseconds: 125));
     }
 
     if (!mounted) {
@@ -622,16 +622,23 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
                                 ),
                               ],
                             ),
-                            child: LudoBoard(
+                            child: GameBoardStage(
                               gameState: _state,
-                              activePlayerCount: _state.players.length,
-                              movableTokenIds:
-                                  _state.movableTokenIds.toSet(),
-                              visualPathOverrides:
-                                  _visualPathOverrides,
-                              movingTokenId: _movingTokenId,
-                              capturedTokenIds: _capturedTokenIds,
-                              onTokenTap: _onTokenTap,
+                              diceValue: _lastDiceValue,
+                              diceRolling: _isRolling,
+                              diceEnabled: canRoll,
+                              onRoll: () => unawaited(_rollDice()),
+                              board: LudoBoard(
+                                gameState: _state,
+                                activePlayerCount: _state.players.length,
+                                movableTokenIds:
+                                    _state.movableTokenIds.toSet(),
+                                visualPathOverrides:
+                                    _visualPathOverrides,
+                                movingTokenId: _movingTokenId,
+                                capturedTokenIds: _capturedTokenIds,
+                                onTokenTap: _onTokenTap,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -639,16 +646,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
                             message: _message,
                             color: currentColor,
                           ),
-                          const SizedBox(height: 10),
-                          AnimatedDice(
-                            value: _lastDiceValue,
-                            enabled: canRoll,
-                            rolling: _isRolling,
-                            accentColor: currentColor,
-                            onTap: () {
-                              unawaited(_rollDice());
-                            },
-                          ),
+
                         ],
                       ),
                     ),

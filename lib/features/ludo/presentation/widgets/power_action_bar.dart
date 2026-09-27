@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../core/assets/game_asset_paths.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../domain/entities/power_type.dart';
 import '../../domain/power/power_rules.dart';
@@ -193,10 +195,12 @@ class _PowerButton extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: Icon(
-                        visual.icon,
-                        color: Colors.white,
-                        size: 21,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: SvgPicture.asset(
+                          GameAssetPaths.powerFor(type),
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                     Positioned(
@@ -260,28 +264,24 @@ class _PowerButton extends StatelessWidget {
       PowerType.doubleDistance => const _PowerVisual(
           label: 'Double Distance',
           shortLabel: 'DOUBLE\nDISTANCE',
-          icon: Icons.double_arrow_rounded,
           color: LudoGlobalColors.red,
           lightColor: Color(0xFFFF7B87),
         ),
       PowerType.shield => const _PowerVisual(
           label: 'Shield',
           shortLabel: 'SHIELD',
-          icon: Icons.shield_rounded,
           color: LudoGlobalColors.electricBlue,
           lightColor: Color(0xFF70E8FF),
         ),
       PowerType.diceControl => const _PowerVisual(
           label: 'Dice Control',
           shortLabel: 'DICE\nCONTROL',
-          icon: Icons.casino_rounded,
           color: LudoGlobalColors.purple,
           lightColor: Color(0xFFD6A5FF),
         ),
       PowerType.bonusRoll => const _PowerVisual(
           label: 'Bonus Roll',
           shortLabel: 'BONUS',
-          icon: Icons.add_rounded,
           color: LudoGlobalColors.gold,
           lightColor: Color(0xFFFFF29D),
         ),
@@ -293,14 +293,12 @@ class _PowerVisual {
   const _PowerVisual({
     required this.label,
     required this.shortLabel,
-    required this.icon,
     required this.color,
     required this.lightColor,
   });
 
   final String label;
   final String shortLabel;
-  final IconData icon;
   final Color color;
   final Color lightColor;
 }
