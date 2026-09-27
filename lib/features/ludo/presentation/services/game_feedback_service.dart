@@ -25,13 +25,11 @@ class GameFeedbackService {
 
   Future<void> diceRoll() async {
     if (soundEnabled) {
+      // The real dice throw sample already contains the throw, clatter,
+      // bounce, and final settle. Layering the old synthesized landing sound
+      // over it made the result sound doubled and artificial.
       unawaited(
-        GameAudioService.instance.playSequence(
-          const <(GameSound, Duration)>[
-            (GameSound.diceRoll, Duration(milliseconds: 620)),
-            (GameSound.diceLand, Duration.zero),
-          ],
-        ),
+        GameAudioService.instance.play(GameSound.diceRoll),
       );
     }
     if (hapticsEnabled) {
