@@ -130,6 +130,7 @@ class _PowerLocalGameScreenState
       _message = 'Rolling...';
     });
 
+    unawaited(_feedback.diceControl());
     unawaited(_feedback.diceRoll());
     await Future<void>.delayed(const Duration(milliseconds: 650));
 
@@ -247,7 +248,7 @@ class _PowerLocalGameScreenState
       final PowerLudoActionResult result =
           _engine.armDoubleDistance(_powerState);
 
-      unawaited(_feedback.tap());
+      unawaited(_feedback.doubleDistance());
       setState(() {
         _powerState = result.state;
         _message = 'Double Distance armed. Tap a glowing token.';
@@ -344,7 +345,7 @@ class _PowerLocalGameScreenState
       final PowerLudoActionResult result =
           _engine.applyShield(_powerState, tokenId);
 
-      unawaited(_feedback.home());
+      unawaited(_feedback.shield());
       setState(() {
         _powerState = result.state;
         _message = 'Shield active. This token cannot be captured.';
@@ -416,6 +417,8 @@ class _PowerLocalGameScreenState
       _showRuleMessage(error.message);
       return;
     }
+
+    _playPowerEventFeedback(result);
 
     final LudoGameEvent moveEvent = result.gameEvents.firstWhere(
       (event) =>
@@ -595,6 +598,8 @@ class _PowerLocalGameScreenState
     bool updateDice = false,
     String? fallbackMessage,
   }) {
+    _playPowerEventFeedback(result);
+
     final LudoGameEvent? diceEvent = _eventOfType(
       result.gameEvents,
       LudoGameEventType.diceRolled,
@@ -613,6 +618,24 @@ class _PowerLocalGameScreenState
         fallbackMessage: fallbackMessage,
       );
     });
+  }
+
+  void _playPowerEventFeedback(PowerLudoActionResult result) {
+    final bool bonusTriggered = result.powerEvents.any(
+      (event) =>
+          event.type == PowerGameEventType.bonusRollTriggered,
+    );
+
+    if (bonusTriggered) {
+      unawaited(_feedback.bonusRoll());
+      return;
+    }
+
+    if (result.powerEvents.any(
+      (event) => event.type == PowerGameEventType.powerCollected,
+    )) {
+      unawaited(_feedback.powerPickup());
+    }
   }
 
   String _messageForResult(
