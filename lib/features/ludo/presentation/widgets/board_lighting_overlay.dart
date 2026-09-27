@@ -32,10 +32,12 @@ class _BoardLightingOverlayState extends State<BoardLightingOverlay>
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, _) {
-          return CustomPaint(
-            painter: _BoardLightingPainter(
-              progress: _controller.value,
-              activeColor: widget.activeColor,
+          return RepaintBoundary(
+            child: CustomPaint(
+              painter: _BoardLightingPainter(
+                progress: _controller.value,
+                activeColor: widget.activeColor,
+              ),
             ),
           );
         },
