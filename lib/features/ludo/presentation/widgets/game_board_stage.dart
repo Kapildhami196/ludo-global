@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../domain/entities/ludo_game_state.dart';
 import '../../domain/entities/player_color.dart';
+import '../style/ludo_reference_visuals.dart';
 import 'player_dice_slot.dart';
 import 'player_game_panel.dart';
 
@@ -29,36 +29,36 @@ class GameBoardStage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
-      aspectRatio: 0.84,
+      aspectRatio: 0.78,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final double width = constraints.maxWidth;
-          final double height = constraints.maxHeight;
           final double boardSize = width;
-          final double panelWidth = width * 0.34;
-          final double panelGap = width * 0.012;
-          final double diceSize = (width / 15) * 1.46;
-          final double boardTop = (height - boardSize) / 2;
+          final double cell = width / 15;
+          final double boardTop = width * 0.145;
+          final double avatarSize = cell * 1.68;
+          final double diceSize = cell * 2.10;
+          final double edgeInset = width * 0.025;
+          final double hudGap = cell * 0.34;
           final Color activeColor =
-              _colorFor(gameState.currentPlayer.color);
+              LudoReferenceVisuals.colorFor(gameState.currentPlayer.color);
 
           return Stack(
             clipBehavior: Clip.none,
             children: [
               Positioned(
                 left: 0,
-                top: boardTop + width * 0.018,
+                top: boardTop + cell * 0.08,
                 width: boardSize,
                 height: boardSize,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(width * 0.035),
+                    borderRadius: BorderRadius.circular(cell * 0.18),
                     boxShadow: const <BoxShadow>[
                       BoxShadow(
-                        color: Color(0xB0000612),
-                        blurRadius: 24,
-                        spreadRadius: 4,
-                        offset: Offset(0, 10),
+                        color: Color(0x70000000),
+                        blurRadius: 8,
+                        offset: Offset(0, 5),
                       ),
                     ],
                   ),
@@ -70,39 +70,32 @@ class GameBoardStage extends StatelessWidget {
                 width: boardSize,
                 height: boardSize,
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
+                  duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOutCubic,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(width * 0.035),
+                    borderRadius: BorderRadius.circular(cell * 0.18),
                     boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        color: activeColor.withValues(
-                          alpha: diceRolling ? 0.34 : 0.17,
+                      if (diceRolling)
+                        BoxShadow(
+                          color: activeColor.withValues(alpha: 0.16),
+                          blurRadius: 14,
+                          spreadRadius: 1,
                         ),
-                        blurRadius: diceRolling ? 30 : 18,
-                        spreadRadius: diceRolling ? 3 : 1,
-                      ),
                     ],
                   ),
-                  child: AnimatedScale(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOutCubic,
-                    scale: diceRolling ? 0.996 : 1,
-                    child: RepaintBoundary(
-                      child: board,
-                    ),
-                  ),
+                  child: RepaintBoundary(child: board),
                 ),
               ),
               for (final player in gameState.players)
                 ..._hudForPlayer(
                   playerId: player.id,
                   color: player.color,
-                  panelWidth: panelWidth,
-                  panelGap: panelGap,
                   boardTop: boardTop,
                   boardSize: boardSize,
+                  avatarSize: avatarSize,
                   diceSize: diceSize,
+                  edgeInset: edgeInset,
+                  hudGap: hudGap,
                 ),
             ],
           );
@@ -114,11 +107,12 @@ class GameBoardStage extends StatelessWidget {
   List<Widget> _hudForPlayer({
     required String playerId,
     required PlayerColor color,
-    required double panelWidth,
-    required double panelGap,
     required double boardTop,
     required double boardSize,
+    required double avatarSize,
     required double diceSize,
+    required double edgeInset,
+    required double hudGap,
   }) {
     final player =
         gameState.players.firstWhere((candidate) => candidate.id == playerId);
@@ -127,20 +121,27 @@ class GameBoardStage extends StatelessWidget {
         color == PlayerColor.green || color == PlayerColor.yellow;
     final bool top =
         color == PlayerColor.red || color == PlayerColor.green;
-    final double panelY =
-        top ? 0 : boardTop + boardSize + 5;
-    final double panelX =
-        alignRight ? boardSize - panelWidth : 0;
-    final double diceX = alignRight
-        ? panelX - diceSize - panelGap
-        : panelX + panelWidth + panelGap;
-    final double diceY = panelY + 1;
 
-    return <Widget>[
+    final double avatarX = alignRight
+        ? boardSize - edgeInset - avatarSize
+        : edgeInset;
+    final double avatarY = top
+        ? boardTop - avatarSize - (boardSize / 15) * 0.22
+        : boardTop + boardSize + (boardSize / 15) * 0.20;
+
+    final double diceWidth = diceSize * 1.18;
+    final double diceX = alignRight
+        ? avatarX - diceWidth - hudGap
+        : avatarX + avatarSize + hudGap;
+    final double diceY =
+        avatarY + ((avatarSize - diceSize) / 2);
+
+    final List<Widget> result = <Widget>[
       Positioned(
-        left: panelX,
-        top: panelY,
-        width: panelWidth,
+        left: avatarX,
+        top: avatarY,
+        width: avatarSize,
+        height: avatarSize,
         child: PlayerGamePanel(
           player: player,
           active: active,
@@ -148,30 +149,30 @@ class GameBoardStage extends StatelessWidget {
           consecutiveSixes:
               active ? gameState.consecutiveSixes : 0,
           alignRight: alignRight,
-        ),
-      ),
-      Positioned(
-        left: diceX,
-        top: diceY,
-        child: PlayerDiceSlot(
-          color: color,
-          active: active,
-          value: diceValue,
-          rolling: active && diceRolling,
-          enabled: active && diceEnabled,
-          onRoll: onRoll,
-          size: diceSize,
+          size: avatarSize,
         ),
       ),
     ];
-  }
 
-  Color _colorFor(PlayerColor color) {
-    return switch (color) {
-      PlayerColor.red => LudoGlobalColors.red,
-      PlayerColor.green => LudoGlobalColors.green,
-      PlayerColor.yellow => LudoGlobalColors.gold,
-      PlayerColor.blue => LudoGlobalColors.electricBlue,
-    };
+    if (active) {
+      result.add(
+        Positioned(
+          left: diceX,
+          top: diceY,
+          child: PlayerDiceSlot(
+            color: color,
+            active: true,
+            value: diceValue,
+            rolling: diceRolling,
+            enabled: diceEnabled,
+            onRoll: onRoll,
+            size: diceSize,
+            tailOnRight: alignRight,
+          ),
+        ),
+      );
+    }
+
+    return result;
   }
 }

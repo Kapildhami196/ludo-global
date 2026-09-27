@@ -639,28 +639,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
                             onMenu: _openGameMenu,
                           ),
                           const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF061127),
-                              borderRadius: BorderRadius.circular(
-                                LudoGlobalRadius.large,
-                              ),
-                              border: Border.all(
-                                color:
-                                    currentColor.withValues(alpha: 0.75),
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: currentColor.withValues(
-                                    alpha: 0.2,
-                                  ),
-                                  blurRadius: 20,
-                                ),
-                              ],
-                            ),
-                            child: GameBoardStage(
+                          GameBoardStage(
                               gameState: _state,
                               diceValue: _lastDiceValue,
                               diceRolling: _isRolling,
@@ -679,7 +658,6 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
                                 onTokenTap: _onTokenTap,
                               ),
                             ),
-                          ),
                           const SizedBox(height: 6),
                           GameplayCallout(
                             message: _message,
