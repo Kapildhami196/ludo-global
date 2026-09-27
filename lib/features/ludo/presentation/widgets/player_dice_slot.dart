@@ -1,9 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../../../core/assets/game_asset_paths.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../domain/entities/player_color.dart';
 import 'animated_dice.dart';
@@ -69,15 +67,17 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
           scale: (widget.active ? 1 : 0.82) * pulseScale,
           child: AnimatedOpacity(
             duration: const Duration(milliseconds: 180),
-            opacity: widget.active ? 1 : 0.42,
+            opacity: widget.active ? 1 : 0.32,
             child: Container(
+              width: widget.size,
+              height: widget.size,
               padding: EdgeInsets.all(widget.size * 0.08),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: const Color(0xD1061127),
                 border: Border.all(
                   color: _accentColor.withValues(
-                    alpha: widget.active ? 0.92 : 0.26,
+                    alpha: widget.active ? 0.92 : 0.22,
                   ),
                   width: widget.active ? 1.6 : 0.9,
                 ),
@@ -105,18 +105,13 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                       rolling: widget.rolling,
                       onTap: widget.onRoll,
                       accentColor: _accentColor,
-                      size: widget.size,
+                      size: widget.size * 0.92,
                       compact: true,
                     )
-                  : IgnorePointer(
-                      child: Opacity(
-                        opacity: 0.48,
-                        child: SvgPicture.asset(
-                          GameAssetPaths.dice1,
-                          width: widget.size * 0.66,
-                          height: widget.size * 0.66,
-                        ),
-                      ),
+                  : Icon(
+                      Icons.casino_rounded,
+                      size: widget.size * 0.42,
+                      color: _accentColor.withValues(alpha: 0.70),
                     ),
             ),
           ),
