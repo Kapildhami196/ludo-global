@@ -34,7 +34,7 @@ class _AnimatedDiceState extends State<AnimatedDice>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 720),
+    duration: const Duration(milliseconds: 680),
   );
 
   @override
@@ -74,46 +74,56 @@ class _AnimatedDiceState extends State<AnimatedDice>
         onTap: widget.enabled ? widget.onTap : null,
         behavior: HitTestBehavior.opaque,
         child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 160),
-          opacity: widget.enabled || widget.rolling ? 1 : 0.34,
+          duration: const Duration(milliseconds: 150),
+          opacity: widget.enabled || widget.rolling ? 1 : 0.58,
           child: AnimatedBuilder(
             animation: _controller,
             builder: (context, _) {
               final double t = _controller.value;
-              final double eased = Curves.easeOutCubic.transform(t);
-              final double angle = widget.rolling
-                  ? (eased * math.pi * 4.5) - 0.08
-                  : -0.08;
-              final double jump = widget.rolling
-                  ? -math.sin(t * math.pi).abs() * widget.size * 0.16
-                  : 0;
+              final double lift =
+                  widget.rolling ? math.sin(t * math.pi).abs() : 0;
+              final double jump =
+                  widget.rolling ? -lift * widget.size * 0.22 : 0;
               final double wobbleX = widget.rolling
-                  ? math.sin(t * math.pi * 8) *
-                      (1 - t) *
+                  ? math.sin(t * math.pi * 6) *
                       widget.size *
-                      0.035
+                      0.055
                   : 0;
               final double scale = widget.rolling
-                  ? 1 +
-                      math.sin(t * math.pi).abs() * 0.08 -
-                      math.sin(t * math.pi * 2) * 0.018
+                  ? 0.96 + (lift * 0.15)
                   : 1;
+              final double zRotation = widget.rolling
+                  ? t * math.pi * 4.4
+                  : -0.035;
+              final double xRotation = widget.rolling
+                  ? math.sin(t * math.pi * 4) * 0.24
+                  : 0;
+              final double yRotation = widget.rolling
+                  ? math.cos(t * math.pi * 5) * 0.20
+                  : 0;
               final int previewValue = widget.rolling
-                  ? ((t * 23).floor() % 6) + 1
+                  ? ((t * 25).floor() % 6) + 1
                   : widget.value.clamp(1, 6).toInt();
+
+              final Matrix4 transform = Matrix4.identity()
+                ..setEntry(3, 2, 0.0018)
+                ..rotateX(xRotation)
+                ..rotateY(yRotation)
+                ..rotateZ(zRotation);
 
               return Transform.translate(
                 offset: Offset(wobbleX, jump),
                 child: Transform.scale(
                   scale: scale,
-                  child: Transform.rotate(
-                    angle: angle,
-                    child: _DiceShell(
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: transform,
+                    child: _DiceFace(
                       value: previewValue,
                       size: widget.size,
                       accentColor: widget.accentColor,
                       active: widget.enabled || widget.rolling,
-                      compact: widget.compact,
+                      lift: lift,
                     ),
                   ),
                 ),
@@ -126,24 +136,25 @@ class _AnimatedDiceState extends State<AnimatedDice>
   }
 }
 
-class _DiceShell extends StatelessWidget {
-  const _DiceShell({
+class _DiceFace extends StatelessWidget {
+  const _DiceFace({
     required this.value,
     required this.size,
     required this.accentColor,
     required this.active,
-    required this.compact,
+    required this.lift,
   });
 
   final int value;
   final double size;
   final Color accentColor;
   final bool active;
-  final bool compact;
+  final double lift;
 
   @override
   Widget build(BuildContext context) {
-    final double dieSize = size * (compact ? 0.72 : 0.66);
+    final double faceSize = size * 0.92;
+    final double shadowWidth = size * (0.70 - lift * 0.18);
 
     return SizedBox.square(
       dimension: size,
@@ -152,56 +163,43 @@ class _DiceShell extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Positioned(
-            bottom: size * 0.05,
+            bottom: size * 0.025,
             child: Container(
-              width: size * 0.58,
-              height: size * 0.13,
+              width: shadowWidth,
+              height: size * 0.12,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(999),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: const Color(0xAA000000),
+                    color: Colors.black.withValues(
+                      alpha: 0.42 - lift * 0.17,
+                    ),
                     blurRadius: size * 0.13,
-                    spreadRadius: size * 0.01,
+                    spreadRadius: size * 0.012,
                   ),
                 ],
               ),
             ),
           ),
-          Container(
-            width: size * 0.92,
-            height: size * 0.92,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: <Color>[
-                  accentColor.withValues(alpha: active ? 0.26 : 0.08),
-                  accentColor.withValues(alpha: active ? 0.08 : 0.02),
-                  Colors.transparent,
-                ],
-                stops: const <double>[0.28, 0.68, 1],
-              ),
-              border: Border.all(
-                color: accentColor.withValues(
-                  alpha: active ? 0.88 : 0.18,
-                ),
-                width: compact ? 1.2 : 2,
-              ),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: accentColor.withValues(
-                    alpha: active ? 0.60 : 0.08,
+          if (active)
+            Container(
+              width: size * 0.88,
+              height: size * 0.88,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(size * 0.22),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: accentColor.withValues(alpha: 0.24),
+                    blurRadius: size * 0.22,
+                    spreadRadius: size * 0.015,
                   ),
-                  blurRadius: size * (active ? 0.28 : 0.12),
-                  spreadRadius: active ? size * 0.025 : 0,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
           SvgPicture.asset(
             GameAssetPaths.diceFor(value),
-            width: dieSize,
-            height: dieSize,
+            width: faceSize,
+            height: faceSize,
           ),
         ],
       ),
