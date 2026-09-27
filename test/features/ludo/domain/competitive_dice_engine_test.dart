@@ -545,6 +545,7 @@ void main() {
     });
 
     test('probability cap prevents a face exceeding forty percent', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine();
       final DiceWeights weights = DiceWeights.fromValues(
         const <double>[100, 100, 100, 100, 100, 1000],
       ).cappedAtProbability(
