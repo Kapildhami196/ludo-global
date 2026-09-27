@@ -657,7 +657,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
                                 returningTokenIds: _returningTokenIds,
                                 onTokenTap: _onTokenTap,
                               ),
-                            ),\n
+                            ),
                           const SizedBox(height: 6),
                           GameplayCallout(
                             message: _message,
