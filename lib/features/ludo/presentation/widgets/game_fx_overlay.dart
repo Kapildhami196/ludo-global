@@ -271,7 +271,8 @@ class _EventBurstPainter extends CustomPainter {
                 .toDouble(),
           )
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 5 * (1 - progress).clamp(0.2, 1.0),
+          ..strokeWidth =
+              5 * (1 - progress).clamp(0.2, 1.0).toDouble(),
       );
     }
 
