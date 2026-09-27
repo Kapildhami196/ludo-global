@@ -22,6 +22,7 @@ class LudoBoard extends StatelessWidget {
     this.visualPathOverrides = const <int, int>{},
     this.movingTokenId,
     this.capturedTokenIds = const <int>{},
+    this.returningTokenIds = const <int>{},
     this.shieldedTokenIds = const <int>{},
     this.powerPickupPositions = const <PowerType, int>{},
     this.onTokenTap,
@@ -34,6 +35,7 @@ class LudoBoard extends StatelessWidget {
   final Map<int, int> visualPathOverrides;
   final int? movingTokenId;
   final Set<int> capturedTokenIds;
+  final Set<int> returningTokenIds;
   final Set<int> shieldedTokenIds;
   final Map<PowerType, int> powerPickupPositions;
   final ValueChanged<int>? onTokenTap;
@@ -86,8 +88,12 @@ class LudoBoard extends StatelessWidget {
                     ),
                   for (final _TokenPlacement placement in placements)
                     AnimatedPositioned(
-                      duration: const Duration(milliseconds: 120),
-                      curve: Curves.easeOutCubic,
+                      duration: returningTokenIds.contains(placement.tokenId)
+                          ? const Duration(milliseconds: 520)
+                          : const Duration(milliseconds: 120),
+                      curve: returningTokenIds.contains(placement.tokenId)
+                          ? Curves.easeInOutCubic
+                          : Curves.easeOutCubic,
                       left: placement.center.dx - (tokenSize / 2),
                       top: placement.center.dy - (tokenSize * 1.12),
                       child: PremiumLudoToken(
@@ -100,6 +106,8 @@ class LudoBoard extends StatelessWidget {
                         moving: movingTokenId == placement.tokenId,
                         captured:
                             capturedTokenIds.contains(placement.tokenId),
+                        returning:
+                            returningTokenIds.contains(placement.tokenId),
                         shielded:
                             shieldedTokenIds.contains(placement.tokenId),
                         onTap: movableTokenIds.contains(placement.tokenId) &&
