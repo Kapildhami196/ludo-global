@@ -2,7 +2,9 @@ import 'dart:math';
 
 import '../entities/ludo_game_event.dart';
 import '../entities/ludo_game_state.dart';
+import 'competitive_dice_tuning.dart';
 import 'dice_context.dart';
+import 'dice_decision_snapshot.dart';
 import 'dice_policy.dart';
 import 'dice_weights.dart';
 import 'match_situation_analyzer.dart';
@@ -14,35 +16,21 @@ class CompetitiveDiceEngine implements DicePolicy {
     Random? random,
     WeightedDiceRoller? roller,
     MatchSituationAnalyzer? analyzer,
+    CompetitiveDiceTuning tuning =
+        CompetitiveDiceTuning.balanced,
   })  : _roller = roller ?? WeightedDiceRoller(random: random),
-        _analyzer = analyzer ?? const MatchSituationAnalyzer();
-
-  static const double _baseWeight = 100;
-  static const double _sixDroughtStartBoost = 15;
-  static const double _sixDroughtMediumBoost = 20;
-  static const double _sixDroughtLongBoost = 25;
-  static const double _allTokensInBaseBoost = 25;
-  static const double _captureBoost = 35;
-  static const double _escapeBoost = 15;
-  static const double _homeEntryBoost = 12;
-  static const double _finishBoost = 20;
-  static const double _blockadeBoost = 12;
-  static const double _staleActionBoost = 15;
-  static const double _behindActionBoost = 10;
-  static const double _endgameDefenseBoost = 20;
-  static const double _endgameFinishBoost = 20;
-
-  static const double maxSingleFaceProbability = 0.40;
-  static const double _cooldownBoostMultiplier = 0.35;
-  static const int strongAssistCooldownRolls = 2;
+        _analyzer = analyzer ?? const MatchSituationAnalyzer(),
+        _tuning = tuning;
 
   final WeightedDiceRoller _roller;
   final MatchSituationAnalyzer _analyzer;
+  final CompetitiveDiceTuning _tuning;
   final Map<String, PlayerDiceHistory> _historyByPlayer =
       <String, PlayerDiceHistory>{};
 
   int _turnsWithoutMajorEvent = 0;
 
+  CompetitiveDiceTuning get tuning => _tuning;
   int get turnsWithoutMajorEvent => _turnsWithoutMajorEvent;
 
   @override
@@ -50,28 +38,23 @@ class CompetitiveDiceEngine implements DicePolicy {
     required LudoGameState state,
   }) {
     final String playerId = state.currentPlayer.id;
-    final PlayerDiceHistory history = historyFor(playerId);
-    final DiceContext context = contextFor(
-      state: state,
-      history: history,
-    );
-    final DiceWeights weights = _weightsForContext(
-      context: context,
-      history: history,
-    );
-
-    final int value = _roller.roll(weights);
+    final DiceDecisionSnapshot decision = decisionFor(state: state);
+    final int value = _roller.roll(decision.weights);
 
     final int nextCooldown;
-    if (history.strongAssistCooldown > 0) {
-      nextCooldown = history.strongAssistCooldown - 1;
-    } else if (_isStrongAssistRoll(value, context)) {
-      nextCooldown = strongAssistCooldownRolls;
+    if (decision.history.strongAssistCooldown > 0) {
+      nextCooldown =
+          decision.history.strongAssistCooldown - 1;
+    } else if (_isStrongAssistRoll(
+      value,
+      decision.context,
+    )) {
+      nextCooldown = _tuning.strongAssistCooldownRolls;
     } else {
       nextCooldown = 0;
     }
 
-    _historyByPlayer[playerId] = history.recordRoll(
+    _historyByPlayer[playerId] = decision.history.recordRoll(
       value,
       strongAssistCooldown: nextCooldown,
     );
@@ -94,17 +77,35 @@ class CompetitiveDiceEngine implements DicePolicy {
     );
   }
 
+  DiceDecisionSnapshot decisionFor({
+    required LudoGameState state,
+    PlayerDiceHistory? history,
+  }) {
+    final PlayerDiceHistory resolvedHistory =
+        history ?? historyFor(state.currentPlayer.id);
+    final DiceContext context = contextFor(
+      state: state,
+      history: resolvedHistory,
+    );
+
+    return DiceDecisionSnapshot(
+      context: context,
+      history: resolvedHistory,
+      weights: _weightsForContext(
+        context: context,
+        history: resolvedHistory,
+      ),
+    );
+  }
+
   DiceWeights weightsFor({
     required LudoGameState state,
     required PlayerDiceHistory history,
   }) {
-    return _weightsForContext(
-      context: contextFor(
-        state: state,
-        history: history,
-      ),
+    return decisionFor(
+      state: state,
       history: history,
-    );
+    ).weights;
   }
 
   DiceWeights _weightsForContext({
@@ -112,17 +113,17 @@ class CompetitiveDiceEngine implements DicePolicy {
     required PlayerDiceHistory history,
   }) {
     DiceWeights weights = DiceWeights.fair(
-      baseWeight: _baseWeight,
+      baseWeight: _tuning.baseWeight,
     );
     final double scale = history.strongAssistCooldown > 0
-        ? _cooldownBoostMultiplier
+        ? _tuning.cooldownBoostMultiplier
         : 1;
 
     if (context.rollsSinceSix >= 3) {
       weights = _boost(
         weights,
         6,
-        _sixDroughtStartBoost,
+        _tuning.sixDroughtStartBoost,
         scale,
       );
     }
@@ -130,7 +131,7 @@ class CompetitiveDiceEngine implements DicePolicy {
       weights = _boost(
         weights,
         6,
-        _sixDroughtMediumBoost,
+        _tuning.sixDroughtMediumBoost,
         scale,
       );
     }
@@ -138,7 +139,7 @@ class CompetitiveDiceEngine implements DicePolicy {
       weights = _boost(
         weights,
         6,
-        _sixDroughtLongBoost,
+        _tuning.sixDroughtLongBoost,
         scale,
       );
     }
@@ -147,29 +148,54 @@ class CompetitiveDiceEngine implements DicePolicy {
       weights = _boost(
         weights,
         6,
-        _allTokensInBaseBoost,
+        _tuning.allTokensInBaseBoost,
         scale,
       );
     }
 
     for (final int face in context.captureRolls) {
-      weights = _boost(weights, face, _captureBoost, scale);
+      weights = _boost(
+        weights,
+        face,
+        _tuning.captureBoost,
+        scale,
+      );
     }
 
     for (final int face in context.escapeRolls) {
-      weights = _boost(weights, face, _escapeBoost, scale);
+      weights = _boost(
+        weights,
+        face,
+        _tuning.escapeBoost,
+        scale,
+      );
     }
 
     for (final int face in context.homeEntryRolls) {
-      weights = _boost(weights, face, _homeEntryBoost, scale);
+      weights = _boost(
+        weights,
+        face,
+        _tuning.homeEntryBoost,
+        scale,
+      );
     }
 
     for (final int face in context.finishRolls) {
-      weights = _boost(weights, face, _finishBoost, scale);
+      weights = _boost(
+        weights,
+        face,
+        _tuning.finishBoost,
+        scale,
+      );
     }
 
     for (final int face in context.blockadeRolls) {
-      weights = _boost(weights, face, _blockadeBoost, scale);
+      weights = _boost(
+        weights,
+        face,
+        _tuning.blockadeBoost,
+        scale,
+      );
     }
 
     if (context.isStaleMatch) {
@@ -177,7 +203,7 @@ class CompetitiveDiceEngine implements DicePolicy {
         weights = _boost(
           weights,
           face,
-          _staleActionBoost,
+          _tuning.staleActionBoost,
           scale,
         );
       }
@@ -188,7 +214,7 @@ class CompetitiveDiceEngine implements DicePolicy {
         weights = _boost(
           weights,
           face,
-          _behindActionBoost,
+          _tuning.behindActionBoost,
           scale,
         );
       }
@@ -199,7 +225,7 @@ class CompetitiveDiceEngine implements DicePolicy {
         weights = _boost(
           weights,
           face,
-          _endgameDefenseBoost,
+          _tuning.endgameDefenseBoost,
           scale,
         );
       }
@@ -210,14 +236,14 @@ class CompetitiveDiceEngine implements DicePolicy {
         weights = _boost(
           weights,
           face,
-          _endgameFinishBoost,
+          _tuning.endgameFinishBoost,
           scale,
         );
       }
     }
 
     return weights.cappedAtProbability(
-      maxSingleFaceProbability,
+      _tuning.maxSingleFaceProbability,
     );
   }
 
