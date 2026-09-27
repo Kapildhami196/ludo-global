@@ -11,6 +11,7 @@ import '../../domain/entities/player_color.dart';
 import '../../domain/entities/power_type.dart';
 import '../../domain/entities/token_status.dart';
 import 'board_decoration_layer.dart';
+import 'board_lighting_overlay.dart';
 import 'power_pickup_marker.dart';
 import 'premium_ludo_token.dart';
 
@@ -69,6 +70,14 @@ class LudoBoard extends StatelessWidget {
                   const Positioned.fill(
                     child: BoardDecorationLayer(),
                   ),
+                  Positioned.fill(
+                    child: BoardLightingOverlay(
+                      activeColor: _uiColorFor(
+                        gameState?.currentPlayer.color ??
+                            PlayerColor.red,
+                      ),
+                    ),
+                  ),
                   for (final MapEntry<PowerType, int> entry
                       in powerPickupPositions.entries)
                     Positioned(
@@ -123,6 +132,15 @@ class LudoBoard extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Color _uiColorFor(PlayerColor color) {
+    return switch (color) {
+      PlayerColor.red => LudoGlobalColors.red,
+      PlayerColor.green => LudoGlobalColors.green,
+      PlayerColor.yellow => LudoGlobalColors.gold,
+      PlayerColor.blue => LudoGlobalColors.electricBlue,
+    };
   }
 
   List<_TokenPlacement> _placements(double cell) {
