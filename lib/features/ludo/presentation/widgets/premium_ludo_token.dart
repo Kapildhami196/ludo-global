@@ -161,10 +161,10 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                         ? 0.92 + lift * 0.12
                         : 1;
                 final double shadowWidth =
-                    widget.size * (0.80 - lift * 0.28);
+                    widget.size * (0.76 - lift * 0.24);
                 final double shadowHeight =
-                    widget.size * (0.13 - lift * 0.035);
-                final double shadowOpacity = 0.46 - lift * 0.23;
+                    widget.size * (0.095 - lift * 0.025);
+                final double shadowOpacity = 0.30 - lift * 0.14;
 
                 return SizedBox(
                   width: widget.size,
@@ -196,7 +196,7 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                           ),
                         ),
                       Positioned(
-                        bottom: widget.size * 0.015,
+                        bottom: widget.size * 0.010,
                         child: Container(
                           width: shadowWidth,
                           height: shadowHeight,
@@ -207,8 +207,8 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                                 color: Colors.black.withValues(
                                   alpha: shadowOpacity,
                                 ),
-                                blurRadius: widget.size * 0.12,
-                                spreadRadius: widget.size * 0.012,
+                                blurRadius: widget.size * 0.15,
+                                spreadRadius: widget.size * 0.006,
                               ),
                             ],
                           ),
