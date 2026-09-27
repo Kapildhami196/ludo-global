@@ -189,13 +189,13 @@ class _PawnPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final HSLColor hsl = HSLColor.fromColor(color);
     final Color light = hsl
-        .withLightness((hsl.lightness + 0.24).clamp(0.0, 1.0))
+        .withLightness((hsl.lightness + 0.24).clamp(0.0, 1.0).toDouble())
         .toColor();
     final Color dark = hsl
-        .withLightness((hsl.lightness - 0.20).clamp(0.0, 1.0))
+        .withLightness((hsl.lightness - 0.20).clamp(0.0, 1.0).toDouble())
         .toColor();
     final Color deep = hsl
-        .withLightness((hsl.lightness - 0.30).clamp(0.0, 1.0))
+        .withLightness((hsl.lightness - 0.30).clamp(0.0, 1.0).toDouble())
         .toColor();
 
     final Rect whole = Offset.zero & size;
