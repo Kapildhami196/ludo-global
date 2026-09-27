@@ -29,21 +29,22 @@ class GameBoardStage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
-      aspectRatio: 0.66,
+      aspectRatio: 0.58,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final double width = constraints.maxWidth;
-          final double boardSize = width;
-          final double cell = width / 15;
+          final double boardInset = width * 0.0125;
+          final double boardLeft = boardInset;
+          final double boardSize = width - (boardInset * 2);
+          final double cell = boardSize / 15;
 
-          // The reference game keeps a large breathing area above the board,
-          // placing the board visually around the middle of the screen rather
-          // than immediately below the header.
-          final double boardTop = width * 0.34;
-          final double avatarSize = cell * 1.76;
-          final double diceSize = cell * 2.34;
-          final double edgeInset = width * 0.026;
-          final double hudGap = cell * 0.18;
+          // Matches the reference composition: a large open HUD area above,
+          // with the square board centered lower in the gameplay viewport.
+          final double boardTop = boardSize * 0.50;
+          final double avatarSize = cell * 1.46;
+          final double diceSize = cell * 2.10;
+          final double edgeInset = cell * 0.28;
+          final double hudGap = cell * 0.14;
           final Color activeColor =
               LudoReferenceVisuals.colorFor(gameState.currentPlayer.color);
 
@@ -51,25 +52,25 @@ class GameBoardStage extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               Positioned(
-                left: 0,
+                left: boardLeft,
                 top: boardTop + cell * 0.09,
                 width: boardSize,
                 height: boardSize,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(cell * 0.18),
+                    borderRadius: BorderRadius.circular(cell * 0.17),
                     boxShadow: const <BoxShadow>[
                       BoxShadow(
-                        color: Color(0x76000000),
-                        blurRadius: 10,
-                        offset: Offset(0, 6),
+                        color: Color(0x78000000),
+                        blurRadius: 9,
+                        offset: Offset(0, 5),
                       ),
                     ],
                   ),
                 ),
               ),
               Positioned(
-                left: 0,
+                left: boardLeft,
                 top: boardTop,
                 width: boardSize,
                 height: boardSize,
@@ -77,17 +78,17 @@ class GameBoardStage extends StatelessWidget {
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOutCubic,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(cell * 0.18),
+                    borderRadius: BorderRadius.circular(cell * 0.17),
                     boxShadow: <BoxShadow>[
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.17),
-                        blurRadius: 7,
+                        color: Colors.black.withValues(alpha: 0.16),
+                        blurRadius: 6,
                         offset: const Offset(0, 3),
                       ),
                       if (diceRolling)
                         BoxShadow(
-                          color: activeColor.withValues(alpha: 0.17),
-                          blurRadius: 18,
+                          color: activeColor.withValues(alpha: 0.13),
+                          blurRadius: 14,
                           spreadRadius: 1,
                         ),
                     ],
@@ -99,6 +100,7 @@ class GameBoardStage extends StatelessWidget {
                 ..._hudForPlayer(
                   playerId: player.id,
                   color: player.color,
+                  boardLeft: boardLeft,
                   boardTop: boardTop,
                   boardSize: boardSize,
                   avatarSize: avatarSize,
@@ -116,6 +118,7 @@ class GameBoardStage extends StatelessWidget {
   List<Widget> _hudForPlayer({
     required String playerId,
     required PlayerColor color,
+    required double boardLeft,
     required double boardTop,
     required double boardSize,
     required double avatarSize,
@@ -133,24 +136,24 @@ class GameBoardStage extends StatelessWidget {
 
     final double cell = boardSize / 15;
     final double avatarX = alignRight
-        ? boardSize - edgeInset - avatarSize
-        : edgeInset;
+        ? boardLeft + boardSize - edgeInset - avatarSize
+        : boardLeft + edgeInset;
     final double avatarY = top
-        ? boardTop - avatarSize - cell * 0.30
-        : boardTop + boardSize + cell * 0.24;
+        ? boardTop - avatarSize - cell * 0.34
+        : boardTop + boardSize + cell * 0.25;
 
-    final double diceWidth = diceSize * 1.20;
+    final double diceWidth = diceSize * 1.18;
     final double diceX = alignRight
         ? avatarX - diceWidth - hudGap
         : avatarX + avatarSize + hudGap;
     final double diceY =
         avatarY + ((avatarSize - diceSize) / 2);
 
-    // The die launches diagonally from the active player's slot toward the
-    // center of the play field while scaling toward the viewer.
+    // The reference die only leaves the holder a modest distance and grows
+    // enough to read as a 3D toss without covering the board.
     final Offset launchDirection = Offset(
-      alignRight ? -0.78 : 0.78,
-      top ? 0.92 : -0.92,
+      alignRight ? -0.56 : 0.56,
+      top ? 0.42 : -0.42,
     );
 
     final List<Widget> result = <Widget>[
