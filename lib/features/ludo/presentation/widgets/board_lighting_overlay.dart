@@ -94,7 +94,7 @@ class _BoardLightingPainter extends CustomPainter {
     canvas.drawRect(
       rect,
       Paint()
-        ..shader = RadialGradient(
+        ..shader = const RadialGradient(
           center: Alignment.center,
           radius: 0.82,
           colors: <Color>[
