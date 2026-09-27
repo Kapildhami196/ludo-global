@@ -980,6 +980,7 @@ class _PowerLocalGameScreenState
                         board: LudoBoard(
                           gameState: _state,
                           activePlayerCount: _state.players.length,
+                          prefer3DPawns: true,
                           movableTokenIds:
                               _state.movableTokenIds.toSet(),
                           visualPathOverrides: _visualPathOverrides,
