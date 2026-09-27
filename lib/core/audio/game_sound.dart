@@ -1,6 +1,6 @@
 enum GameSound {
   buttonTap('audio/game/button_tap.wav', 0.45),
-  diceRoll('audio/game/dice_roll.wav', 0.58),
+  diceRoll('audio/game/dice_roll_real.mp3', 0.76),
   diceLand('audio/game/dice_land.wav', 0.72),
   pawnStep('audio/game/pawn_step.wav', 0.28),
   pawnRelease('audio/game/pawn_release.wav', 0.58),
