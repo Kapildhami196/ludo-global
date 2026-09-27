@@ -26,6 +26,9 @@ class MatchSituationAnalyzer {
 
     final Set<int> captureRolls = <int>{};
     final Set<int> escapeRolls = <int>{};
+    final Set<int> homeEntryRolls = <int>{};
+    final Set<int> finishRolls = <int>{};
+    final Set<int> blockadeRolls = <int>{};
 
     for (int face = 1; face <= 6; face++) {
       for (final LudoToken token in player.tokens) {
@@ -52,8 +55,34 @@ class MatchSituationAnalyzer {
         )) {
           escapeRolls.add(face);
         }
+
+        if (_entersHomeLane(token, face)) {
+          homeEntryRolls.add(face);
+        }
+
+        if (_finishesToken(token, face)) {
+          finishRolls.add(face);
+        }
+
+        if (_createsBlockade(
+          state: state,
+          token: token,
+          diceValue: face,
+        )) {
+          blockadeRolls.add(face);
+        }
       }
     }
+
+    final double playerProgress = _normalizedProgress(player);
+    final List<double> opponentProgress = state.players
+        .where((LudoPlayer opponent) => opponent.id != player.id)
+        .map(_normalizedProgress)
+        .toList(growable: false);
+    final double averageOpponentProgress = opponentProgress.isEmpty
+        ? playerProgress
+        : opponentProgress.reduce((a, b) => a + b) /
+            opponentProgress.length;
 
     return DiceContext(
       rollsSinceSix: history.rollsSinceSix,
@@ -61,7 +90,16 @@ class MatchSituationAnalyzer {
       hasTokenInBase: hasTokenInBase,
       captureRolls: Set<int>.unmodifiable(captureRolls),
       escapeRolls: Set<int>.unmodifiable(escapeRolls),
+      homeEntryRolls: Set<int>.unmodifiable(homeEntryRolls),
+      finishRolls: Set<int>.unmodifiable(finishRolls),
+      blockadeRolls: Set<int>.unmodifiable(blockadeRolls),
       turnsWithoutMajorEvent: turnsWithoutMajorEvent,
+      relativeProgressDelta:
+          playerProgress - averageOpponentProgress,
+      currentPlayerNearWin: _isNearWin(player),
+      opponentNearWin: state.players
+          .where((LudoPlayer opponent) => opponent.id != player.id)
+          .any(_isNearWin),
     );
   }
 
@@ -162,6 +200,66 @@ class MatchSituationAnalyzer {
     return LudoBoardMap.isSafeGlobalIndex(targetGlobalIndex);
   }
 
+  bool _entersHomeLane(
+    LudoToken token,
+    int diceValue,
+  ) {
+    if (token.status != TokenStatus.active) {
+      return false;
+    }
+
+    final int targetPosition = token.pathPosition + diceValue;
+    return targetPosition >= ClassicRules.commonPathLength &&
+        targetPosition < ClassicRules.finishProgress;
+  }
+
+  bool _finishesToken(
+    LudoToken token,
+    int diceValue,
+  ) {
+    if (token.isInBase || token.isFinished) {
+      return false;
+    }
+
+    return token.pathPosition + diceValue ==
+        ClassicRules.finishProgress;
+  }
+
+  bool _createsBlockade({
+    required LudoGameState state,
+    required LudoToken token,
+    required int diceValue,
+  }) {
+    if (token.status != TokenStatus.active) {
+      return false;
+    }
+
+    final int targetPosition = token.pathPosition + diceValue;
+    if (targetPosition >= ClassicRules.commonPathLength) {
+      return false;
+    }
+
+    final int targetGlobalIndex = LudoBoardMap.globalIndexFor(
+      color: token.color,
+      pathPosition: targetPosition,
+    );
+
+    if (LudoBoardMap.isSafeGlobalIndex(targetGlobalIndex)) {
+      return false;
+    }
+
+    return state.currentPlayer.tokens.any(
+      (LudoToken friendly) =>
+          friendly.id != token.id &&
+          friendly.status == TokenStatus.active &&
+          LudoBoardMap.globalIndexFor(
+                color: friendly.color,
+                pathPosition: friendly.pathPosition,
+              ) ==
+              targetGlobalIndex,
+    );
+  }
+
   bool _isThreatened(
     LudoGameState state,
     LudoToken target,
@@ -214,6 +312,42 @@ class MatchSituationAnalyzer {
     }
 
     return false;
+  }
+
+  double _normalizedProgress(LudoPlayer player) {
+    if (player.tokens.isEmpty) {
+      return 0;
+    }
+
+    final double progress = player.tokens.fold<double>(
+      0,
+      (double total, LudoToken token) {
+        if (token.isInBase) {
+          return total;
+        }
+
+        final int boundedProgress = min(
+          token.pathPosition + 1,
+          ClassicRules.finishProgress + 1,
+        );
+        return total + boundedProgress;
+      },
+    );
+
+    final double maximum =
+        player.tokens.length * (ClassicRules.finishProgress + 1);
+    return progress / maximum;
+  }
+
+  bool _isNearWin(LudoPlayer player) {
+    if (player.tokens.length < 2) {
+      return false;
+    }
+
+    final int finished = player.tokens
+        .where((LudoToken token) => token.isFinished)
+        .length;
+    return finished >= player.tokens.length - 1;
   }
 
   bool _crossesOpponentBlockade({
