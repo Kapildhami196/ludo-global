@@ -4,6 +4,7 @@ import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../domain/entities/ludo_game_state.dart';
 import '../../domain/entities/player_color.dart';
 import 'player_dice_slot.dart';
+import 'player_game_panel.dart';
 
 class GameBoardStage extends StatelessWidget {
   const GameBoardStage({
@@ -13,6 +14,7 @@ class GameBoardStage extends StatelessWidget {
     required this.diceRolling,
     required this.diceEnabled,
     required this.onRoll,
+    this.computerPlayerIds = const <String>{},
     super.key,
   });
 
@@ -22,46 +24,56 @@ class GameBoardStage extends StatelessWidget {
   final bool diceRolling;
   final bool diceEnabled;
   final VoidCallback onRoll;
+  final Set<String> computerPlayerIds;
 
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
-      aspectRatio: 1,
+      aspectRatio: 0.84,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final double size = constraints.maxWidth;
-          final double diceSize = (size / 15) * 1.70;
-
+          final double width = constraints.maxWidth;
+          final double height = constraints.maxHeight;
+          final double boardSize = width;
+          final double panelWidth = width * 0.34;
+          final double panelGap = width * 0.012;
+          final double diceSize = (width / 15) * 1.46;
+          final double boardTop = (height - boardSize) / 2;
           final Color activeColor =
               _colorFor(gameState.currentPlayer.color);
 
           return Stack(
             clipBehavior: Clip.none,
             children: [
-              Positioned.fill(
-                child: Transform.translate(
-                  offset: Offset(0, size * 0.018),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(size * 0.035),
-                      boxShadow: const <BoxShadow>[
-                        BoxShadow(
-                          color: Color(0xB0000612),
-                          blurRadius: 24,
-                          spreadRadius: 4,
-                          offset: Offset(0, 10),
-                        ),
-                      ],
-                    ),
+              Positioned(
+                left: 0,
+                top: boardTop + width * 0.018,
+                width: boardSize,
+                height: boardSize,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(width * 0.035),
+                    boxShadow: const <BoxShadow>[
+                      BoxShadow(
+                        color: Color(0xB0000612),
+                        blurRadius: 24,
+                        spreadRadius: 4,
+                        offset: Offset(0, 10),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              Positioned.fill(
+              Positioned(
+                left: 0,
+                top: boardTop,
+                width: boardSize,
+                height: boardSize,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(size * 0.035),
+                    borderRadius: BorderRadius.circular(width * 0.035),
                     boxShadow: <BoxShadow>[
                       BoxShadow(
                         color: activeColor.withValues(
@@ -81,20 +93,14 @@ class GameBoardStage extends StatelessWidget {
                 ),
               ),
               for (final player in gameState.players)
-                _dicePosition(
+                ..._hudForPlayer(
+                  playerId: player.id,
                   color: player.color,
-                  size: size,
-                  child: PlayerDiceSlot(
-                    color: player.color,
-                    active: player.id == gameState.currentPlayer.id,
-                    value: diceValue,
-                    rolling: player.id == gameState.currentPlayer.id &&
-                        diceRolling,
-                    enabled: player.id == gameState.currentPlayer.id &&
-                        diceEnabled,
-                    onRoll: onRoll,
-                    size: diceSize,
-                  ),
+                  panelWidth: panelWidth,
+                  panelGap: panelGap,
+                  boardTop: boardTop,
+                  boardSize: boardSize,
+                  diceSize: diceSize,
                 ),
             ],
           );
@@ -103,43 +109,67 @@ class GameBoardStage extends StatelessWidget {
     );
   }
 
+  List<Widget> _hudForPlayer({
+    required String playerId,
+    required PlayerColor color,
+    required double panelWidth,
+    required double panelGap,
+    required double boardTop,
+    required double boardSize,
+    required double diceSize,
+  }) {
+    final player =
+        gameState.players.firstWhere((candidate) => candidate.id == playerId);
+    final bool active = playerId == gameState.currentPlayer.id;
+    final bool alignRight =
+        color == PlayerColor.green || color == PlayerColor.yellow;
+    final bool top =
+        color == PlayerColor.red || color == PlayerColor.green;
+    final double panelY =
+        top ? 0 : boardTop + boardSize + 5;
+    final double panelX =
+        alignRight ? boardSize - panelWidth : 0;
+    final double diceX = alignRight
+        ? panelX - diceSize - panelGap
+        : panelX + panelWidth + panelGap;
+    final double diceY = panelY + 1;
+
+    return <Widget>[
+      Positioned(
+        left: panelX,
+        top: panelY,
+        width: panelWidth,
+        child: PlayerGamePanel(
+          player: player,
+          active: active,
+          isComputer: computerPlayerIds.contains(playerId),
+          consecutiveSixes:
+              active ? gameState.consecutiveSixes : 0,
+          alignRight: alignRight,
+        ),
+      ),
+      Positioned(
+        left: diceX,
+        top: diceY,
+        child: PlayerDiceSlot(
+          color: color,
+          active: active,
+          value: diceValue,
+          rolling: active && diceRolling,
+          enabled: active && diceEnabled,
+          onRoll: onRoll,
+          size: diceSize,
+        ),
+      ),
+    ];
+  }
+
   Color _colorFor(PlayerColor color) {
     return switch (color) {
       PlayerColor.red => LudoGlobalColors.red,
       PlayerColor.green => LudoGlobalColors.green,
       PlayerColor.yellow => LudoGlobalColors.gold,
       PlayerColor.blue => LudoGlobalColors.electricBlue,
-    };
-  }
-
-  Widget _dicePosition({
-    required PlayerColor color,
-    required double size,
-    required Widget child,
-  }) {
-    final double inset = size * 0.018;
-
-    return switch (color) {
-      PlayerColor.red => Positioned(
-          left: inset,
-          top: inset,
-          child: child,
-        ),
-      PlayerColor.green => Positioned(
-          right: inset,
-          top: inset,
-          child: child,
-        ),
-      PlayerColor.yellow => Positioned(
-          right: inset,
-          bottom: inset,
-          child: child,
-        ),
-      PlayerColor.blue => Positioned(
-          left: inset,
-          bottom: inset,
-          child: child,
-        ),
     };
   }
 }
