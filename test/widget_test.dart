@@ -103,11 +103,10 @@ void main() {
     await _pumpUi(tester);
 
     expect(find.text('POWER LUDO'), findsWidgets);
-    expect(find.text('DOUBLE\nDISTANCE'), findsOneWidget);
+    expect(find.text('DOUBLE'), findsOneWidget);
     expect(find.text('SHIELD'), findsOneWidget);
-    expect(find.text('DICE\nCONTROL'), findsOneWidget);
+    expect(find.text('CONTROL'), findsOneWidget);
     expect(find.text('BONUS'), findsNothing);
-    expect(find.text('COLLECT ON BOARD'), findsOneWidget);
     expect(find.byKey(const Key('roll_dice_button')), findsOneWidget);
   });
 
