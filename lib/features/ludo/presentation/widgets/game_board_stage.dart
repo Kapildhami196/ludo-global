@@ -47,7 +47,7 @@ class GameBoardStage extends StatelessWidget {
         final double cell = boardSize / 15;
 
         final double avatarSize = cell * 1.58;
-        final double diceSize = cell * 2.55;
+        final double diceSize = cell * 2.70;
         final double edgeInset = cell * 0.20;
         final double hudGap = cell * 0.10;
         final Color activeColor =
