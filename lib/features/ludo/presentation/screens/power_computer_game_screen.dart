@@ -28,6 +28,7 @@ import '../widgets/game_fx_overlay.dart';
 import '../widgets/gameplay_callout.dart';
 import '../widgets/gameplay_header.dart';
 import '../widgets/ludo_board.dart';
+import '../widgets/match_result_dialog.dart';
 import '../widgets/power_action_bar.dart';
 
 class PowerComputerGameScreen extends StatefulWidget {
@@ -838,42 +839,27 @@ class _PowerComputerGameScreenState
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: LudoGlobalColors.surface,
-        icon: Icon(
-          humanWon
-              ? Icons.emoji_events_rounded
-              : Icons.smart_toy_rounded,
-          size: 62,
-          color: humanWon
-              ? LudoGlobalColors.gold
-              : LudoGlobalColors.purple,
-        ),
-        title: Text(
-          humanWon
-              ? 'You win Power Ludo!'
-              : '$winner wins Power Ludo',
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontWeight: FontWeight.w900),
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          FilledButton.icon(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              setState(_resetGame);
-            },
-            icon: const Icon(Icons.replay_rounded),
-            label: const Text('Play Again'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              Navigator.of(context).pop();
-            },
-            child: const Text('Back'),
-          ),
-        ],
+      builder: (dialogContext) => MatchResultDialog(
+        title: humanWon
+            ? 'You win Power Ludo!'
+            : '$winner wins Power Ludo',
+        subtitle: humanWon
+            ? 'You finished all four tokens first.'
+            : 'The computer finished all four tokens first.',
+        accentColor: humanWon
+            ? LudoGlobalColors.gold
+            : LudoGlobalColors.purple,
+        icon: humanWon
+            ? Icons.emoji_events_rounded
+            : Icons.smart_toy_rounded,
+        onPlayAgain: () {
+          Navigator.of(dialogContext).pop();
+          setState(_resetGame);
+        },
+        onBack: () {
+          Navigator.of(dialogContext).pop();
+          Navigator.of(context).pop();
+        },
       ),
     );
   }
