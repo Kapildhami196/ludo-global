@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/player_color.dart';
+import '../rendering/flame_3d_runtime.dart';
 import '../rendering/production_dice.dart';
 import '../style/ludo_reference_visuals.dart';
 
@@ -85,86 +86,179 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
 
         return Transform.scale(
           scale: pulseScale,
-          child: SizedBox(
-            width: widget.size * 1.20,
-            height: widget.size,
-            child: Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                Positioned(
-                  left: widget.tailOnRight ? null : 0,
-                  right: widget.tailOnRight ? 0 : null,
-                  top: widget.size * 0.43,
-                  child: CustomPaint(
-                    size: Size(
-                      widget.size * 0.30,
-                      widget.size * 0.30,
-                    ),
-                    painter: _DiceBubbleTailPainter(
-                      pointRight: widget.tailOnRight,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: widget.tailOnRight
-                      ? 0
-                      : widget.size * 0.20,
-                  right: widget.tailOnRight
-                      ? widget.size * 0.20
-                      : 0,
-                  child: Container(
-                    width: widget.size,
-                    height: widget.size * 0.88,
-                    padding: EdgeInsets.all(widget.size * 0.045),
-                    decoration: BoxDecoration(
-                      borderRadius:
-                          BorderRadius.circular(widget.size * 0.19),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: <Color>[
-                          Color(0xFF2B2B59),
-                          Color(0xFF161638),
-                        ],
-                      ),
-                      border: Border.all(
-                        color: const Color(0xFF0B0E28),
-                        width: widget.size * 0.036,
-                      ),
-                      boxShadow: <BoxShadow>[
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.48),
-                          blurRadius: widget.size * 0.15,
-                          offset: Offset(0, widget.size * 0.07),
-                        ),
-                        BoxShadow(
-                          color: _accentColor.withValues(
-                            alpha: 0.08 + wave * 0.08,
-                          ),
-                          blurRadius: widget.size * 0.14,
-                          spreadRadius: widget.size * 0.004,
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: ProductionDice(
-                        value: widget.value,
-                        enabled: widget.enabled,
-                        rolling: widget.rolling,
-                        onTap: widget.onRoll,
-                        accentColor: _accentColor,
-                        size: widget.size * 0.84,
-                        launchDirection: widget.launchDirection,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: Flame3DRuntime.isAvailable
+              ? _build3DDiceSlot(wave)
+              : _build2DFallbackSlot(wave),
         );
       },
+    );
+  }
+
+  Widget _build3DDiceSlot(double wave) {
+    final double sceneSize = widget.size * 1.18;
+
+    return SizedBox(
+      width: widget.size * 1.48,
+      height: widget.size * 1.28,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: <Widget>[
+          Positioned(
+            bottom: widget.size * 0.03,
+            child: Container(
+              width: widget.size * 0.88,
+              height: widget.size * 0.12,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.34),
+                    blurRadius: widget.size * 0.18,
+                    spreadRadius: widget.size * 0.018,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Container(
+            width: widget.size * 1.25,
+            height: widget.size * 1.25,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: <Color>[
+                  _accentColor.withValues(
+                    alpha: 0.13 + wave * 0.06,
+                  ),
+                  _accentColor.withValues(alpha: 0.035),
+                  Colors.transparent,
+                ],
+                stops: const <double>[0, 0.54, 1],
+              ),
+            ),
+          ),
+          SizedBox.square(
+            dimension: sceneSize,
+            child: ProductionDice(
+              value: widget.value,
+              enabled: widget.enabled,
+              rolling: widget.rolling,
+              onTap: widget.onRoll,
+              accentColor: _accentColor,
+              size: sceneSize,
+              launchDirection: widget.launchDirection,
+            ),
+          ),
+          if (!widget.rolling)
+            Positioned(
+              bottom: 0,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.size * 0.12,
+                  vertical: widget.size * 0.035,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xE6192240),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: _accentColor.withValues(alpha: 0.22),
+                  ),
+                ),
+                child: Text(
+                  widget.enabled ? 'ROLL' : 'WAIT',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.92),
+                    fontSize: widget.size * 0.12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _build2DFallbackSlot(double wave) {
+    return SizedBox(
+      width: widget.size * 1.20,
+      height: widget.size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            left: widget.tailOnRight ? null : 0,
+            right: widget.tailOnRight ? 0 : null,
+            top: widget.size * 0.43,
+            child: CustomPaint(
+              size: Size(
+                widget.size * 0.30,
+                widget.size * 0.30,
+              ),
+              painter: _DiceBubbleTailPainter(
+                pointRight: widget.tailOnRight,
+              ),
+            ),
+          ),
+          Positioned(
+            left: widget.tailOnRight
+                ? 0
+                : widget.size * 0.20,
+            right: widget.tailOnRight
+                ? widget.size * 0.20
+                : 0,
+            child: Container(
+              width: widget.size,
+              height: widget.size * 0.88,
+              padding: EdgeInsets.all(widget.size * 0.045),
+              decoration: BoxDecoration(
+                borderRadius:
+                    BorderRadius.circular(widget.size * 0.19),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: <Color>[
+                    Color(0xFF2B2B59),
+                    Color(0xFF161638),
+                  ],
+                ),
+                border: Border.all(
+                  color: const Color(0xFF0B0E28),
+                  width: widget.size * 0.036,
+                ),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.48),
+                    blurRadius: widget.size * 0.15,
+                    offset: Offset(0, widget.size * 0.07),
+                  ),
+                  BoxShadow(
+                    color: _accentColor.withValues(
+                      alpha: 0.08 + wave * 0.08,
+                    ),
+                    blurRadius: widget.size * 0.14,
+                    spreadRadius: widget.size * 0.004,
+                  ),
+                ],
+              ),
+              child: Center(
+                child: ProductionDice(
+                  value: widget.value,
+                  enabled: widget.enabled,
+                  rolling: widget.rolling,
+                  onTap: widget.onRoll,
+                  accentColor: _accentColor,
+                  size: widget.size * 0.84,
+                  launchDirection: widget.launchDirection,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
