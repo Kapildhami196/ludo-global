@@ -962,6 +962,7 @@ class _PowerComputerGameScreenState
       body: Stack(
         children: [
           GameBackground(
+            referencePurple: true,
             child: SafeArea(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(vertical: 4),
