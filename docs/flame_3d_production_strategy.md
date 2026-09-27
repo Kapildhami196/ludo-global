@@ -89,9 +89,18 @@ The board painter, labels, rules, token placement calculations, and domain state
 
 ## Supported runtime policy
 
-3D is enabled only for Android, iOS, and macOS.
+3D is enabled for Android, iOS, and macOS.
 
-Web, Windows, Linux, and Fuchsia use the 2D fallback.
+Debug web builds also enable Flame 3D automatically through its experimental
+WebGPU backend so developers can actually preview the 3D dice and pawns in
+Chrome. Release web remains opt-in with:
+
+```bash
+flutter run -d chrome --dart-define=LUDO_ENABLE_WEB_3D=true
+```
+
+Windows native, Linux native, and Fuchsia still use the 2D fallback because
+Flame 3D does not support those native targets.
 
 A release can force the fallback everywhere with:
 
@@ -136,3 +145,22 @@ until Local Classic passes physical-device profiling.
 Do not expand the 3D renderer to additional modes solely because CI is green.
 The package itself remains experimental, so each rollout step must preserve
 the automatic 2D fallback and the `LUDO_FORCE_2D` kill switch.
+
+
+## Development renderer diagnostics
+
+Startup now prints one explicit renderer line:
+
+```text
+[LudoRenderer] Flame 3D renderer active
+```
+
+or a concrete fallback reason, for example:
+
+```text
+[LudoRenderer] 2D fallback: Flame 3D does not support Windows native
+[LudoRenderer] 2D fallback: Flame GPU initialization failed (...)
+```
+
+If Chrome still shows the 2D renderer, confirm WebGPU is available in the
+browser/device and inspect this line before changing game widgets.
