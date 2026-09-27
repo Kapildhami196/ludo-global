@@ -195,7 +195,6 @@ class _PowerComputerGameScreenState
           : 'Rolling...';
     });
 
-    unawaited(_feedback.diceControl());
     unawaited(_feedback.diceRoll());
     await Future<void>.delayed(const Duration(milliseconds: 650));
     if (!mounted) {
@@ -485,6 +484,7 @@ class _PowerComputerGameScreenState
       _isRolling = true;
       _message = 'Controlling dice to $value...';
     });
+    unawaited(_feedback.diceControl());
     unawaited(_feedback.diceRoll());
     await Future<void>.delayed(const Duration(milliseconds: 650));
 
