@@ -917,7 +917,7 @@ class _PowerComputerGameScreenState
           GameBackground(
             child: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(LudoGlobalSpacing.sm),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 child: Column(
                   children: [
                     GameplayHeader(
@@ -928,9 +928,8 @@ class _PowerComputerGameScreenState
                       onBack: _confirmQuit,
                     ),
                     const SizedBox(height: 4),
-                    const SizedBox(height: 10),
                     Container(
-                      padding: const EdgeInsets.all(7),
+                      padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
                         color: const Color(0xFF061127),
                         borderRadius:
