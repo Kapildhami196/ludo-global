@@ -33,7 +33,7 @@ class PowerPickupMarker extends StatelessWidget {
           return Transform.scale(
             scale: scale,
             child: Opacity(
-              opacity: scale.clamp(0.0, 1.0),
+              opacity: scale.clamp(0.0, 1.0).toDouble(),
               child: child,
             ),
           );
