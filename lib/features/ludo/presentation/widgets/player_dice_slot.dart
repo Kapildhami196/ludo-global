@@ -3,8 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/player_color.dart';
-import '../style/ludo_reference_visuals.dart';
 import '../rendering/production_dice.dart';
+import '../style/ludo_reference_visuals.dart';
 
 class PlayerDiceSlot extends StatefulWidget {
   const PlayerDiceSlot({
