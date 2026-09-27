@@ -8,7 +8,13 @@ import 'package:ludo_global/features/ludo/domain/dice/player_dice_history.dart';
 import 'package:ludo_global/features/ludo/domain/dice/weighted_dice_roller.dart';
 import 'package:ludo_global/features/ludo/domain/engine/ludo_game_engine.dart';
 import 'package:ludo_global/features/ludo/domain/entities/game_config.dart';
+import 'package:ludo_global/features/ludo/domain/entities/game_phase.dart';
+import 'package:ludo_global/features/ludo/domain/entities/ludo_game_event.dart';
 import 'package:ludo_global/features/ludo/domain/entities/ludo_game_state.dart';
+import 'package:ludo_global/features/ludo/domain/entities/ludo_player.dart';
+import 'package:ludo_global/features/ludo/domain/entities/ludo_token.dart';
+import 'package:ludo_global/features/ludo/domain/entities/player_color.dart';
+import 'package:ludo_global/features/ludo/domain/entities/token_status.dart';
 
 void main() {
   group('DiceWeights', () {
@@ -87,15 +93,25 @@ void main() {
     });
   });
 
-  group('CompetitiveDiceEngine Phase 1', () {
-    test('starts from fair weights', () {
+  group('CompetitiveDiceEngine Phase 2', () {
+    test('neutral board keeps all faces equally weighted', () {
       final CompetitiveDiceEngine dice =
           CompetitiveDiceEngine(random: Random(3));
-      final LudoGameState state = _newGame();
+      final LudoGameState state = _stateWithTokens(
+        redTokens: const <LudoToken>[
+          LudoToken(
+            id: 0,
+            color: PlayerColor.red,
+            pathPosition: 10,
+            status: TokenStatus.active,
+          ),
+        ],
+        yellowTokens: const <LudoToken>[],
+      );
 
       final DiceWeights weights = dice.weightsFor(
         state: state,
-        history: dice.historyFor(state.currentPlayer.id),
+        history: const PlayerDiceHistory(),
       );
 
       for (int face = 1; face <= 6; face++) {
@@ -125,6 +141,187 @@ void main() {
 
       expect(dice.historyFor(redId).recentRolls, hasLength(1));
       expect(dice.historyFor(yellowId).recentRolls, hasLength(1));
+    });
+
+    test('six drought progressively increases face six weight', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine();
+      final LudoGameState state = _stateWithTokens(
+        redTokens: const <LudoToken>[
+          LudoToken(
+            id: 0,
+            color: PlayerColor.red,
+            pathPosition: 10,
+            status: TokenStatus.active,
+          ),
+        ],
+        yellowTokens: const <LudoToken>[],
+      );
+
+      final DiceWeights afterThree = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(rollsSinceSix: 3),
+      );
+      final DiceWeights afterFive = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(rollsSinceSix: 5),
+      );
+      final DiceWeights afterSeven = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(rollsSinceSix: 7),
+      );
+
+      expect(afterThree.weightFor(6), 115);
+      expect(afterFive.weightFor(6), 135);
+      expect(afterSeven.weightFor(6), 160);
+      expect(afterSeven.weightFor(1), 100);
+    });
+
+    test('all tokens in base gives six an additional boost', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine();
+      final LudoGameState state = _newGame();
+
+      final DiceWeights weights = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(),
+      );
+
+      expect(weights.weightFor(6), 125);
+      expect(weights.weightFor(1), 100);
+    });
+
+    test('capture opportunity boosts the exact capture roll', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine();
+      final LudoGameState state = _stateWithTokens(
+        redTokens: const <LudoToken>[
+          LudoToken(
+            id: 0,
+            color: PlayerColor.red,
+            pathPosition: 2,
+            status: TokenStatus.active,
+          ),
+        ],
+        yellowTokens: const <LudoToken>[
+          LudoToken(
+            id: 4,
+            color: PlayerColor.yellow,
+            pathPosition: 31,
+            status: TokenStatus.active,
+          ),
+        ],
+      );
+
+      final context = dice.contextFor(state: state);
+      final DiceWeights weights = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(),
+      );
+
+      expect(context.captureRolls, contains(3));
+      expect(weights.weightFor(3), 135);
+      expect(weights.weightFor(2), 100);
+    });
+
+    test('escape to safe cell boosts the required roll', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine();
+      final LudoGameState state = _stateWithTokens(
+        redTokens: const <LudoToken>[
+          LudoToken(
+            id: 0,
+            color: PlayerColor.red,
+            pathPosition: 5,
+            status: TokenStatus.active,
+          ),
+        ],
+        yellowTokens: const <LudoToken>[
+          LudoToken(
+            id: 4,
+            color: PlayerColor.yellow,
+            pathPosition: 28,
+            status: TokenStatus.active,
+          ),
+        ],
+      );
+
+      final context = dice.contextFor(state: state);
+      final DiceWeights weights = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(),
+      );
+
+      expect(context.escapeRolls, contains(3));
+      expect(weights.weightFor(3), 115);
+    });
+
+    test('stale match adds an action boost to useful rolls', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine();
+      final LudoGameState state = _stateWithTokens(
+        redTokens: const <LudoToken>[
+          LudoToken(
+            id: 0,
+            color: PlayerColor.red,
+            pathPosition: 10,
+            status: TokenStatus.active,
+          ),
+          LudoToken(
+            id: 1,
+            color: PlayerColor.red,
+          ),
+        ],
+        yellowTokens: const <LudoToken>[],
+      );
+
+      for (int index = 0; index < 8; index++) {
+        dice.recordGameEvents(
+          const <LudoGameEvent>[
+            LudoGameEvent(
+              type: LudoGameEventType.tokenMoved,
+              playerId: 'player_0',
+            ),
+          ],
+        );
+      }
+
+      final context = dice.contextFor(state: state);
+      final DiceWeights weights = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(),
+      );
+
+      expect(context.isStaleMatch, isTrue);
+      expect(context.actionRolls, contains(6));
+      expect(weights.weightFor(6), 115);
+    });
+
+    test('major event resets stale-match counter', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine();
+
+      for (int index = 0; index < 8; index++) {
+        dice.recordGameEvents(
+          const <LudoGameEvent>[
+            LudoGameEvent(
+              type: LudoGameEventType.tokenMoved,
+              playerId: 'player_0',
+            ),
+          ],
+        );
+      }
+
+      expect(dice.turnsWithoutMajorEvent, 8);
+
+      dice.recordGameEvents(
+        const <LudoGameEvent>[
+          LudoGameEvent(
+            type: LudoGameEventType.tokenMoved,
+            playerId: 'player_0',
+          ),
+          LudoGameEvent(
+            type: LudoGameEventType.tokenCaptured,
+            playerId: 'player_0',
+          ),
+        ],
+      );
+
+      expect(dice.turnsWithoutMajorEvent, 0);
     });
   });
 
@@ -177,6 +374,31 @@ LudoGameState _newGame({
     ),
     playerNames: const <String>['Red', 'Yellow'],
     startingPlayerIndex: 0,
+  );
+}
+
+LudoGameState _stateWithTokens({
+  required List<LudoToken> redTokens,
+  required List<LudoToken> yellowTokens,
+}) {
+  return LudoGameState(
+    players: <LudoPlayer>[
+      LudoPlayer(
+        id: 'player_0',
+        name: 'Red',
+        color: PlayerColor.red,
+        tokens: redTokens,
+      ),
+      LudoPlayer(
+        id: 'player_1',
+        name: 'Yellow',
+        color: PlayerColor.yellow,
+        tokens: yellowTokens,
+      ),
+    ],
+    currentPlayerIndex: 0,
+    phase: GamePhase.waitingForRoll,
+    mode: LudoGameMode.normal,
   );
 }
 
