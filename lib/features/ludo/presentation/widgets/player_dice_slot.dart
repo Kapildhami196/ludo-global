@@ -35,7 +35,27 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1700),
-  )..repeat();
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.active) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant PlayerDiceSlot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.active && !oldWidget.active) {
+      _controller.repeat();
+    } else if (!widget.active && oldWidget.active) {
+      _controller
+        ..stop()
+        ..reset();
+    }
+  }
 
   Color get _accentColor => switch (widget.color) {
         PlayerColor.red => LudoGlobalColors.red,
