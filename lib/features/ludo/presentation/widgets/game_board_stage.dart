@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/ludo_game_state.dart';
+import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../domain/entities/player_color.dart';
 import 'player_dice_slot.dart';
 
@@ -31,10 +32,54 @@ class GameBoardStage extends StatelessWidget {
           final double size = constraints.maxWidth;
           final double diceSize = (size / 15) * 1.70;
 
+          final Color activeColor =
+              _colorFor(gameState.currentPlayer.color);
+
           return Stack(
             clipBehavior: Clip.none,
             children: [
-              Positioned.fill(child: board),
+              Positioned.fill(
+                child: Transform.translate(
+                  offset: Offset(0, size * 0.018),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(size * 0.035),
+                      boxShadow: const <BoxShadow>[
+                        BoxShadow(
+                          color: Color(0xB0000612),
+                          blurRadius: 24,
+                          spreadRadius: 4,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(size * 0.035),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: activeColor.withValues(
+                          alpha: diceRolling ? 0.34 : 0.17,
+                        ),
+                        blurRadius: diceRolling ? 30 : 18,
+                        spreadRadius: diceRolling ? 3 : 1,
+                      ),
+                    ],
+                  ),
+                  child: AnimatedScale(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                    scale: diceRolling ? 0.996 : 1,
+                    child: board,
+                  ),
+                ),
+              ),
               for (final player in gameState.players)
                 _dicePosition(
                   color: player.color,
@@ -56,6 +101,15 @@ class GameBoardStage extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Color _colorFor(PlayerColor color) {
+    return switch (color) {
+      PlayerColor.red => LudoGlobalColors.red,
+      PlayerColor.green => LudoGlobalColors.green,
+      PlayerColor.yellow => LudoGlobalColors.gold,
+      PlayerColor.blue => LudoGlobalColors.electricBlue,
+    };
   }
 
   Widget _dicePosition({
