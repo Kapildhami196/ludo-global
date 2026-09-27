@@ -7,7 +7,7 @@ and dice outcomes in the existing domain engine.
 
 `flame_3d` is experimental, so it must never be the only renderer.
 
-The production path is:
+The production path initializes the GPU backend once before `runApp`. If that initialization fails, the app stays usable and selects the 2D renderer. The production path is:
 
 ```text
 PlayerDiceSlot
@@ -22,11 +22,18 @@ The game still works if 3D rendering is unavailable.
 
 ```yaml
 flame: 1.38.2
-flame_3d: 0.3.0
+flame_3d:
+  git:
+    url: https://github.com/flame-engine/flame.git
+    ref: 0453bad6e726ff90610baec86e5c24dc4c89a5a4
+    path: packages/flame_3d
 ```
 
-Do not change these versions as part of unrelated dependency upgrades. Review
-the Flame 3D changelog and rerun device validation before changing either one.
+The published 0.3.0 release predates Flutter 3.47 GPU API changes and fails to
+compile under the current stable toolchain when the GPU backend is reached.
+The pinned upstream commit is Flame's verified Flutter 3.47 compatibility fix.
+Do not move this ref as part of unrelated dependency upgrades. Review upstream
+changes and rerun CI plus the physical-device release gate before updating it.
 
 ## Domain ownership
 
