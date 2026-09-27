@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -6,7 +8,7 @@ import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../domain/entities/player_color.dart';
 import 'animated_dice.dart';
 
-class PlayerDiceSlot extends StatelessWidget {
+class PlayerDiceSlot extends StatefulWidget {
   const PlayerDiceSlot({
     required this.color,
     required this.active,
@@ -26,7 +28,18 @@ class PlayerDiceSlot extends StatelessWidget {
   final VoidCallback onRoll;
   final double size;
 
-  Color get _accentColor => switch (color) {
+  @override
+  State<PlayerDiceSlot> createState() => _PlayerDiceSlotState();
+}
+
+class _PlayerDiceSlotState extends State<PlayerDiceSlot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1700),
+  )..repeat();
+
+  Color get _accentColor => switch (widget.color) {
         PlayerColor.red => LudoGlobalColors.red,
         PlayerColor.green => LudoGlobalColors.green,
         PlayerColor.yellow => LudoGlobalColors.gold,
@@ -34,61 +47,81 @@ class PlayerDiceSlot extends StatelessWidget {
       };
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AnimatedScale(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutBack,
-      scale: active ? 1 : 0.82,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 180),
-        opacity: active ? 1 : 0.46,
-        child: Container(
-          padding: EdgeInsets.all(size * 0.08),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xCC061127),
-            border: Border.all(
-              color: _accentColor.withValues(
-                alpha: active ? 0.95 : 0.30,
-              ),
-              width: active ? 1.6 : 0.9,
-            ),
-            boxShadow: <BoxShadow>[
-              if (active)
-                BoxShadow(
-                  color: _accentColor.withValues(alpha: 0.42),
-                  blurRadius: size * 0.42,
-                  spreadRadius: 1,
-                ),
-              const BoxShadow(
-                color: Color(0x66000000),
-                blurRadius: 5,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: active
-              ? AnimatedDice(
-                  value: value,
-                  enabled: enabled,
-                  rolling: rolling,
-                  onTap: onRoll,
-                  accentColor: _accentColor,
-                  size: size,
-                  compact: true,
-                )
-              : IgnorePointer(
-                  child: Opacity(
-                    opacity: 0.52,
-                    child: SvgPicture.asset(
-                      GameAssetPaths.dice1,
-                      width: size * 0.66,
-                      height: size * 0.66,
-                    ),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final double wave =
+            (math.sin(_controller.value * math.pi * 2) + 1) / 2;
+        final double pulseScale = widget.active
+            ? 0.985 + wave * 0.025
+            : 1;
+
+        return AnimatedScale(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutBack,
+          scale: (widget.active ? 1 : 0.82) * pulseScale,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 180),
+            opacity: widget.active ? 1 : 0.42,
+            child: Container(
+              padding: EdgeInsets.all(widget.size * 0.08),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xD1061127),
+                border: Border.all(
+                  color: _accentColor.withValues(
+                    alpha: widget.active ? 0.92 : 0.26,
                   ),
+                  width: widget.active ? 1.6 : 0.9,
                 ),
-        ),
-      ),
+                boxShadow: <BoxShadow>[
+                  if (widget.active)
+                    BoxShadow(
+                      color: _accentColor.withValues(
+                        alpha: 0.30 + wave * 0.24,
+                      ),
+                      blurRadius:
+                          widget.size * (0.30 + wave * 0.20),
+                      spreadRadius: wave * 1.4,
+                    ),
+                  const BoxShadow(
+                    color: Color(0x66000000),
+                    blurRadius: 5,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: widget.active
+                  ? AnimatedDice(
+                      value: widget.value,
+                      enabled: widget.enabled,
+                      rolling: widget.rolling,
+                      onTap: widget.onRoll,
+                      accentColor: _accentColor,
+                      size: widget.size,
+                      compact: true,
+                    )
+                  : IgnorePointer(
+                      child: Opacity(
+                        opacity: 0.48,
+                        child: SvgPicture.asset(
+                          GameAssetPaths.dice1,
+                          width: widget.size * 0.66,
+                          height: widget.size * 0.66,
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
