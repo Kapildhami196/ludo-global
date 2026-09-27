@@ -80,6 +80,60 @@ class DiceWeights {
     return DiceWeights._(next);
   }
 
+  DiceWeights cappedAtProbability(double maxProbability) {
+    if (maxProbability <= 0 || maxProbability >= 1) {
+      throw ArgumentError.value(
+        maxProbability,
+        'maxProbability',
+        'Maximum probability must be greater than 0 and less than 1.',
+      );
+    }
+
+    if (maxProbability < 1 / 6) {
+      throw ArgumentError.value(
+        maxProbability,
+        'maxProbability',
+        'A six-sided die cannot cap every face below 1/6.',
+      );
+    }
+
+    final List<double> next = List<double>.of(_values);
+
+    for (int iteration = 0; iteration < 6; iteration++) {
+      final double total =
+          next.fold<double>(0, (sum, value) => sum + value);
+      if (total <= 0) {
+        throw StateError(
+          'At least one dice face must have a positive weight.',
+        );
+      }
+
+      int? faceToCap;
+      for (int index = 0; index < next.length; index++) {
+        if (next[index] / total > maxProbability) {
+          faceToCap = index;
+          break;
+        }
+      }
+
+      if (faceToCap == null) {
+        break;
+      }
+
+      final double otherWeight = total - next[faceToCap];
+      if (otherWeight <= 0) {
+        throw StateError(
+          'Cannot cap probability when all other face weights are zero.',
+        );
+      }
+
+      next[faceToCap] =
+          (maxProbability / (1 - maxProbability)) * otherWeight;
+    }
+
+    return DiceWeights._(next);
+  }
+
   DiceWeights withWeight(
     int face,
     double value,
