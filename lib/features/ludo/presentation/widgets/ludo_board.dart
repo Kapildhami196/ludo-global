@@ -50,7 +50,7 @@ class LudoBoard extends StatelessWidget {
             constraints.maxHeight,
           );
           final double cell = size / 15;
-          final double tokenSize = cell * 0.92;
+          final double tokenSize = cell * 1.15;
           final List<_TokenPlacement> placements = _placements(cell);
 
           return RepaintBoundary(
@@ -105,6 +105,8 @@ class LudoBoard extends StatelessWidget {
                         highlighted:
                             movableTokenIds.contains(placement.tokenId),
                         moving: movingTokenId == placement.tokenId,
+                        movementStep:
+                            visualPathOverrides[placement.tokenId],
                         captured:
                             capturedTokenIds.contains(placement.tokenId),
                         returning:
