@@ -153,6 +153,7 @@ class LudoBoard extends StatelessWidget {
               child: label,
             ),
           );
+          break;
         case PlayerColor.green:
           labels.add(
             Positioned(
@@ -162,6 +163,7 @@ class LudoBoard extends StatelessWidget {
               child: label,
             ),
           );
+          break;
         case PlayerColor.yellow:
           labels.add(
             Positioned(
@@ -171,6 +173,7 @@ class LudoBoard extends StatelessWidget {
               child: label,
             ),
           );
+          break;
         case PlayerColor.blue:
           labels.add(
             Positioned(
@@ -180,6 +183,7 @@ class LudoBoard extends StatelessWidget {
               child: label,
             ),
           );
+          break;
       }
     }
 
@@ -864,15 +868,19 @@ class _LudoBoardPainter extends CustomPainter {
       case _ArrowDirection.right:
         start = center.translate(-shaft, 0);
         end = center.translate(shaft, 0);
+        break;
       case _ArrowDirection.left:
         start = center.translate(shaft, 0);
         end = center.translate(-shaft, 0);
+        break;
       case _ArrowDirection.down:
         start = center.translate(0, -shaft);
         end = center.translate(0, shaft);
+        break;
       case _ArrowDirection.up:
         start = center.translate(0, shaft);
         end = center.translate(0, -shaft);
+        break;
     }
 
     final Paint paint = Paint()
@@ -889,21 +897,25 @@ class _LudoBoardPainter extends CustomPainter {
           ..moveTo(end.dx, end.dy)
           ..lineTo(end.dx - head, end.dy - head)
           ..lineTo(end.dx - head, end.dy + head);
+        break;
       case _ArrowDirection.left:
         arrowHead
           ..moveTo(end.dx, end.dy)
           ..lineTo(end.dx + head, end.dy - head)
           ..lineTo(end.dx + head, end.dy + head);
+        break;
       case _ArrowDirection.down:
         arrowHead
           ..moveTo(end.dx, end.dy)
           ..lineTo(end.dx - head, end.dy - head)
           ..lineTo(end.dx + head, end.dy - head);
+        break;
       case _ArrowDirection.up:
         arrowHead
           ..moveTo(end.dx, end.dy)
           ..lineTo(end.dx - head, end.dy + head)
           ..lineTo(end.dx + head, end.dy + head);
+        break;
     }
     arrowHead.close();
     canvas.drawPath(arrowHead, Paint()..color = color.withValues(alpha: 0.72));
