@@ -1001,7 +1001,7 @@ class _PowerLocalGameScreenState
                                 },
                                 onTokenTap: _onTokenTap,
                               ),
-                            ),\n
+                            ),
                           const SizedBox(height: 6),
                           GameplayCallout(
                             message: _message,
