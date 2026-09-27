@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
-
 import 'package:flame/game.dart';
 import 'package:flame_3d/camera.dart';
 import 'package:flame_3d/components.dart';
 import 'package:flame_3d/game.dart';
 import 'package:flame_3d/resources.dart';
-import 'package:flutter/material.dart' show BuildContext, StatefulWidget, State, Widget, WidgetsBinding;
+import 'package:flutter/material.dart';
 
 class FlamePawnVisualState {
   const FlamePawnVisualState({
