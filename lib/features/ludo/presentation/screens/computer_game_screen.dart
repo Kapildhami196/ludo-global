@@ -19,6 +19,8 @@ import '../../domain/rules/classic_rules.dart';
 import '../services/game_feedback_service.dart';
 import '../widgets/game_board_stage.dart';
 import '../widgets/game_fx_overlay.dart';
+import '../widgets/gameplay_callout.dart';
+import '../widgets/gameplay_header.dart';
 import '../widgets/ludo_board.dart';
 
 class ComputerGameScreen extends StatefulWidget {
@@ -654,105 +656,13 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
                 padding: const EdgeInsets.all(LudoGlobalSpacing.sm),
                 child: Column(
                   children: [
-                    Row(
-                      children: [
-                        IconButton.filledTonal(
-                          onPressed: _confirmQuit,
-                          icon: const Icon(Icons.arrow_back_rounded),
-                        ),
-                        const SizedBox(width: 8),
-                        const Expanded(
-                          child: Text(
-                            'VS COMPUTER',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: LudoGlobalColors.purple
-                                .withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            widget.difficulty.label.toUpperCase(),
-                            style: const TextStyle(
-                              color: LudoGlobalColors.gold,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ],
+                    GameplayHeader(
+                      title: 'VS COMPUTER',
+                      badge: widget.difficulty.label.toUpperCase(),
+                      accentColor: LudoGlobalColors.gold,
+                      onBack: _confirmQuit,
                     ),
-                    const SizedBox(height: 8),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: LudoGlobalColors.surface
-                            .withValues(alpha: 0.94),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: currentColor.withValues(alpha: 0.72),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: currentColor,
-                            child: Icon(
-                              _isHumanTurn
-                                  ? Icons.person_rounded
-                                  : Icons.smart_toy_rounded,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  current.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                Text(
-                                  _isHumanTurn
-                                      ? 'YOUR TURN'
-                                      : 'COMPUTER TURN',
-                                  style: const TextStyle(
-                                    color:
-                                        LudoGlobalColors.textSecondary,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (!_isHumanTurn &&
-                              (_computerLoopRunning || _isBusy))
-                            const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
+                    const SizedBox(height: 4),
                     const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.all(7),
@@ -771,6 +681,10 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
                         diceRolling: _isRolling,
                         diceEnabled: canHumanRoll,
                         onRoll: () => unawaited(_humanRoll()),
+                        computerPlayerIds: <String>{
+                          for (final player in _state.players.skip(1))
+                            player.id,
+                        },
                         board: LudoBoard(
                           gameState: _state,
                           activePlayerCount: _state.players.length,
@@ -785,40 +699,11 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 9,
-                      ),
-                      decoration: BoxDecoration(
-                        color: currentColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: currentColor.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: Text(
-                        _message,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-                    Text(
-                      _isHumanTurn
-                          ? 'Tap the dice when it is your turn.'
-                          : 'Computer moves automatically.',
-                      style: const TextStyle(
-                        color: LudoGlobalColors.textSecondary,
-                        fontSize: 10,
-                      ),
-                    ),
+                    const SizedBox(height: 6),
+                    GameplayCallout(
+                      message: _message,
+                      color: currentColor,
+                    ),                    ),
                   ],
                 ),
               ),
