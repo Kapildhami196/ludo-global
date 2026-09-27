@@ -25,6 +25,7 @@ import '../widgets/game_fx_overlay.dart';
 import '../widgets/gameplay_callout.dart';
 import '../widgets/gameplay_header.dart';
 import '../widgets/ludo_board.dart';
+import '../widgets/match_result_dialog.dart';
 import '../widgets/power_action_bar.dart';
 
 class PowerLocalGameScreen extends StatefulWidget {
@@ -721,43 +722,20 @@ class _PowerLocalGameScreenState
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: LudoGlobalColors.surface,
-          icon: const Icon(
-            Icons.emoji_events_rounded,
-            size: 64,
-            color: LudoGlobalColors.gold,
-          ),
-          title: Text(
-            '$winner wins Power Ludo!',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
-          content: const Text(
-            'All four tokens reached the center.',
-            textAlign: TextAlign.center,
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                setState(_resetGame);
-              },
-              icon: const Icon(Icons.replay_rounded),
-              label: const Text('Play Again'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                Navigator.of(context).pop();
-              },
-              child: const Text('Back'),
-            ),
-          ],
-        );
-      },
+      builder: (dialogContext) => MatchResultDialog(
+        title: '$winner wins Power Ludo!',
+        subtitle: 'All four tokens reached the center.',
+        accentColor: LudoGlobalColors.gold,
+        icon: Icons.emoji_events_rounded,
+        onPlayAgain: () {
+          Navigator.of(dialogContext).pop();
+          setState(_resetGame);
+        },
+        onBack: () {
+          Navigator.of(dialogContext).pop();
+          Navigator.of(context).pop();
+        },
+      ),
     );
   }
 
