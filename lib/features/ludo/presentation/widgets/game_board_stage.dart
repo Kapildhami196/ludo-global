@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../domain/entities/ludo_game_state.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
+import '../../domain/entities/ludo_game_state.dart';
 import '../../domain/entities/player_color.dart';
 import 'player_dice_slot.dart';
 
