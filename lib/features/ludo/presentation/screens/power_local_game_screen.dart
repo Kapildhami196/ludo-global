@@ -20,7 +20,7 @@ import '../../domain/power/power_ludo_engine.dart';
 import '../../domain/power/power_ludo_state.dart';
 import '../../domain/rules/classic_rules.dart';
 import '../services/game_feedback_service.dart';
-import '../widgets/animated_dice.dart';
+import '../widgets/game_board_stage.dart';
 import '../widgets/game_fx_overlay.dart';
 import '../widgets/ludo_board.dart';
 import '../widgets/power_action_bar.dart';
@@ -937,23 +937,30 @@ class _PowerLocalGameScreenState
                                 ),
                               ],
                             ),
-                            child: LudoBoard(
+                            child: GameBoardStage(
                               gameState: _state,
-                              activePlayerCount: _state.players.length,
-                              movableTokenIds:
-                                  _state.movableTokenIds.toSet(),
-                              visualPathOverrides:
-                                  _visualPathOverrides,
-                              movingTokenId: _movingTokenId,
-                              capturedTokenIds: _capturedTokenIds,
-                              shieldedTokenIds:
-                                  _powerState.shields.keys.toSet(),
-                              powerPickupPositions: <PowerType, int>{
-                                for (final entry
-                                    in _powerState.pickups.entries)
-                                  entry.key: entry.value.globalIndex,
-                              },
-                              onTokenTap: _onTokenTap,
+                              diceValue: _lastDiceValue,
+                              diceRolling: _isRolling,
+                              diceEnabled: _canRoll,
+                              onRoll: () => unawaited(_rollDice()),
+                              board: LudoBoard(
+                                gameState: _state,
+                                activePlayerCount: _state.players.length,
+                                movableTokenIds:
+                                    _state.movableTokenIds.toSet(),
+                                visualPathOverrides:
+                                    _visualPathOverrides,
+                                movingTokenId: _movingTokenId,
+                                capturedTokenIds: _capturedTokenIds,
+                                shieldedTokenIds:
+                                    _powerState.shields.keys.toSet(),
+                                powerPickupPositions: <PowerType, int>{
+                                  for (final entry
+                                      in _powerState.pickups.entries)
+                                    entry.key: entry.value.globalIndex,
+                                },
+                                onTokenTap: _onTokenTap,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -961,14 +968,7 @@ class _PowerLocalGameScreenState
                             message: _message,
                             color: currentColor,
                           ),
-                          const SizedBox(height: 10),
-                          AnimatedDice(
-                            value: _lastDiceValue,
-                            enabled: _canRoll,
-                            rolling: _isRolling,
-                            accentColor: currentColor,
-                            onTap: () => unawaited(_rollDice()),
-                          ),
+
                           const SizedBox(height: 12),
                           PowerActionBar(
                             counts: _powerCounts,
