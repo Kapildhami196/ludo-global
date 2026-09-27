@@ -70,7 +70,7 @@ class _AnimatedDiceState extends State<AnimatedDice>
       enabled: widget.enabled,
       label: 'Roll dice',
       child: GestureDetector(
-        key: widget.compact ? null : const Key('roll_dice_button'),
+        key: const Key('roll_dice_button'),
         onTap: widget.enabled ? widget.onTap : null,
         behavior: HitTestBehavior.opaque,
         child: AnimatedOpacity(
