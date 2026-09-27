@@ -663,7 +663,6 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
                       onBack: _confirmQuit,
                     ),
                     const SizedBox(height: 4),
-                    const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
@@ -703,7 +702,7 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
                     GameplayCallout(
                       message: _message,
                       color: currentColor,
-                    ),                    ),
+                    ),
                   ],
                 ),
               ),
