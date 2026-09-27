@@ -72,8 +72,7 @@ class _AnimatedDiceState extends State<AnimatedDice>
       _settling = true;
       _controller
         ..stop()
-        ..duration = const Duration(milliseconds: 800)
-        ..forward(from: 0);
+        ..duration = const Duration(milliseconds: 800);
 
       _controller.forward(from: 0).whenComplete(() {
         if (!mounted ||
