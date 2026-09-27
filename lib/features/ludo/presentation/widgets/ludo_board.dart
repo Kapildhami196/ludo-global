@@ -91,7 +91,7 @@ class LudoBoard extends StatelessWidget {
                     AnimatedPositioned(
                       duration: returningTokenIds.contains(placement.tokenId)
                           ? const Duration(milliseconds: 520)
-                          : const Duration(milliseconds: 125),
+                          : const Duration(milliseconds: 155),
                       curve: returningTokenIds.contains(placement.tokenId)
                           ? Curves.easeInOutCubic
                           : Curves.easeOutCubic,
