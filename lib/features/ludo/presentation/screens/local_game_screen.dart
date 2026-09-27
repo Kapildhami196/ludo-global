@@ -786,7 +786,7 @@ class _TurnCard extends StatelessWidget {
                   ),
                 ),
                 const Text(
-                  'YOUR TURN',
+                  'CURRENT TURN',
                   style: TextStyle(
                     color: LudoGlobalColors.textSecondary,
                     fontSize: 9,
