@@ -1,56 +1,92 @@
-<svg width="96" height="112" viewBox="0 0 96 112" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="104" height="104" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="head" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(39 23) rotate(47) scale(33)">
+    <radialGradient id="head" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+      gradientTransform="translate(42 24) rotate(45) scale(36)">
       <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="0.16" stop-color="#9CE4FF"/>
-      <stop offset="0.62" stop-color="#2A9AF2"/>
-      <stop offset="1" stop-color="#0B4C9D"/>
+      <stop offset="0.14" stop-color="#9EE6FF"/>
+      <stop offset="0.58" stop-color="#299EF3"/>
+      <stop offset="1" stop-color="#0B4F9F"/>
     </radialGradient>
-    <linearGradient id="body" x1="28" y1="46" x2="69" y2="88" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#9CE4FF"/>
-      <stop offset="0.38" stop-color="#2A9AF2"/>
-      <stop offset="1" stop-color="#0B4C9D"/>
+
+    <linearGradient id="body" x1="30" y1="43" x2="75" y2="84" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9EE6FF"/>
+      <stop offset="0.34" stop-color="#299EF3"/>
+      <stop offset="0.78" stop-color="#299EF3"/>
+      <stop offset="1" stop-color="#0B4F9F"/>
     </linearGradient>
-    <linearGradient id="rim" x1="18" y1="78" x2="79" y2="102" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#9CE4FF"/>
-      <stop offset="0.48" stop-color="#2A9AF2"/>
-      <stop offset="1" stop-color="#0B4C9D"/>
+
+    <linearGradient id="baseTop" x1="17" y1="76" x2="86" y2="89" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9EE6FF"/>
+      <stop offset="0.46" stop-color="#299EF3"/>
+      <stop offset="1" stop-color="#0B4F9F"/>
     </linearGradient>
-    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="2.8"/>
+
+    <linearGradient id="baseFront" x1="18" y1="84" x2="84" y2="101" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#299EF3"/>
+      <stop offset="0.62" stop-color="#0B4F9F"/>
+      <stop offset="1" stop-color="#06366E"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-35%" y="-60%" width="170%" height="220%">
+      <feGaussianBlur stdDeviation="2.4"/>
     </filter>
   </defs>
 
-  <ellipse cx="48" cy="101" rx="35" ry="7.5" fill="#001120" fill-opacity="0.33" filter="url(#soft)"/>
+  <!-- soft contact shadow: wide and low, like the reference camera angle -->
+  <ellipse cx="52" cy="97.5" rx="37" ry="5.8"
+    fill="#00111F" fill-opacity="0.24" filter="url(#shadow)"/>
 
-  <path d="M31 48
-           C36 53 36 58 30 65
-           C23 73 20 80 23 86
-           C27 93 36 96 48 96
-           C60 96 69 93 73 86
-           C76 80 73 73 66 65
-           C60 58 60 53 65 48
+  <!-- thick front-facing base -->
+  <path d="M15 83
+           C15 75 31 70 52 70
+           C73 70 89 75 89 83
+           L89 91
+           C89 99 74 103 52 103
+           C30 103 15 99 15 91Z"
+        fill="url(#baseFront)" stroke="#06366E" stroke-width="1.5"/>
+
+  <ellipse cx="52" cy="81.5" rx="37" ry="12.5"
+    fill="url(#baseTop)" stroke="#06366E" stroke-width="1.5"/>
+
+  <ellipse cx="52" cy="80.3" rx="31.5" ry="8.1"
+    fill="#9EE6FF" fill-opacity="0.18"/>
+
+  <!-- squat body: deliberately wider and shorter -->
+  <path d="M34 45
+           C39 50 39 55 33 61
+           C27 67 24 72 26 77
+           C29 82 38 85 52 85
+           C66 85 75 82 78 77
+           C80 72 77 67 71 61
+           C65 55 65 50 70 45
            Z"
-        fill="url(#body)" stroke="#073A78" stroke-width="1.8"/>
+        fill="url(#body)" stroke="#06366E" stroke-width="1.6"/>
 
-  <path d="M28 62C34 54 39 50 41 46"
-        stroke="#FFFFFF" stroke-opacity="0.38" stroke-width="5" stroke-linecap="round"/>
+  <!-- front highlight -->
+  <path d="M31 65
+           C36 56 40 51 44 47"
+        stroke="#FFFFFF" stroke-opacity="0.42" stroke-width="5.4"
+        stroke-linecap="round"/>
 
-  <ellipse cx="48" cy="86" rx="32" ry="13" fill="#0B4C9D" fill-opacity="0.42"/>
-  <path d="M17 84
-           C17 77 29 72 48 72
-           C67 72 79 77 79 84
-           L79 91
-           C79 100 66 105 48 105
-           C30 105 17 100 17 91
-           Z"
-        fill="url(#rim)" stroke="#073A78" stroke-width="1.8"/>
-  <ellipse cx="48" cy="84" rx="31" ry="10.5" fill="#2A9AF2" fill-opacity="0.70"/>
-  <ellipse cx="48" cy="82" rx="27" ry="7.5" fill="#9CE4FF" fill-opacity="0.20"/>
+  <!-- neck shadow -->
+  <ellipse cx="52" cy="48.5" rx="15" ry="6.3"
+    fill="#0B4F9F" fill-opacity="0.52"/>
 
-  <ellipse cx="48" cy="49" rx="14" ry="7" fill="#0B4C9D" fill-opacity="0.58"/>
+  <!-- large low-set head for stronger screen-facing perspective -->
+  <circle cx="52" cy="31.5" r="20.5"
+    fill="url(#head)" stroke="#06366E" stroke-width="1.6"/>
 
-  <circle cx="48" cy="31" r="19" fill="url(#head)" stroke="#073A78" stroke-width="1.8"/>
-  <ellipse cx="40" cy="23" rx="6.2" ry="4.2" fill="#FFFFFF" fill-opacity="0.58"/>
-  <path d="M32 31C34 21 41 15 50 13" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="3.2" stroke-linecap="round"/>
+  <ellipse cx="43.8" cy="23.8" rx="7.2" ry="4.5"
+    fill="#FFFFFF" fill-opacity="0.58"/>
+
+  <path d="M35 31
+           C37 21 44 14 54 12"
+        stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="3"
+        stroke-linecap="round"/>
+
+  <!-- subtle lower-front reflection -->
+  <path d="M26 89
+           C37 94 66 95 79 89"
+        stroke="#9EE6FF" stroke-opacity="0.17" stroke-width="2.2"
+        stroke-linecap="round"/>
 </svg>
