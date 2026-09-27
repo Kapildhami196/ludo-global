@@ -142,7 +142,7 @@ class LudoBoard extends StatelessWidget {
         progressLabel: '$finished/${player.tokens.length}',
         color: LudoReferenceVisuals.colorFor(player.color),
         darkColor: LudoReferenceVisuals.darkColorFor(player.color),
-        height: cell * 0.54,
+        height: cell * 0.60,
       );
 
       switch (player.color) {
@@ -150,7 +150,7 @@ class LudoBoard extends StatelessWidget {
           labels.add(
             Positioned(
               left: cell * 1.00,
-              top: cell * 0.10,
+              top: cell * 0.05,
               width: cell * 4.65,
               child: label,
             ),
@@ -160,7 +160,7 @@ class LudoBoard extends StatelessWidget {
           labels.add(
             Positioned(
               right: cell * 0.42,
-              top: cell * 0.10,
+              top: cell * 0.05,
               width: cell * 4.65,
               child: label,
             ),
@@ -170,7 +170,7 @@ class LudoBoard extends StatelessWidget {
           labels.add(
             Positioned(
               right: cell * 0.42,
-              bottom: cell * 0.12,
+              bottom: cell * 0.08,
               width: cell * 4.65,
               child: label,
             ),
@@ -180,7 +180,7 @@ class LudoBoard extends StatelessWidget {
           labels.add(
             Positioned(
               left: cell * 1.00,
-              bottom: cell * 0.12,
+              bottom: cell * 0.08,
               width: cell * 4.65,
               child: label,
             ),
@@ -407,8 +407,8 @@ class _TokenPlacement {
 class _LudoBoardPainter extends CustomPainter {
   const _LudoBoardPainter();
 
-  static const Color _grid = Color(0xFF92A2B2);
-  static const Color _safeStar = Color(0xFF7DA7D3);
+  static const Color _grid = Color(0xFFA9B4BF);
+  static const Color _safeStar = Color(0xFF7CA5D0);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -592,8 +592,27 @@ class _LudoBoardPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: <Color>[soft, color],
-          stops: const <double>[0, 0.76],
+          colors: <Color>[
+            soft,
+            color,
+            dark.withValues(alpha: 0.92),
+          ],
+          stops: const <double>[0, 0.64, 1],
+        ).createShader(baseRect),
+    );
+
+    canvas.drawRect(
+      baseRect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: const Alignment(-1, -0.9),
+          end: const Alignment(1, 0.9),
+          colors: <Color>[
+            Colors.white.withValues(alpha: 0.10),
+            Colors.transparent,
+            Colors.black.withValues(alpha: 0.055),
+          ],
+          stops: const <double>[0, 0.52, 1],
         ).createShader(baseRect),
     );
 
@@ -624,8 +643,8 @@ class _LudoBoardPainter extends CustomPainter {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: <Color>[
-            dark.withValues(alpha: 0.68),
-            dark.withValues(alpha: 0.90),
+            dark.withValues(alpha: 0.70),
+            dark.withValues(alpha: 0.86),
           ],
         ).createShader(innerRect),
     );
@@ -635,7 +654,7 @@ class _LudoBoardPainter extends CustomPainter {
       Paint()
         ..color = Colors.white.withValues(alpha: 0.18)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2,
+        ..strokeWidth = 1.0,
     );
 
     final List<Offset> holes = <Offset>[
@@ -649,13 +668,13 @@ class _LudoBoardPainter extends CustomPainter {
       final Offset center = Offset(hole.dx * cell, hole.dy * cell);
       canvas.drawCircle(
         center.translate(0, cell * 0.04),
-        cell * 0.40,
-        Paint()..color = Colors.black.withValues(alpha: 0.16),
+        cell * 0.38,
+        Paint()..color = Colors.black.withValues(alpha: 0.14),
       );
       canvas.drawCircle(
         center,
-        cell * 0.37,
-        Paint()..color = dark.withValues(alpha: 0.32),
+        cell * 0.35,
+        Paint()..color = dark.withValues(alpha: 0.30),
       );
     }
   }
@@ -682,10 +701,10 @@ class _LudoBoardPainter extends CustomPainter {
           end: Alignment.bottomRight,
           colors: <Color>[
             Color(0xFFFFFFFF),
-            Color(0xFFF4F6F8),
-            Color(0xFFE3E7EC),
+            Color(0xFFF7F8FA),
+            Color(0xFFE8ECF0),
           ],
-          stops: <double>[0, 0.62, 1],
+          stops: <double>[0, 0.66, 1],
         ).createShader(rect),
     );
 
@@ -693,7 +712,7 @@ class _LudoBoardPainter extends CustomPainter {
       rect.topLeft.translate(1, 1),
       rect.topRight.translate(-1, 1),
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.95)
+        ..color = Colors.white.withValues(alpha: 0.78)
         ..strokeWidth = 1.15,
     );
 
@@ -701,7 +720,7 @@ class _LudoBoardPainter extends CustomPainter {
       rect.bottomLeft.translate(1, -1),
       rect.bottomRight.translate(-1, -1),
       Paint()
-        ..color = const Color(0xFFBBC5CF)
+        ..color = const Color(0xFFC9D1D9)
         ..strokeWidth = 1.15,
     );
 
@@ -710,7 +729,7 @@ class _LudoBoardPainter extends CustomPainter {
       Paint()
         ..color = _grid
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.82,
+        ..strokeWidth = 0.72,
     );
   }
 
@@ -737,7 +756,10 @@ class _LudoBoardPainter extends CustomPainter {
           ..shader = LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: <Color>[soft, color],
+            colors: <Color>[
+              color,
+              Color.lerp(color, LudoReferenceVisuals.darkColorFor(engineColor), 0.18)!,
+            ],
           ).createShader(rect),
       );
 
@@ -746,7 +768,7 @@ class _LudoBoardPainter extends CustomPainter {
         Paint()
           ..color = _grid
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.82,
+          ..strokeWidth = 0.72,
       );
 
       canvas.drawLine(
@@ -792,7 +814,7 @@ class _LudoBoardPainter extends CustomPainter {
       Paint()
         ..color = _grid
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.82,
+        ..strokeWidth = 0.72,
     );
 
     _drawStar(
@@ -993,9 +1015,9 @@ class _LudoBoardPainter extends CustomPainter {
     canvas.drawRRect(
       border,
       Paint()
-        ..color = const Color(0xFF26384C)
+        ..color = const Color(0xFF344758)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = cell * 0.085,
+        ..strokeWidth = cell * 0.105,
     );
 
     final RRect inner = RRect.fromRectAndRadius(
