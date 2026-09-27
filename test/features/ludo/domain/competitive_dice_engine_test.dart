@@ -548,7 +548,7 @@ void main() {
       final DiceWeights weights = DiceWeights.fromValues(
         const <double>[100, 100, 100, 100, 100, 1000],
       ).cappedAtProbability(
-        CompetitiveDiceEngine.maxSingleFaceProbability,
+        dice.tuning.maxSingleFaceProbability,
       );
 
       expect(
@@ -633,13 +633,13 @@ void main() {
       dice.roll(state: state);
       expect(
         dice.historyFor('player_0').strongAssistCooldown,
-        CompetitiveDiceEngine.strongAssistCooldownRolls,
+        dice.tuning.strongAssistCooldownRolls,
       );
 
       dice.roll(state: state);
       expect(
         dice.historyFor('player_0').strongAssistCooldown,
-        CompetitiveDiceEngine.strongAssistCooldownRolls - 1,
+        dice.tuning.strongAssistCooldownRolls - 1,
       );
     });
   });
