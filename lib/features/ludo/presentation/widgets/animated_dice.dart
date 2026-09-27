@@ -111,40 +111,55 @@ class _AnimatedDiceState extends State<AnimatedDice>
 
               double travel = 0;
               double scale = 1;
-              double zRotation = 0;
+              double xRotation = 0;
               int previewValue = widget.value.clamp(1, 6).toInt();
 
               if (widget.rolling) {
-                final int faceIndex =
-                    (t * 6).floor().clamp(0, 5);
-                previewValue = faceIndex + 1;
+                // Front-face-only vertical tumble. Each half turn swaps to
+                // the next front face, so the fallback never reveals fake
+                // top/right artwork or a mirrored back face.
+                const int halfTurnsPerCycle = 8;
+                final double halfTurnProgress =
+                    t * halfTurnsPerCycle;
+                final int halfTurnIndex =
+                    halfTurnProgress.floor();
+                final double local =
+                    halfTurnProgress - halfTurnIndex;
 
+                previewValue = (halfTurnIndex % 6) + 1;
+
+                // First half of each step tips away to an edge; the next
+                // front face enters from the opposite edge and lands flat.
+                xRotation = local < 0.5
+                    ? local * math.pi
+                    : (local - 1) * math.pi;
+
+                // One clean vertical hop for the full roll cycle.
                 travel = math.sin(t * math.pi).abs();
-                scale = 1 + travel * 0.40;
-                zRotation =
-                    math.sin(t * math.pi * 4) * 0.12;
+                scale = 1 + travel * 0.14;
               } else if (_settling) {
                 final double bounceWindow =
                     (t / 0.20).clamp(0.0, 1.0).toDouble();
                 final double bounce =
                     math.sin(bounceWindow * math.pi).abs();
-                scale = 1 + bounce * 0.07;
-                zRotation = bounce * 0.025;
+                scale = 1 + bounce * 0.06;
+                xRotation = -bounce * 0.055;
               }
 
-              final Offset launchOffset = Offset(
-                widget.launchDirection.dx * widget.size * travel,
-                widget.launchDirection.dy * widget.size * travel,
-              );
-              final double arc =
-                  -travel * widget.size * 0.17;
+              final double verticalOffset =
+                  -travel * widget.size * 0.27;
+
+              final Matrix4 transform = Matrix4.identity()
+                ..setEntry(3, 2, 0.0028)
+                ..rotateX(xRotation);
 
               return Transform.translate(
-                offset: launchOffset.translate(0, arc),
+                offset: Offset(0, verticalOffset),
                 child: Transform.scale(
                   scale: scale,
-                  child: Transform.rotate(
-                    angle: zRotation,
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: transform,
                     child: _FlatDiceFace(
                       value: previewValue,
                       size: widget.size,
