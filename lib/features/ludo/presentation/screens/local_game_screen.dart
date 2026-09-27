@@ -640,35 +640,15 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
                             color: currentColor,
                           ),
                           const SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _SmallControl(
-                                icon: Icons.chat_bubble_rounded,
-                                label: 'Chat',
-                                onTap: () {},
-                              ),
-                              const SizedBox(width: 18),
-                              AnimatedDice(
-                                value: _lastDiceValue,
-                                enabled: canRoll,
-                                rolling: _isRolling,
-                                onTap: () {
-                                  unawaited(_rollDice());
-                                },
-                              ),
-                              const SizedBox(width: 18),
-                              _SmallControl(
-                                icon: Icons.emoji_emotions_rounded,
-                                label: 'Emotes',
-                                onTap: () {},
-                              ),
-                            ],
+                          AnimatedDice(
+                            value: _lastDiceValue,
+                            enabled: canRoll,
+                            rolling: _isRolling,
+                            accentColor: currentColor,
+                            onTap: () {
+                              unawaited(_rollDice());
+                            },
                           ),
-                          if (widget.mode == LudoGameMode.power) ...[
-                            const SizedBox(height: 12),
-                            const _PowerComingNext(),
-                          ],
                         ],
                       ),
                     ),
@@ -875,83 +855,6 @@ class _StatusBanner extends StatelessWidget {
             fontSize: 11,
             fontWeight: FontWeight.w700,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SmallControl extends StatelessWidget {
-  const _SmallControl({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: 58,
-        height: 54,
-        decoration: BoxDecoration(
-          color: LudoGlobalColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: LudoGlobalColors.border,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 21,
-              color: LudoGlobalColors.cyan,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 8,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PowerComingNext extends StatelessWidget {
-  const _PowerComingNext();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: LudoGlobalColors.purple.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: LudoGlobalColors.purple.withValues(alpha: 0.45),
-        ),
-      ),
-      child: const Text(
-        '⚡ Power controls use this same Normal Ludo engine and '
-        'will be enabled in the Power phase.',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: LudoGlobalColors.textSecondary,
-          fontSize: 10,
         ),
       ),
     );
