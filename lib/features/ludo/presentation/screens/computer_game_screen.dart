@@ -47,6 +47,7 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
   int _autoMoveSequence = 0;
   int? _movingTokenId;
   Set<int> _capturedTokenIds = const <int>{};
+  Set<int> _returningTokenIds = const <int>{};
   GameFxType? _fxType;
   String? _fxLabel;
 
@@ -85,6 +86,7 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
     _fxSequence = 0;
     _movingTokenId = null;
     _capturedTokenIds = const <int>{};
+    _returningTokenIds = const <int>{};
     _fxType = null;
     _fxLabel = null;
     _isRolling = false;
@@ -331,7 +333,7 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
         _visualPathOverrides[tokenId] = progress;
       });
       unawaited(_feedback.tokenStep());
-      await Future<void>.delayed(const Duration(milliseconds: 145));
+      await Future<void>.delayed(const Duration(milliseconds: 125));
     }
 
     if (!mounted) {
@@ -346,26 +348,59 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
       await _triggerFx(GameFxType.capture, durationMs: 480);
     }
 
-    if (reachedHome) {
-      unawaited(_feedback.home());
-      await _triggerFx(GameFxType.home, durationMs: 480);
-    }
+    if (capture != null) {
+      if (!mounted) {
+        return;
+      }
 
-    if (!mounted) {
-      return;
-    }
+      final Set<int> returning = capture.otherTokenIds.toSet();
 
-    setState(() {
-      _visualPathOverrides.remove(tokenId);
-      _movingTokenId = null;
-      _capturedTokenIds = const <int>{};
-      _state = result.state;
-      _isMoving = false;
-      _message = _messageForMove(
-        result,
-        computerReason: computerReason,
+      setState(() {
+        _visualPathOverrides.remove(tokenId);
+        _movingTokenId = null;
+        _capturedTokenIds = const <int>{};
+        _returningTokenIds = returning;
+        _state = result.state;
+        _message = _messageForMove(
+          result,
+          computerReason: computerReason,
+        );
+      });
+
+      await Future<void>.delayed(
+        const Duration(milliseconds: 540),
       );
-    });
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _returningTokenIds = const <int>{};
+        _isMoving = false;
+      });
+    } else {
+      if (reachedHome) {
+        unawaited(_feedback.home());
+        await _triggerFx(GameFxType.home, durationMs: 480);
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _visualPathOverrides.remove(tokenId);
+        _movingTokenId = null;
+        _capturedTokenIds = const <int>{};
+        _state = result.state;
+        _isMoving = false;
+        _message = _messageForMove(
+          result,
+          computerReason: computerReason,
+        );
+      });
+    }
 
     if (won) {
       unawaited(_feedback.win());
@@ -745,6 +780,7 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
                           visualPathOverrides: _visualPathOverrides,
                           movingTokenId: _movingTokenId,
                           capturedTokenIds: _capturedTokenIds,
+                          returningTokenIds: _returningTokenIds,
                           onTokenTap: _onHumanTokenTap,
                         ),
                       ),
