@@ -18,6 +18,7 @@ import '../../domain/power/power_inventory.dart';
 import '../../domain/power/power_ludo_action_result.dart';
 import '../../domain/power/power_ludo_engine.dart';
 import '../../domain/power/power_ludo_state.dart';
+import '../../domain/rules/classic_rules.dart';
 import '../services/game_feedback_service.dart';
 import '../widgets/animated_dice.dart';
 import '../widgets/game_fx_overlay.dart';
@@ -46,6 +47,7 @@ class _PowerLocalGameScreenState
 
   int _lastDiceValue = 1;
   int _fxSequence = 0;
+  int _autoMoveSequence = 0;
   int? _movingTokenId;
   Set<int> _capturedTokenIds = const <int>{};
   GameFxType? _fxType;
@@ -53,7 +55,6 @@ class _PowerLocalGameScreenState
 
   bool _isRolling = false;
   bool _isMoving = false;
-  bool _handoffVisible = false;
   bool _soundEnabled = true;
   bool _hapticsEnabled = true;
 
@@ -92,7 +93,6 @@ class _PowerLocalGameScreenState
     _fxLabel = null;
     _isRolling = false;
     _isMoving = false;
-    _handoffVisible = false;
     _visualPathOverrides.clear();
     _message = '${_state.currentPlayer.name}, choose a power or roll.';
   }
@@ -102,7 +102,7 @@ class _PowerLocalGameScreenState
       return;
     }
 
-    final int previousPlayerIndex = _state.currentPlayerIndex;
+    _autoMoveSequence++;
 
     setState(() {
       _isRolling = true;
@@ -121,17 +121,13 @@ class _PowerLocalGameScreenState
 
     _applyActionResult(
       result,
-      previousPlayerIndex: previousPlayerIndex,
       updateDice: true,
     );
-
-    if (_state.currentPlayerIndex != previousPlayerIndex) {
-      await _showTurnHandoff();
-    }
+    _scheduleSingleLegalAutoMove();
   }
 
   Future<void> _useDiceControl() async {
-    if (_isBusy || _handoffVisible) {
+    if (_isBusy) {
       return;
     }
 
@@ -196,7 +192,7 @@ class _PowerLocalGameScreenState
       return;
     }
 
-    final int previousPlayerIndex = _state.currentPlayerIndex;
+    _autoMoveSequence++;
 
     setState(() {
       _isRolling = true;
@@ -215,18 +211,14 @@ class _PowerLocalGameScreenState
 
     _applyActionResult(
       result,
-      previousPlayerIndex: previousPlayerIndex,
       updateDice: true,
       fallbackMessage: 'Dice Control selected $value.',
     );
-
-    if (_state.currentPlayerIndex != previousPlayerIndex) {
-      await _showTurnHandoff();
-    }
+    _scheduleSingleLegalAutoMove();
   }
 
   void _useDoubleDistance() {
-    if (_isBusy || _handoffVisible) {
+    if (_isBusy) {
       return;
     }
 
@@ -245,7 +237,7 @@ class _PowerLocalGameScreenState
   }
 
   Future<void> _useShield() async {
-    if (_isBusy || _handoffVisible) {
+    if (_isBusy) {
       return;
     }
 
@@ -341,25 +333,6 @@ class _PowerLocalGameScreenState
     }
   }
 
-  void _useBonusRoll() {
-    if (_isBusy || _handoffVisible) {
-      return;
-    }
-
-    try {
-      final PowerLudoActionResult result =
-          _engine.queueBonusRoll(_powerState);
-
-      unawaited(_feedback.tap());
-      setState(() {
-        _powerState = result.state;
-        _message = 'Bonus Roll queued for this turn.';
-      });
-    } on StateError catch (error) {
-      _showRuleMessage(error.message);
-    }
-  }
-
   void _onPowerTap(PowerType type) {
     switch (type) {
       case PowerType.doubleDistance:
@@ -369,22 +342,51 @@ class _PowerLocalGameScreenState
       case PowerType.diceControl:
         unawaited(_useDiceControl());
       case PowerType.bonusRoll:
-        _useBonusRoll();
+        _showRuleMessage(
+          'Bonus Roll activates automatically when you land on it.',
+        );
     }
   }
 
   void _onTokenTap(int tokenId) {
     if (_isBusy ||
-        _handoffVisible ||
         _state.phase != GamePhase.selectingToken) {
       return;
     }
 
+    _autoMoveSequence++;
     unawaited(_moveToken(tokenId));
   }
 
+  void _scheduleSingleLegalAutoMove() {
+    if (!ClassicRules.autoMoveSingleLegalToken ||
+        _state.phase != GamePhase.selectingToken ||
+        _state.movableTokenIds.length != 1 ||
+        _isBusy) {
+      return;
+    }
+
+    final int tokenId = _state.movableTokenIds.single;
+    final int sequence = ++_autoMoveSequence;
+
+    Future<void>.delayed(
+      ClassicRules.singleLegalTokenAutoMoveDelay,
+      () {
+        if (!mounted ||
+            sequence != _autoMoveSequence ||
+            _isBusy ||
+            _state.phase != GamePhase.selectingToken ||
+            _state.movableTokenIds.length != 1 ||
+            _state.movableTokenIds.single != tokenId) {
+          return;
+        }
+
+        unawaited(_moveToken(tokenId));
+      },
+    );
+  }
+
   Future<void> _moveToken(int tokenId) async {
-    final int previousPlayerIndex = _state.currentPlayerIndex;
 
     PowerLudoActionResult result;
     try {
@@ -479,14 +481,10 @@ class _PowerLocalGameScreenState
       return;
     }
 
-    if (_state.currentPlayerIndex != previousPlayerIndex) {
-      await _showTurnHandoff();
-    }
   }
 
   bool get _canRoll =>
       !_isBusy &&
-      !_handoffVisible &&
       _state.phase == GamePhase.waitingForRoll &&
       !_state.isGameOver;
 
@@ -502,9 +500,6 @@ class _PowerLocalGameScreenState
     if (_engine.canUseDiceControl(_powerState)) {
       enabled.add(PowerType.diceControl);
     }
-    if (_engine.canUseBonusRoll(_powerState)) {
-      enabled.add(PowerType.bonusRoll);
-    }
 
     return enabled;
   }
@@ -514,10 +509,6 @@ class _PowerLocalGameScreenState
 
     if (_powerState.doubleDistanceArmed) {
       active.add(PowerType.doubleDistance);
-    }
-
-    if (_powerState.bonusRollQueued) {
-      active.add(PowerType.bonusRoll);
     }
 
     final bool currentHasShield = _state.currentPlayer.tokens.any(
@@ -542,7 +533,6 @@ class _PowerLocalGameScreenState
 
   void _applyActionResult(
     PowerLudoActionResult result, {
-    required int previousPlayerIndex,
     bool updateDice = false,
     String? fallbackMessage,
   }) {
@@ -572,7 +562,7 @@ class _PowerLocalGameScreenState
   }) {
     if (result.powerEvents.any(
       (event) =>
-          event.type == PowerGameEventType.bonusRollGranted,
+          event.type == PowerGameEventType.bonusRollTriggered,
     )) {
       return 'Bonus Roll activated! Roll again.';
     }
@@ -610,7 +600,7 @@ class _PowerLocalGameScreenState
       )) {
         return 'No legal move. Roll again.';
       }
-      return 'No legal move.';
+      return '${_state.currentPlayer.name}, choose a power or roll.';
     }
 
     if (_state.phase == GamePhase.selectingToken) {
@@ -624,7 +614,8 @@ class _PowerLocalGameScreenState
       return '${result.state.gameState.currentPlayer.name}, roll again.';
     }
 
-    return fallbackMessage ?? 'Turn complete.';
+    return fallbackMessage ??
+        '${result.state.gameState.currentPlayer.name}, choose a power or roll.';
   }
 
   LudoGameEvent? _eventOfType(
@@ -674,30 +665,6 @@ class _PowerLocalGameScreenState
     setState(() {
       _fxType = null;
       _fxLabel = null;
-    });
-  }
-
-  Future<void> _showTurnHandoff() async {
-    if (!mounted || _state.isGameOver) {
-      return;
-    }
-
-    setState(() {
-      _handoffVisible = true;
-    });
-    unawaited(_feedback.tap());
-  }
-
-  void _dismissHandoff() {
-    if (!_handoffVisible) {
-      return;
-    }
-
-    unawaited(_feedback.tap());
-    setState(() {
-      _handoffVisible = false;
-      _message =
-          '${_state.currentPlayer.name}, choose a power or roll.';
     });
   }
 
@@ -981,6 +948,11 @@ class _PowerLocalGameScreenState
                               capturedTokenIds: _capturedTokenIds,
                               shieldedTokenIds:
                                   _powerState.shields.keys.toSet(),
+                              powerPickupPositions: <PowerType, int>{
+                                for (final entry
+                                    in _powerState.pickups.entries)
+                                  entry.key: entry.value.globalIndex,
+                              },
                               onTokenTap: _onTokenTap,
                             ),
                           ),
@@ -1033,12 +1005,6 @@ class _PowerLocalGameScreenState
             sequence: _fxSequence,
             label: _fxLabel,
           ),
-          if (_handoffVisible)
-            _PowerHandoffOverlay(
-              player: _state.currentPlayer,
-              color: currentColor,
-              onReady: _dismissHandoff,
-            ),
         ],
       ),
     );
@@ -1263,108 +1229,3 @@ class _PowerSmallControl extends StatelessWidget {
   }
 }
 
-class _PowerHandoffOverlay extends StatelessWidget {
-  const _PowerHandoffOverlay({
-    required this.player,
-    required this.color,
-    required this.onReady,
-  });
-
-  final LudoPlayer player;
-  final Color color;
-  final VoidCallback onReady;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: ColoredBox(
-        color: const Color(0xEB031024),
-        child: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(28),
-              child: Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(maxWidth: 360),
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: LudoGlobalColors.surface,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: color.withValues(alpha: 0.85),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.32),
-                      blurRadius: 32,
-                      spreadRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.bolt_rounded,
-                      size: 40,
-                      color: LudoGlobalColors.gold,
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'PASS THE PHONE',
-                      style: TextStyle(
-                        color: LudoGlobalColors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: color,
-                      ),
-                      child: const Icon(
-                        Icons.person_rounded,
-                        size: 44,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      "${player.name}'s Power turn",
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        key: const Key('power_handoff_ready_button'),
-                        onPressed: onReady,
-                        icon: const Icon(Icons.check_circle_rounded),
-                        label: const Text("I'm Ready"),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: color,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

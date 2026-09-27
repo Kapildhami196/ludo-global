@@ -72,12 +72,11 @@ void main() {
 
     expect(find.text('NORMAL LUDO'), findsOneWidget);
     expect(find.text('LOCAL'), findsOneWidget);
-    expect(find.text('Player 1'), findsOneWidget);
     expect(find.text('Roll the dice to begin.'), findsNothing);
     expect(find.byKey(const Key('roll_dice_button')), findsOneWidget);
   });
 
-  testWidgets('Power Ludo local flow exposes all four powers', (
+  testWidgets('Power Ludo local flow exposes collected power controls', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const LudoGlobalApp());
@@ -107,7 +106,8 @@ void main() {
     expect(find.text('DOUBLE'), findsOneWidget);
     expect(find.text('SHIELD'), findsOneWidget);
     expect(find.text('CONTROL'), findsOneWidget);
-    expect(find.text('BONUS'), findsOneWidget);
+    expect(find.text('BONUS'), findsNothing);
+    expect(find.text('COLLECT ON BOARD'), findsOneWidget);
     expect(find.byKey(const Key('roll_dice_button')), findsOneWidget);
   });
 
@@ -133,7 +133,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('VS COMPUTER'), findsOneWidget);
-    expect(find.text('You'), findsWidgets);
     expect(find.byKey(const Key('roll_dice_button')), findsOneWidget);
   });
 }

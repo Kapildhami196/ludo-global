@@ -1,75 +1,78 @@
-# Normal Ludo Rules — Classic V1
+# Normal Ludo Rules — Gameplay Rules V2
 
-This document is the rule source of truth for the Normal Ludo engine.
+This document is the rule source of truth for Normal Ludo.
 
-## Confirmed scope
+## Match setup
 
 - 2 to 4 players.
 - 4 tokens per player.
-- Normal Ludo and Power Ludo share the same base movement/rule engine.
-- Local / Pass-and-Play supports:
-  - 2 human players on one device.
-  - 3 human players on one device.
-  - 4 human players on one device.
+- 2-player matches use opposite seats: **Red vs Yellow**.
+- 3-player matches use Red, Green, and Yellow.
+- 4-player matches use Red, Green, Yellow, and Blue.
+- The starting player is chosen randomly.
+- Turns then advance in player-list order.
 
-## Classic V1 rule decisions
-
-These rules are now implemented and covered by domain tests.
-
-### Starting and movement
+## Starting and movement
 
 - A token must roll **6** to leave base.
 - Leaving base places the token on that color's starting square.
-- A roll of **6** grants another roll after the selected legal move.
-- Three consecutive sixes by the same player forfeit the third roll and immediately pass the turn.
-- A token must use the **exact roll** needed to reach the center. A roll that overshoots is not legal.
-- Reaching the center does not independently grant another roll.
+- A roll of **6** grants one extra roll.
+- If a 6 has no legal move, the player still receives the extra roll.
+- Three consecutive sixes: the first two rolls/moves remain; the third six is forfeited and the turn immediately passes.
+- A token must use the exact roll needed to reach the center.
+- Finishing a token grants one extra roll.
+- Extra-roll reasons never stack. A move that qualifies for multiple bonuses still grants only one next roll.
+- When a human player has exactly one legal token, it is highlighted briefly and then moved automatically.
 
-### Board route
+## Board route
 
-- The shared track contains **52 cells**.
-- Each color uses the same shared track with a different start offset:
-  - Red: global index 0.
-  - Green: global index 13.
-  - Yellow: global index 26.
-  - Blue: global index 39.
-- Token progress is stored relative to its own starting square:
-  - -1 = base.
-  - 0–51 = shared track.
-  - 52–56 = that color's five-cell home lane.
-  - 57 = finished in the center.
+- The shared track contains 52 cells.
+- Start offsets:
+  - Red: 0
+  - Green: 13
+  - Yellow: 26
+  - Blue: 39
+- Logical token progress:
+  - -1 = base
+  - 0–51 = shared track
+  - 52–56 = home lane
+  - 57 = finished
 
-### Safe cells
+## Safe cells
 
-The eight safe shared-track indices are:
+Safe shared-track indices:
 
 `0, 8, 13, 21, 26, 34, 39, 47`
 
-These include all four color starting squares and four star/safe squares.
-
 - Opponents are never captured on a safe cell.
 - Different colors may coexist on a safe cell.
-- A safe cell does not act as a blockade.
+- Safe cells do not form opponent blockades.
 
-### Capture
+## Capture
 
-- Landing on an opponent token on a non-safe shared cell sends that token back to base.
-- A successful capture grants an extra roll.
-- Captures do not occur in a home lane or in the center.
+- Landing exactly on an opponent token on a non-safe shared cell sends that token back to base.
+- A capture grants one extra roll.
+- Captures do not occur in a home lane or center.
+- Capture + six, capture + finish, or any other combination still gives a maximum of one extra roll.
 
-### Stacks and blockades
+## Stacks and blockades
 
-- Tokens of the same color may share a shared-track cell.
-- Two or more same-color opponent tokens on the same non-safe cell form a blockade.
-- A token may not land on or pass through an opponent blockade.
-- A player's own stacked tokens do not block that player's movement in Classic V1.
+- Two, three, or four same-color tokens may share a cell.
+- Two or more same-color opponent tokens on one non-safe shared cell form a blockade.
+- An opponent cannot land on or pass through that blockade.
+- The owner may move any token away from their own stack.
 
-### Winning
+## Winning
 
-- The first player to move all four tokens into the center wins.
-- Classic V1 ends immediately when the first winner is determined.
-- 2nd/3rd-place continuation can be added later as a separate match configuration.
+- A player wins after all four tokens reach the center.
+- The current implementation ends the match when the first winner is determined.
 
-## Online-only rules
+## Local pass-and-play
 
-Turn timers, disconnect handling, reconnection, and server-authoritative validation are intentionally deferred to the online multiplayer phase.
+- Turns change directly when the previous human player's turn ends.
+- There is no Pass-the-Phone confirmation overlay.
+
+## Online rule reserved for multiplayer phase
+
+- Turn timer: **20 seconds**.
+- Networking, disconnect/reconnect, and server-authoritative validation remain a future phase.

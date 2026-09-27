@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import '../engine/ludo_board_map.dart';
 import '../engine/ludo_game_engine.dart';
 import '../entities/game_config.dart';
 import '../entities/game_phase.dart';
@@ -7,6 +10,7 @@ import '../entities/ludo_game_state.dart';
 import '../entities/ludo_token.dart';
 import '../entities/power_type.dart';
 import '../entities/token_status.dart';
+import 'board_power_pickup.dart';
 import 'power_game_event.dart';
 import 'power_inventory.dart';
 import 'power_ludo_action_result.dart';
@@ -17,13 +21,17 @@ import 'shield_effect.dart';
 class PowerLudoEngine {
   PowerLudoEngine({
     LudoGameEngine? classicEngine,
-  }) : _classic = classicEngine ?? LudoGameEngine();
+    Random? random,
+  })  : _classic = classicEngine ?? LudoGameEngine(),
+        _random = random ?? Random();
 
   final LudoGameEngine _classic;
+  final Random _random;
 
   PowerLudoState createGame({
     required LudoGameConfig config,
     required List<String> playerNames,
+    int? startingPlayerIndex,
   }) {
     if (config.mode != LudoGameMode.power) {
       throw ArgumentError(
@@ -34,6 +42,7 @@ class PowerLudoEngine {
     final LudoGameState gameState = _classic.createGame(
       config: config,
       playerNames: playerNames,
+      startingPlayerIndex: startingPlayerIndex,
     );
 
     return PowerLudoState(
@@ -42,17 +51,15 @@ class PowerLudoEngine {
         for (final player in gameState.players)
           player.id: PowerInventory.initial(),
       },
+      pickups: _createInitialPickups(),
     );
   }
 
   PowerLudoActionResult rollDice(PowerLudoState state) {
     _requirePowerMode(state);
-    final LudoGameActionResult result =
-        _classic.rollDice(state.gameState);
-
     return _resolveClassicAction(
       before: state,
-      baseResult: result,
+      baseResult: _classic.rollDice(state.gameState),
     );
   }
 
@@ -148,13 +155,10 @@ class PowerLudoEngine {
       PowerType.doubleDistance,
     );
 
-    final LudoGameState filteredGameState =
-        consumed.gameState.copyWith(
-      movableTokenIds: eligibleTokenIds,
-    );
-
     final PowerLudoState next = consumed.copyWith(
-      gameState: filteredGameState,
+      gameState: consumed.gameState.copyWith(
+        movableTokenIds: eligibleTokenIds,
+      ),
       doubleDistancePlayerId: playerId,
     );
 
@@ -235,40 +239,6 @@ class PowerLudoEngine {
     );
   }
 
-  PowerLudoActionResult queueBonusRoll(PowerLudoState state) {
-    _requirePowerMode(state);
-    _requirePhase(state.gameState, GamePhase.waitingForRoll);
-
-    final String playerId = state.gameState.currentPlayer.id;
-    if (state.bonusRollQueued) {
-      throw StateError('Bonus Roll is already queued.');
-    }
-
-    final PowerLudoState consumed = _consume(
-      state,
-      playerId,
-      PowerType.bonusRoll,
-    );
-
-    return PowerLudoActionResult(
-      state: consumed.copyWith(
-        bonusRollPlayerId: playerId,
-      ),
-      powerEvents: <PowerGameEvent>[
-        PowerGameEvent(
-          type: PowerGameEventType.powerActivated,
-          playerId: playerId,
-          powerType: PowerType.bonusRoll,
-        ),
-        PowerGameEvent(
-          type: PowerGameEventType.bonusRollQueued,
-          playerId: playerId,
-          powerType: PowerType.bonusRoll,
-        ),
-      ],
-    );
-  }
-
   PowerLudoActionResult moveToken(
     PowerLudoState state,
     int tokenId,
@@ -276,6 +246,7 @@ class PowerLudoEngine {
     _requirePowerMode(state);
     _requirePhase(state.gameState, GamePhase.selectingToken);
 
+    final int actingPlayerIndex = state.gameState.currentPlayerIndex;
     final String playerId = state.gameState.currentPlayer.id;
     final int diceValue = state.gameState.diceValue ??
         (throw StateError('A token cannot move without a dice value.'));
@@ -285,7 +256,7 @@ class PowerLudoEngine {
         ? diceValue * PowerRules.doubleDistanceMultiplier
         : null;
 
-    final LudoGameActionResult result = _classic.moveToken(
+    LudoGameActionResult gameResult = _classic.moveToken(
       state.gameState,
       tokenId,
       movementDistance: movementDistance,
@@ -293,7 +264,9 @@ class PowerLudoEngine {
     );
 
     final List<PowerGameEvent> powerEvents = <PowerGameEvent>[];
-    PowerLudoState working = state;
+    PowerLudoState working = doubleArmed
+        ? state.copyWith(clearDoubleDistancePlayerId: true)
+        : state;
 
     if (doubleArmed) {
       powerEvents.add(
@@ -305,14 +278,86 @@ class PowerLudoEngine {
           value: movementDistance,
         ),
       );
-      working = working.copyWith(
-        clearDoubleDistancePlayerId: true,
+    }
+
+    final LudoGameEvent moveEvent = gameResult.events.firstWhere(
+      (LudoGameEvent event) =>
+          event.type == LudoGameEventType.tokenMoved ||
+          event.type == LudoGameEventType.tokenReleased,
+    );
+
+    final int? toPosition = moveEvent.toPosition;
+    if (toPosition != null &&
+        toPosition >= 0 &&
+        toPosition < 52) {
+      final int globalIndex = LudoBoardMap.globalIndexFor(
+        color: state.gameState.currentPlayer.color,
+        pathPosition: toPosition,
       );
+      final BoardPowerPickup? pickup =
+          working.pickupAtGlobalIndex(globalIndex);
+
+      if (pickup != null) {
+        final Map<PowerType, BoardPowerPickup> relocated =
+            _relocatePickup(
+          working.pickups,
+          pickup.type,
+        );
+
+        powerEvents.add(
+          PowerGameEvent(
+            type: PowerGameEventType.powerCollected,
+            playerId: playerId,
+            powerType: pickup.type,
+            tokenId: tokenId,
+            globalIndex: globalIndex,
+          ),
+        );
+
+        powerEvents.add(
+          PowerGameEvent(
+            type: PowerGameEventType.powerRelocated,
+            playerId: playerId,
+            powerType: pickup.type,
+            previousGlobalIndex: globalIndex,
+            globalIndex: relocated[pickup.type]!.globalIndex,
+          ),
+        );
+
+        if (pickup.type == PowerType.bonusRoll) {
+          powerEvents.add(
+            PowerGameEvent(
+              type: PowerGameEventType.bonusRollTriggered,
+              playerId: playerId,
+              powerType: PowerType.bonusRoll,
+              tokenId: tokenId,
+              globalIndex: globalIndex,
+            ),
+          );
+
+          gameResult = _grantImmediateBonusRoll(
+            baseResult: gameResult,
+            actingPlayerIndex: actingPlayerIndex,
+            actingPlayerId: playerId,
+          );
+          working = working.copyWith(pickups: relocated);
+        } else {
+          final PowerInventory inventory =
+              working.inventoryFor(playerId).add(pickup.type);
+          working = working.copyWith(
+            inventories: <String, PowerInventory>{
+              ...working.inventories,
+              playerId: inventory,
+            },
+            pickups: relocated,
+          );
+        }
+      }
     }
 
     return _resolveClassicAction(
       before: working,
-      baseResult: result,
+      baseResult: gameResult,
       powerEvents: powerEvents,
     );
   }
@@ -372,14 +417,97 @@ class PowerLudoEngine {
         );
   }
 
-  bool canUseBonusRoll(PowerLudoState state) {
-    return state.gameState.phase == GamePhase.waitingForRoll &&
-        !state.bonusRollQueued &&
-        _hasCharge(
-          state,
-          state.gameState.currentPlayer.id,
-          PowerType.bonusRoll,
-        );
+  Map<PowerType, BoardPowerPickup> _createInitialPickups() {
+    final List<int> cells =
+        List<int>.of(PowerRules.pickupEligibleGlobalIndices)
+          ..shuffle(_random);
+
+    return <PowerType, BoardPowerPickup>{
+      for (int index = 0;
+          index < PowerType.values.length;
+          index++)
+        PowerType.values[index]: BoardPowerPickup(
+          type: PowerType.values[index],
+          globalIndex: cells[index],
+        ),
+    };
+  }
+
+  Map<PowerType, BoardPowerPickup> _relocatePickup(
+    Map<PowerType, BoardPowerPickup> pickups,
+    PowerType type,
+  ) {
+    final BoardPowerPickup current = pickups[type] ??
+        (throw StateError('Missing pickup for $type.'));
+
+    final Set<int> occupiedByOthers = pickups.entries
+        .where((entry) => entry.key != type)
+        .map((entry) => entry.value.globalIndex)
+        .toSet();
+
+    final List<int> available = PowerRules
+        .pickupEligibleGlobalIndices
+        .where(
+          (index) =>
+              index != current.globalIndex &&
+              !occupiedByOthers.contains(index),
+        )
+        .toList(growable: false);
+
+    if (available.isEmpty) {
+      throw StateError('No eligible cell is available for $type.');
+    }
+
+    final int nextIndex =
+        available[_random.nextInt(available.length)];
+
+    return <PowerType, BoardPowerPickup>{
+      ...pickups,
+      type: BoardPowerPickup(
+        type: type,
+        globalIndex: nextIndex,
+      ),
+    };
+  }
+
+  LudoGameActionResult _grantImmediateBonusRoll({
+    required LudoGameActionResult baseResult,
+    required int actingPlayerIndex,
+    required String actingPlayerId,
+  }) {
+    if (baseResult.state.isGameOver ||
+        baseResult.state.currentPlayerIndex == actingPlayerIndex) {
+      return baseResult;
+    }
+
+    final List<LudoGameEvent> events = baseResult.events
+        .where(
+          (LudoGameEvent event) =>
+              event.type != LudoGameEventType.turnChanged,
+        )
+        .toList(growable: true);
+
+    if (!events.any(
+      (event) => event.type == LudoGameEventType.extraTurn,
+    )) {
+      events.add(
+        LudoGameEvent(
+          type: LudoGameEventType.extraTurn,
+          playerId: actingPlayerId,
+        ),
+      );
+    }
+
+    return LudoGameActionResult(
+      state: baseResult.state.copyWith(
+        currentPlayerIndex: actingPlayerIndex,
+        phase: GamePhase.waitingForRoll,
+        clearDiceValue: true,
+        movableTokenIds: const <int>[],
+        consecutiveSixes: 0,
+      ),
+      events: events,
+    );
   }
 
   PowerLudoActionResult _resolveClassicAction({
@@ -387,64 +515,13 @@ class PowerLudoEngine {
     required LudoGameActionResult baseResult,
     List<PowerGameEvent> powerEvents = const <PowerGameEvent>[],
   }) {
-    final String actingPlayerId = before.gameState.currentPlayer.id;
     final int actingPlayerIndex = before.gameState.currentPlayerIndex;
     final bool changedPlayer =
         baseResult.state.currentPlayerIndex != actingPlayerIndex;
-    final bool forfeitedByThreeSixes = baseResult.events.any(
-      (LudoGameEvent event) =>
-          event.type == LudoGameEventType.threeSixesForfeit,
-    );
-
-    if (changedPlayer &&
-        before.bonusRollPlayerId == actingPlayerId &&
-        !forfeitedByThreeSixes) {
-      final LudoGameState preserved =
-          baseResult.state.copyWith(
-        currentPlayerIndex: actingPlayerIndex,
-        phase: GamePhase.waitingForRoll,
-        clearDiceValue: true,
-        movableTokenIds: const <int>[],
-        consecutiveSixes: 0,
-      );
-
-      final List<LudoGameEvent> gameEvents = baseResult.events
-          .where(
-            (LudoGameEvent event) =>
-                event.type != LudoGameEventType.turnChanged,
-          )
-          .toList(growable: true)
-        ..add(
-          LudoGameEvent(
-            type: LudoGameEventType.extraTurn,
-            playerId: actingPlayerId,
-          ),
-        );
-
-      return PowerLudoActionResult(
-        state: before.copyWith(
-          gameState: preserved,
-          clearBonusRollPlayerId: true,
-        ),
-        gameEvents: gameEvents,
-        powerEvents: <PowerGameEvent>[
-          ...powerEvents,
-          PowerGameEvent(
-            type: PowerGameEventType.bonusRollGranted,
-            playerId: actingPlayerId,
-            powerType: PowerType.bonusRoll,
-          ),
-        ],
-      );
-    }
 
     PowerLudoState next = before.copyWith(
       gameState: baseResult.state,
       clearDoubleDistancePlayerId: true,
-      clearBonusRollPlayerId:
-          changedPlayer &&
-          before.bonusRollPlayerId == actingPlayerId &&
-          forfeitedByThreeSixes,
     );
 
     final List<PowerGameEvent> resolvedPowerEvents =
@@ -497,9 +574,13 @@ class PowerLudoEngine {
     String playerId,
     PowerType type,
   ) {
+    if (!PowerRules.heldPowerTypes.contains(type)) {
+      throw StateError('$type is not a manually activated power.');
+    }
+
     final PowerInventory inventory = state.inventoryFor(playerId);
     if (!inventory.has(type)) {
-      throw StateError('No $type charges remain.');
+      throw StateError('Collect $type from the board first.');
     }
 
     return state.copyWith(

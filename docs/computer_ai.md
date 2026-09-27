@@ -43,7 +43,7 @@ Uses all Medium priorities plus:
 - uses Dice Control when it creates strong tactical value;
 - shields threatened advanced tokens;
 - compares Double Distance against the best normal move before spending it;
-- queues Bonus Roll when it can extend a productive turn.
+- collects Bonus Roll from the board like a human; Bonus Roll activates immediately on exact landing rather than being manually queued.
 
 ## Architecture
 
@@ -53,8 +53,9 @@ does not mutate game state or bypass rules.
 
 `PowerLudoAiStrategy` sits above `PowerLudoEngine`. Power decisions are
 validated by the same Power engine used for human players. AI therefore cannot
-use an exhausted power, shield an invalid token, move through a blockade, or
-ignore exact-finish rules.
+use a power it has not collected, shield an invalid token, move through a
+blockade, or ignore exact-finish rules. Board pickups are collected and
+relocated by the shared Power engine for both humans and computers.
 
 ## Turn flow
 

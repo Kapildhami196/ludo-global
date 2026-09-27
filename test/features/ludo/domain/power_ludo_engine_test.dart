@@ -1,4 +1,8 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ludo_global/features/ludo/domain/engine/ludo_board_map.dart';
+import 'package:ludo_global/features/ludo/domain/engine/ludo_game_engine.dart';
 import 'package:ludo_global/features/ludo/domain/entities/game_config.dart';
 import 'package:ludo_global/features/ludo/domain/entities/game_phase.dart';
 import 'package:ludo_global/features/ludo/domain/entities/ludo_game_state.dart';
@@ -7,6 +11,8 @@ import 'package:ludo_global/features/ludo/domain/entities/ludo_token.dart';
 import 'package:ludo_global/features/ludo/domain/entities/player_color.dart';
 import 'package:ludo_global/features/ludo/domain/entities/power_type.dart';
 import 'package:ludo_global/features/ludo/domain/entities/token_status.dart';
+import 'package:ludo_global/features/ludo/domain/power/board_power_pickup.dart';
+import 'package:ludo_global/features/ludo/domain/power/power_game_event.dart';
 import 'package:ludo_global/features/ludo/domain/power/power_inventory.dart';
 import 'package:ludo_global/features/ludo/domain/power/power_ludo_engine.dart';
 import 'package:ludo_global/features/ludo/domain/power/power_ludo_state.dart';
@@ -14,62 +20,189 @@ import 'package:ludo_global/features/ludo/domain/power/power_rules.dart';
 import 'package:ludo_global/features/ludo/domain/power/shield_effect.dart';
 
 void main() {
-  final PowerLudoEngine engine = PowerLudoEngine();
+  final PowerLudoEngine engine = PowerLudoEngine(
+    classicEngine: LudoGameEngine(random: Random(1)),
+    random: Random(1),
+  );
 
-  group('PowerLudoEngine', () {
-    test('starts every player with one charge of every power', () {
+  group('Power Ludo V2 pickups', () {
+    test('starts with zero held powers and four unique board pickups', () {
       final PowerLudoState state = engine.createGame(
         config: const LudoGameConfig(
           mode: LudoGameMode.power,
           matchType: LudoMatchType.localPassAndPlay,
           playerCount: 2,
         ),
-        playerNames: const <String>['Red', 'Green'],
+        playerNames: const <String>['Red', 'Yellow'],
+        startingPlayerIndex: 0,
       );
 
       for (final player in state.gameState.players) {
-        final PowerInventory inventory =
-            state.inventoryFor(player.id);
-        for (final PowerType type in PowerType.values) {
-          expect(
-            inventory.count(type),
-            PowerRules.initialChargesPerPower,
-          );
+        for (final PowerType type in PowerRules.heldPowerTypes) {
+          expect(state.inventoryFor(player.id).count(type), 0);
         }
+      }
+
+      expect(state.pickups.length, 4);
+      expect(
+        state.pickups.values.map((pickup) => pickup.globalIndex).toSet().length,
+        4,
+      );
+
+      for (final pickup in state.pickups.values) {
+        expect(
+          PowerRules.pickupEligibleGlobalIndices,
+          contains(pickup.globalIndex),
+        );
+        expect(
+          LudoBoardMap.isSafeGlobalIndex(pickup.globalIndex),
+          isFalse,
+        );
       }
     });
 
-    test('Dice Control forces the selected value and consumes charge', () {
-      final PowerLudoState initial = _newTwoPlayerGame(engine);
-
-      final result = engine.useDiceControl(initial, 6);
-
-      expect(result.state.gameState.diceValue, 6);
-      expect(
-        result.state.gameState.phase,
-        GamePhase.selectingToken,
+    test('landing exactly on held power collects and relocates it', () {
+      final PowerLudoState state = _stateWithTokens(
+        redProgresses: const <int>[2],
+        greenProgresses: const <int>[],
+        phase: GamePhase.selectingToken,
+        diceValue: 3,
+        movableTokenIds: const <int>[0],
+        pickups: _pickups(
+          doubleDistance: 5,
+          shield: 10,
+          diceControl: 15,
+          bonusRoll: 18,
+        ),
       );
+
+      final result = engine.moveToken(state, 0);
+
       expect(
         result.state
+            .inventoryFor('player_0')
+            .count(PowerType.doubleDistance),
+        1,
+      );
+      expect(
+        result.state.pickups[PowerType.doubleDistance]!.globalIndex,
+        isNot(5),
+      );
+      expect(
+        result.powerEvents.any(
+          (event) =>
+              event.type == PowerGameEventType.powerCollected &&
+              event.powerType == PowerType.doubleDistance,
+        ),
+        isTrue,
+      );
+    });
+
+    test('passing over a pickup does not collect it', () {
+      final PowerLudoState state = _stateWithTokens(
+        redProgresses: const <int>[2],
+        greenProgresses: const <int>[],
+        phase: GamePhase.selectingToken,
+        diceValue: 3,
+        movableTokenIds: const <int>[0],
+        pickups: _pickups(
+          doubleDistance: 4,
+          shield: 10,
+          diceControl: 15,
+          bonusRoll: 18,
+        ),
+      );
+
+      final result = engine.moveToken(state, 0);
+
+      expect(
+        result.state
+            .inventoryFor('player_0')
+            .count(PowerType.doubleDistance),
+        0,
+      );
+      expect(
+        result.state.pickups[PowerType.doubleDistance]!.globalIndex,
+        4,
+      );
+    });
+
+    test('Bonus Roll triggers immediately on exact landing and relocates', () {
+      final PowerLudoState state = _stateWithTokens(
+        redProgresses: const <int>[2],
+        greenProgresses: const <int>[-1],
+        phase: GamePhase.selectingToken,
+        diceValue: 3,
+        movableTokenIds: const <int>[0],
+        pickups: _pickups(
+          doubleDistance: 10,
+          shield: 15,
+          diceControl: 18,
+          bonusRoll: 5,
+        ),
+      );
+
+      final result = engine.moveToken(state, 0);
+
+      expect(result.state.gameState.currentPlayerIndex, 0);
+      expect(result.state.gameState.phase, GamePhase.waitingForRoll);
+      expect(
+        result.state.inventoryFor('player_0').count(PowerType.bonusRoll),
+        0,
+      );
+      expect(
+        result.state.pickups[PowerType.bonusRoll]!.globalIndex,
+        isNot(5),
+      );
+      expect(
+        result.powerEvents.any(
+          (event) => event.type == PowerGameEventType.bonusRollTriggered,
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  group('Power Ludo V2 held powers', () {
+    test('Dice Control behaves like a natural six', () {
+      final PowerLudoState state = _stateWithTokens(
+        redProgresses: const <int>[-1],
+        greenProgresses: const <int>[-1],
+        phase: GamePhase.waitingForRoll,
+        redInventory: _inventory(diceControl: 1),
+      );
+
+      final rolled = engine.useDiceControl(state, 6);
+      expect(rolled.state.gameState.diceValue, 6);
+      expect(rolled.state.gameState.phase, GamePhase.selectingToken);
+
+      final moved = engine.moveToken(
+        rolled.state,
+        rolled.state.gameState.movableTokenIds.first,
+      );
+
+      expect(moved.state.gameState.currentPlayerIndex, 0);
+      expect(moved.state.gameState.phase, GamePhase.waitingForRoll);
+      expect(moved.state.gameState.consecutiveSixes, 1);
+      expect(
+        moved.state
             .inventoryFor('player_0')
             .count(PowerType.diceControl),
         0,
       );
     });
 
-    test('Double Distance moves an active token twice the die value', () {
-      final PowerLudoState initial = _powerStateWithTokens(
-        currentPlayerIndex: 0,
+    test('Double Distance moves twice the die value when collected', () {
+      final PowerLudoState state = _stateWithTokens(
         redProgresses: const <int>[5],
         greenProgresses: const <int>[],
         phase: GamePhase.selectingToken,
         diceValue: 3,
         movableTokenIds: const <int>[0],
+        redInventory: _inventory(doubleDistance: 1),
       );
 
-      final armed = engine.armDoubleDistance(initial);
-      expect(armed.state.doubleDistanceArmed, isTrue);
-
+      final armed = engine.armDoubleDistance(state);
       final moved = engine.moveToken(armed.state, 0);
 
       expect(
@@ -82,29 +215,24 @@ void main() {
             .count(PowerType.doubleDistance),
         0,
       );
-      expect(moved.state.doubleDistanceArmed, isFalse);
     });
 
-    test('Double Distance cannot be used only to release a base token', () {
-      final PowerLudoState initial = _powerStateWithTokens(
-        currentPlayerIndex: 0,
+    test('Double Distance cannot release a base token', () {
+      final PowerLudoState state = _stateWithTokens(
         redProgresses: const <int>[-1],
         greenProgresses: const <int>[],
         phase: GamePhase.selectingToken,
         diceValue: 6,
         movableTokenIds: const <int>[0],
+        redInventory: _inventory(doubleDistance: 1),
       );
 
-      expect(engine.canUseDoubleDistance(initial), isFalse);
-      expect(
-        () => engine.armDoubleDistance(initial),
-        throwsStateError,
-      );
+      expect(engine.canUseDoubleDistance(state), isFalse);
+      expect(() => engine.armDoubleDistance(state), throwsStateError);
     });
 
-    test('Shield prevents capture of the protected token', () {
-      final PowerLudoState initial = _powerStateWithTokens(
-        currentPlayerIndex: 0,
+    test('shielded enemy can share unsafe square without capture', () {
+      final PowerLudoState state = _stateWithTokens(
         redProgresses: const <int>[2],
         greenProgresses: const <int>[44],
         phase: GamePhase.selectingToken,
@@ -119,95 +247,102 @@ void main() {
         },
       );
 
-      final moved = engine.moveToken(initial, 0);
-      final LudoToken green =
-          moved.state.gameState.players[1].tokens.first;
+      final moved = engine.moveToken(state, 0);
+      final LudoToken red = moved.state.gameState.players[0].tokens.first;
+      final LudoToken green = moved.state.gameState.players[1].tokens.first;
 
-      expect(green.status, TokenStatus.active);
+      expect(red.pathPosition, 5);
       expect(green.pathPosition, 44);
+      expect(green.status, TokenStatus.active);
+      expect(
+        LudoBoardMap.globalIndexFor(
+          color: red.color,
+          pathPosition: red.pathPosition,
+        ),
+        LudoBoardMap.globalIndexFor(
+          color: green.color,
+          pathPosition: green.pathPosition,
+        ),
+      );
     });
 
-    test('Shield expires when its owner next receives the turn', () {
-      PowerLudoState state = _powerStateWithTokens(
+    test('Shield expires when owner next receives the turn', () {
+      PowerLudoState state = _stateWithTokens(
         currentPlayerIndex: 1,
         redProgresses: const <int>[-1],
         greenProgresses: const <int>[10],
         phase: GamePhase.waitingForRoll,
+        greenInventory: _inventory(shield: 1, diceControl: 1),
+        redInventory: _inventory(diceControl: 1),
       );
 
-      final shielded = engine.applyShield(state, 4);
-      state = shielded.state;
+      state = engine.applyShield(state, 4).state;
       expect(state.isShielded(4), isTrue);
 
-      final greenRoll = engine.useDiceControl(state, 1);
-      state = greenRoll.state;
-      expect(state.gameState.phase, GamePhase.selectingToken);
-
-      final greenEndsTurn = engine.moveToken(state, 4);
-      state = greenEndsTurn.state;
+      state = engine.useDiceControl(state, 1).state;
+      state = engine.moveToken(state, 4).state;
       expect(state.gameState.currentPlayerIndex, 0);
       expect(state.isShielded(4), isTrue);
 
-      final redEndsTurn = engine.useDiceControl(state, 1);
-      state = redEndsTurn.state;
+      state = engine.useDiceControl(state, 1).state;
       expect(state.gameState.currentPlayerIndex, 1);
       expect(state.isShielded(4), isFalse);
-    });
-
-    test('Bonus Roll preserves a turn that would otherwise pass', () {
-      PowerLudoState state = _newTwoPlayerGame(engine);
-
-      state = engine.queueBonusRoll(state).state;
-      expect(state.bonusRollQueued, isTrue);
-
-      final result = engine.useDiceControl(state, 1);
-
-      expect(result.state.gameState.currentPlayerIndex, 0);
-      expect(
-        result.state.gameState.phase,
-        GamePhase.waitingForRoll,
-      );
-      expect(result.state.bonusRollQueued, isFalse);
-      expect(
-        result.state
-            .inventoryFor('player_0')
-            .count(PowerType.bonusRoll),
-        0,
-      );
-    });
-
-    test('each power charge can only be consumed once', () {
-      PowerLudoState state = _newTwoPlayerGame(engine);
-
-      state = engine.queueBonusRoll(state).state;
-
-      expect(
-        () => engine.queueBonusRoll(state),
-        throwsStateError,
-      );
     });
   });
 }
 
-PowerLudoState _newTwoPlayerGame(PowerLudoEngine engine) {
-  return engine.createGame(
-    config: const LudoGameConfig(
-      mode: LudoGameMode.power,
-      matchType: LudoMatchType.localPassAndPlay,
-      playerCount: 2,
+Map<PowerType, BoardPowerPickup> _pickups({
+  int doubleDistance = 4,
+  int shield = 10,
+  int diceControl = 15,
+  int bonusRoll = 18,
+}) {
+  return <PowerType, BoardPowerPickup>{
+    PowerType.doubleDistance: BoardPowerPickup(
+      type: PowerType.doubleDistance,
+      globalIndex: doubleDistance,
     ),
-    playerNames: const <String>['Red', 'Green'],
+    PowerType.shield: BoardPowerPickup(
+      type: PowerType.shield,
+      globalIndex: shield,
+    ),
+    PowerType.diceControl: BoardPowerPickup(
+      type: PowerType.diceControl,
+      globalIndex: diceControl,
+    ),
+    PowerType.bonusRoll: BoardPowerPickup(
+      type: PowerType.bonusRoll,
+      globalIndex: bonusRoll,
+    ),
+  };
+}
+
+PowerInventory _inventory({
+  int doubleDistance = 0,
+  int shield = 0,
+  int diceControl = 0,
+}) {
+  return PowerInventory(
+    charges: <PowerType, int>{
+      PowerType.doubleDistance: doubleDistance,
+      PowerType.shield: shield,
+      PowerType.diceControl: diceControl,
+      PowerType.bonusRoll: 0,
+    },
   );
 }
 
-PowerLudoState _powerStateWithTokens({
-  required int currentPlayerIndex,
+PowerLudoState _stateWithTokens({
+  int currentPlayerIndex = 0,
   required List<int> redProgresses,
   required List<int> greenProgresses,
   required GamePhase phase,
   int? diceValue,
   List<int> movableTokenIds = const <int>[],
+  PowerInventory? redInventory,
+  PowerInventory? greenInventory,
   Map<int, ShieldEffect> shields = const <int, ShieldEffect>{},
+  Map<PowerType, BoardPowerPickup>? pickups,
 }) {
   List<LudoToken> buildTokens(
     PlayerColor color,
@@ -231,42 +366,33 @@ PowerLudoState _powerStateWithTokens({
     ];
   }
 
-  final LudoGameState gameState = LudoGameState(
-    players: <LudoPlayer>[
-      LudoPlayer(
-        id: 'player_0',
-        name: 'Red',
-        color: PlayerColor.red,
-        tokens: buildTokens(
-          PlayerColor.red,
-          0,
-          redProgresses,
-        ),
-      ),
-      LudoPlayer(
-        id: 'player_1',
-        name: 'Green',
-        color: PlayerColor.green,
-        tokens: buildTokens(
-          PlayerColor.green,
-          4,
-          greenProgresses,
-        ),
-      ),
-    ],
-    currentPlayerIndex: currentPlayerIndex,
-    diceValue: diceValue,
-    movableTokenIds: movableTokenIds,
-    phase: phase,
-    mode: LudoGameMode.power,
-  );
-
   return PowerLudoState(
-    gameState: gameState,
+    gameState: LudoGameState(
+      players: <LudoPlayer>[
+        LudoPlayer(
+          id: 'player_0',
+          name: 'Red',
+          color: PlayerColor.red,
+          tokens: buildTokens(PlayerColor.red, 0, redProgresses),
+        ),
+        LudoPlayer(
+          id: 'player_1',
+          name: 'Green',
+          color: PlayerColor.green,
+          tokens: buildTokens(PlayerColor.green, 4, greenProgresses),
+        ),
+      ],
+      currentPlayerIndex: currentPlayerIndex,
+      diceValue: diceValue,
+      movableTokenIds: movableTokenIds,
+      phase: phase,
+      mode: LudoGameMode.power,
+    ),
     inventories: <String, PowerInventory>{
-      'player_0': PowerInventory.initial(),
-      'player_1': PowerInventory.initial(),
+      'player_0': redInventory ?? PowerInventory.initial(),
+      'player_1': greenInventory ?? PowerInventory.initial(),
     },
+    pickups: pickups ?? _pickups(),
     shields: shields,
   );
 }

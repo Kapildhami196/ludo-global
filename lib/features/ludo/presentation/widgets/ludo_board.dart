@@ -8,7 +8,9 @@ import '../../domain/entities/ludo_game_state.dart';
 import '../../domain/entities/ludo_player.dart';
 import '../../domain/entities/ludo_token.dart';
 import '../../domain/entities/player_color.dart';
+import '../../domain/entities/power_type.dart';
 import '../../domain/entities/token_status.dart';
+import 'power_pickup_marker.dart';
 import 'premium_ludo_token.dart';
 
 class LudoBoard extends StatelessWidget {
@@ -20,6 +22,7 @@ class LudoBoard extends StatelessWidget {
     this.movingTokenId,
     this.capturedTokenIds = const <int>{},
     this.shieldedTokenIds = const <int>{},
+    this.powerPickupPositions = const <PowerType, int>{},
     this.onTokenTap,
     super.key,
   });
@@ -31,6 +34,7 @@ class LudoBoard extends StatelessWidget {
   final int? movingTokenId;
   final Set<int> capturedTokenIds;
   final Set<int> shieldedTokenIds;
+  final Map<PowerType, int> powerPickupPositions;
   final ValueChanged<int>? onTokenTap;
 
   @override
@@ -59,6 +63,20 @@ class LudoBoard extends StatelessWidget {
                       painter: _LudoBoardPainter(),
                     ),
                   ),
+                  for (final MapEntry<PowerType, int> entry
+                      in powerPickupPositions.entries)
+                    Positioned(
+                      left: (LudoBoardMap.commonPath[entry.value].column + 0.5) *
+                              cell -
+                          (cell * 0.3),
+                      top: (LudoBoardMap.commonPath[entry.value].row + 0.5) *
+                              cell -
+                          (cell * 0.3),
+                      child: PowerPickupMarker(
+                        type: entry.key,
+                        size: cell * 0.6,
+                      ),
+                    ),
                   for (final _TokenPlacement placement in placements)
                     AnimatedPositioned(
                       duration: const Duration(milliseconds: 125),
