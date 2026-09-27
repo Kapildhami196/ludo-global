@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/audio/game_audio_service.dart';
+import '../../../../core/settings/game_preferences.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../../../core/widgets/game_background.dart';
 import '../../domain/engine/ludo_game_engine.dart';
@@ -67,6 +69,20 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
   void initState() {
     super.initState();
     _resetGame();
+    unawaited(GameAudioService.instance.preload());
+    unawaited(_loadPreferences());
+  }
+
+  Future<void> _loadPreferences() async {
+    final settings = await GamePreferences.load();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _soundEnabled = settings.soundEnabled;
+      _hapticsEnabled = settings.hapticsEnabled;
+    });
   }
 
   void _resetGame() {
@@ -450,6 +466,9 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
                         setState(() {
                           _soundEnabled = value;
                         });
+                        unawaited(
+                          GamePreferences.setSoundEnabled(value),
+                        );
                         setSheetState(() {});
                       },
                     ),
@@ -461,6 +480,9 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
                         setState(() {
                           _hapticsEnabled = value;
                         });
+                        unawaited(
+                          GamePreferences.setHapticsEnabled(value),
+                        );
                         setSheetState(() {});
                       },
                     ),
