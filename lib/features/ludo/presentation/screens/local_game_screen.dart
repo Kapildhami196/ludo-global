@@ -43,6 +43,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
   int _autoMoveSequence = 0;
   int? _movingTokenId;
   Set<int> _capturedTokenIds = const <int>{};
+  Set<int> _returningTokenIds = const <int>{};
   GameFxType? _fxType;
 
   bool _isRolling = false;
@@ -79,6 +80,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
     _fxSequence = 0;
     _movingTokenId = null;
     _capturedTokenIds = const <int>{};
+    _returningTokenIds = const <int>{};
     _fxType = null;
     _isRolling = false;
     _isMoving = false;
@@ -216,23 +218,54 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
       await _triggerFx(GameFxType.capture, durationMs: 520);
     }
 
-    if (reachedHome) {
-      unawaited(_feedback.home());
-      await _triggerFx(GameFxType.home, durationMs: 520);
-    }
+    if (captureEvent != null) {
+      if (!mounted) {
+        return;
+      }
 
-    if (!mounted) {
-      return;
-    }
+      final Set<int> returning =
+          captureEvent.otherTokenIds.toSet();
 
-    setState(() {
-      _visualPathOverrides.remove(tokenId);
-      _capturedTokenIds = const <int>{};
-      _movingTokenId = null;
-      _state = result.state;
-      _isMoving = false;
-      _message = _messageForMove(result);
-    });
+      setState(() {
+        _visualPathOverrides.remove(tokenId);
+        _capturedTokenIds = const <int>{};
+        _returningTokenIds = returning;
+        _movingTokenId = null;
+        _state = result.state;
+        _message = _messageForMove(result);
+      });
+
+      await Future<void>.delayed(
+        const Duration(milliseconds: 540),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _returningTokenIds = const <int>{};
+        _isMoving = false;
+      });
+    } else {
+      if (reachedHome) {
+        unawaited(_feedback.home());
+        await _triggerFx(GameFxType.home, durationMs: 520);
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _visualPathOverrides.remove(tokenId);
+        _capturedTokenIds = const <int>{};
+        _movingTokenId = null;
+        _state = result.state;
+        _isMoving = false;
+        _message = _messageForMove(result);
+      });
+    }
 
     if (won) {
       unawaited(_feedback.win());
@@ -637,6 +670,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
                                     _visualPathOverrides,
                                 movingTokenId: _movingTokenId,
                                 capturedTokenIds: _capturedTokenIds,
+                                returningTokenIds: _returningTokenIds,
                                 onTokenTap: _onTokenTap,
                               ),
                             ),
