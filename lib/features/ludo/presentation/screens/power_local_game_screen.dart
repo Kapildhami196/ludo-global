@@ -22,7 +22,10 @@ import '../../domain/rules/classic_rules.dart';
 import '../services/game_feedback_service.dart';
 import '../widgets/game_board_stage.dart';
 import '../widgets/game_fx_overlay.dart';
+import '../widgets/gameplay_callout.dart';
+import '../widgets/gameplay_header.dart';
 import '../widgets/ludo_board.dart';
+import '../widgets/match_result_dialog.dart';
 import '../widgets/power_action_bar.dart';
 
 class PowerLocalGameScreen extends StatefulWidget {
@@ -719,43 +722,20 @@ class _PowerLocalGameScreenState
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: LudoGlobalColors.surface,
-          icon: const Icon(
-            Icons.emoji_events_rounded,
-            size: 64,
-            color: LudoGlobalColors.gold,
-          ),
-          title: Text(
-            '$winner wins Power Ludo!',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
-          content: const Text(
-            'All four tokens reached the center.',
-            textAlign: TextAlign.center,
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                setState(_resetGame);
-              },
-              icon: const Icon(Icons.replay_rounded),
-              label: const Text('Play Again'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                Navigator.of(context).pop();
-              },
-              child: const Text('Back'),
-            ),
-          ],
-        );
-      },
+      builder: (dialogContext) => MatchResultDialog(
+        title: '$winner wins Power Ludo!',
+        subtitle: 'All four tokens reached the center.',
+        accentColor: LudoGlobalColors.gold,
+        icon: Icons.emoji_events_rounded,
+        onPlayAgain: () {
+          Navigator.of(dialogContext).pop();
+          setState(_resetGame);
+        },
+        onBack: () {
+          Navigator.of(dialogContext).pop();
+          Navigator.of(context).pop();
+        },
+      ),
     );
   }
 
@@ -927,7 +907,7 @@ class _PowerLocalGameScreenState
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.all(LudoGlobalSpacing.sm),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
                         minHeight: constraints.maxHeight -
@@ -935,19 +915,17 @@ class _PowerLocalGameScreenState
                       ),
                       child: Column(
                         children: [
-                          _PowerHeader(
+                          GameplayHeader(
+                            title: 'POWER LUDO',
+                            badge: 'LOCAL',
+                            leadingIcon: Icons.bolt_rounded,
+                            accentColor: LudoGlobalColors.gold,
                             onBack: _confirmQuit,
                             onMenu: _openGameMenu,
                           ),
-                          const SizedBox(height: 8),
-                          _PowerTurnCard(
-                            player: current,
-                            color: currentColor,
-                            consecutiveSixes: _state.consecutiveSixes,
-                          ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.all(7),
+                            padding: const EdgeInsets.all(3),
                             decoration: BoxDecoration(
                               color: const Color(0xFF061127),
                               borderRadius: BorderRadius.circular(
@@ -997,13 +975,12 @@ class _PowerLocalGameScreenState
                               ),
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          _PowerStatusBanner(
+                          const SizedBox(height: 6),
+                          GameplayCallout(
                             message: _message,
                             color: currentColor,
                           ),
-
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 8),
                           PowerActionBar(
                             counts: _powerCounts,
                             enabledPowers: _enabledPowers,
@@ -1029,177 +1006,3 @@ class _PowerLocalGameScreenState
   }
 }
 
-class _PowerHeader extends StatelessWidget {
-  const _PowerHeader({
-    required this.onBack,
-    required this.onMenu,
-  });
-
-  final VoidCallback onBack;
-  final VoidCallback onMenu;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton.filledTonal(
-          onPressed: onBack,
-          icon: const Icon(Icons.arrow_back_rounded),
-        ),
-        const SizedBox(width: 8),
-        const Expanded(
-          child: Row(
-            children: [
-              Icon(
-                Icons.bolt_rounded,
-                color: LudoGlobalColors.gold,
-                size: 22,
-              ),
-              SizedBox(width: 5),
-              Text(
-                'POWER LUDO',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const Text(
-          'LOCAL',
-          style: TextStyle(
-            color: LudoGlobalColors.textSecondary,
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(width: 4),
-        IconButton(
-          key: const Key('power_game_menu_button'),
-          onPressed: onMenu,
-          icon: const Icon(Icons.more_vert_rounded),
-        ),
-      ],
-    );
-  }
-}
-
-class _PowerTurnCard extends StatelessWidget {
-  const _PowerTurnCard({
-    required this.player,
-    required this.color,
-    required this.consecutiveSixes,
-  });
-
-  final LudoPlayer player;
-  final Color color;
-  final int consecutiveSixes;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 260),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: <Color>[
-            color.withValues(alpha: 0.2),
-            LudoGlobalColors.purple.withValues(alpha: 0.12),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(LudoGlobalRadius.medium),
-        border: Border.all(
-          color: color.withValues(alpha: 0.8),
-          width: 1.4,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color,
-              boxShadow: [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.35),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-            child: const Icon(Icons.person_rounded, color: Colors.white),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  player.name,
-                  style: const TextStyle(fontWeight: FontWeight.w900),
-                ),
-                const Text(
-                  'CURRENT TURN',
-                  style: TextStyle(
-                    color: LudoGlobalColors.textSecondary,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (consecutiveSixes > 0)
-            Text(
-              '6 × $consecutiveSixes',
-              style: const TextStyle(
-                color: LudoGlobalColors.gold,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PowerStatusBanner extends StatelessWidget {
-  const _PowerStatusBanner({
-    required this.message,
-    required this.color,
-  });
-
-  final String message;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.13),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: color.withValues(alpha: 0.42),
-        ),
-      ),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 180),
-        child: Text(
-          message,
-          key: ValueKey<String>(message),
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}

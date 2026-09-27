@@ -23,84 +23,56 @@ class PowerActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 7),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: <Color>[
-            Color(0xF20C2448),
-            Color(0xF205142B),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(18),
+        color: const Color(0xD907142A),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: LudoGlobalColors.electricBlue.withValues(alpha: 0.38),
+          color: LudoGlobalColors.electricBlue.withValues(alpha: 0.26),
         ),
         boxShadow: const <BoxShadow>[
           BoxShadow(
-            color: Color(0x66000000),
-            blurRadius: 14,
-            offset: Offset(0, 7),
+            color: Color(0x55000000),
+            blurRadius: 12,
+            offset: Offset(0, 6),
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.bolt_rounded,
-                size: 16,
-                color: LudoGlobalColors.gold,
+          const Padding(
+            padding: EdgeInsets.only(right: 6),
+            child: Text(
+              'POWERS',
+              style: TextStyle(
+                color: LudoGlobalColors.textSecondary,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.6,
               ),
-              SizedBox(width: 5),
-              Text(
-                'POWER INVENTORY',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.7,
-                ),
-              ),
-              Spacer(),
-              Text(
-                'COLLECT ON BOARD',
-                style: TextStyle(
-                  color: LudoGlobalColors.textSecondary,
-                  fontSize: 7.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.4,
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              for (final PowerType type in PowerRules.heldPowerTypes) ...[
-                if (type != PowerRules.heldPowerTypes.first)
-                  const SizedBox(width: 7),
-                Expanded(
-                  child: _PowerButton(
-                    type: type,
-                    count: counts[type] ?? 0,
-                    enabled: enabledPowers.contains(type),
-                    active: activePowers.contains(type),
-                    onTap: () => onPowerTap(type),
-                  ),
-                ),
-              ],
-            ],
-          ),
+          for (final PowerType type in PowerRules.heldPowerTypes) ...[
+            if (type != PowerRules.heldPowerTypes.first)
+              const SizedBox(width: 6),
+            Expanded(
+              child: _CompactPowerButton(
+                type: type,
+                count: counts[type] ?? 0,
+                enabled: enabledPowers.contains(type),
+                active: activePowers.contains(type),
+                onTap: () => onPowerTap(type),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _PowerButton extends StatelessWidget {
-  const _PowerButton({
+class _CompactPowerButton extends StatelessWidget {
+  const _CompactPowerButton({
     required this.type,
     required this.count,
     required this.enabled,
@@ -114,57 +86,57 @@ class _PowerButton extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;
 
+  Color get _color => switch (type) {
+        PowerType.doubleDistance => LudoGlobalColors.red,
+        PowerType.shield => LudoGlobalColors.electricBlue,
+        PowerType.diceControl => LudoGlobalColors.purple,
+        PowerType.bonusRoll => LudoGlobalColors.gold,
+      };
+
+  String get _label => switch (type) {
+        PowerType.doubleDistance => 'DOUBLE',
+        PowerType.shield => 'SHIELD',
+        PowerType.diceControl => 'CONTROL',
+        PowerType.bonusRoll => 'BONUS',
+      };
+
   @override
   Widget build(BuildContext context) {
-    final _PowerVisual visual = _visualFor(type);
     final bool interactive = enabled && count > 0;
 
     return Semantics(
       button: true,
       enabled: interactive,
-      label: '${visual.label} power, $count remaining',
+      label: '$_label power, $count remaining',
       child: GestureDetector(
         onTap: interactive ? onTap : null,
         child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 160),
-          opacity: interactive || active ? 1 : 0.42,
+          duration: const Duration(milliseconds: 150),
+          opacity: interactive || active ? 1 : 0.40,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            height: 58,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 7,
-              vertical: 6,
-            ),
+            height: 46,
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: <Color>[
-                  visual.color.withValues(
-                    alpha: active ? 0.38 : 0.22,
-                  ),
-                  const Color(0xFF08182F),
+                  _color.withValues(alpha: active ? 0.34 : 0.16),
+                  const Color(0xFF07162D),
                 ],
               ),
-              borderRadius: BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: visual.color.withValues(
-                  alpha: active ? 1 : 0.62,
-                ),
-                width: active ? 1.6 : 1,
+                color: _color.withValues(alpha: active ? 0.95 : 0.44),
+                width: active ? 1.4 : 0.8,
               ),
               boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: visual.color.withValues(
-                    alpha: active ? 0.40 : 0.15,
+                if (active)
+                  BoxShadow(
+                    color: _color.withValues(alpha: 0.34),
+                    blurRadius: 10,
                   ),
-                  blurRadius: active ? 12 : 7,
-                ),
-                const BoxShadow(
-                  color: Color(0x55000000),
-                  blurRadius: 5,
-                  offset: Offset(0, 3),
-                ),
               ],
             ),
             child: Row(
@@ -172,45 +144,22 @@ class _PowerButton extends StatelessWidget {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: <Color>[
-                            visual.lightColor,
-                            visual.color,
-                          ],
-                        ),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.52),
-                        ),
-                        boxShadow: <BoxShadow>[
-                          BoxShadow(
-                            color: visual.color.withValues(alpha: 0.42),
-                            blurRadius: 7,
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: SvgPicture.asset(
-                          GameAssetPaths.powerFor(type),
-                          fit: BoxFit.contain,
-                        ),
+                    SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: SvgPicture.asset(
+                        GameAssetPaths.powerFor(type),
+                        fit: BoxFit.contain,
                       ),
                     ),
                     Positioned(
-                      right: -7,
-                      top: -7,
+                      right: -5,
+                      top: -5,
                       child: Container(
-                        constraints: const BoxConstraints(minWidth: 18),
+                        constraints: const BoxConstraints(minWidth: 16),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 2,
+                          horizontal: 3,
+                          vertical: 1,
                         ),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
@@ -218,8 +167,8 @@ class _PowerButton extends StatelessWidget {
                               ? LudoGlobalColors.red
                               : const Color(0xFF33435A),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.75),
-                            width: 0.8,
+                            color: Colors.white.withValues(alpha: 0.65),
+                            width: 0.7,
                           ),
                         ),
                         child: Text(
@@ -227,7 +176,7 @@ class _PowerButton extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 8,
+                            fontSize: 7,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -235,18 +184,15 @@ class _PowerButton extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 5),
                 Expanded(
                   child: Text(
-                    active ? 'ACTIVE' : visual.shortLabel,
-                    maxLines: 2,
+                    active ? 'ACTIVE' : _label,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: active
-                          ? visual.lightColor
-                          : Colors.white,
-                      fontSize: 8,
-                      height: 1.05,
+                      color: active ? _color : Colors.white,
+                      fontSize: 7.5,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -258,47 +204,4 @@ class _PowerButton extends StatelessWidget {
       ),
     );
   }
-
-  _PowerVisual _visualFor(PowerType type) {
-    return switch (type) {
-      PowerType.doubleDistance => const _PowerVisual(
-          label: 'Double Distance',
-          shortLabel: 'DOUBLE\nDISTANCE',
-          color: LudoGlobalColors.red,
-          lightColor: Color(0xFFFF7B87),
-        ),
-      PowerType.shield => const _PowerVisual(
-          label: 'Shield',
-          shortLabel: 'SHIELD',
-          color: LudoGlobalColors.electricBlue,
-          lightColor: Color(0xFF70E8FF),
-        ),
-      PowerType.diceControl => const _PowerVisual(
-          label: 'Dice Control',
-          shortLabel: 'DICE\nCONTROL',
-          color: LudoGlobalColors.purple,
-          lightColor: Color(0xFFD6A5FF),
-        ),
-      PowerType.bonusRoll => const _PowerVisual(
-          label: 'Bonus Roll',
-          shortLabel: 'BONUS',
-          color: LudoGlobalColors.gold,
-          lightColor: Color(0xFFFFF29D),
-        ),
-    };
-  }
-}
-
-class _PowerVisual {
-  const _PowerVisual({
-    required this.label,
-    required this.shortLabel,
-    required this.color,
-    required this.lightColor,
-  });
-
-  final String label;
-  final String shortLabel;
-  final Color color;
-  final Color lightColor;
 }
