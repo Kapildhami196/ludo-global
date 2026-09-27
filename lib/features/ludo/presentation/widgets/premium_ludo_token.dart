@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/assets/game_asset_paths.dart';
 import '../../domain/entities/player_color.dart';
+import '../style/ludo_reference_visuals.dart';
 
 class PremiumLudoToken extends StatefulWidget {
   const PremiumLudoToken({
@@ -38,7 +39,7 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 140),
+    duration: const Duration(milliseconds: 150),
   );
 
   @override
@@ -74,7 +75,7 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
 
     if (widget.moving) {
       _controller
-        ..duration = const Duration(milliseconds: 140)
+        ..duration = const Duration(milliseconds: 150)
         ..repeat();
       return;
     }
@@ -84,12 +85,8 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
       ..reset();
   }
 
-  Color get _accentColor => switch (widget.playerColor) {
-        PlayerColor.red => const Color(0xFFF13B48),
-        PlayerColor.green => const Color(0xFF26C45A),
-        PlayerColor.yellow => const Color(0xFFF5C433),
-        PlayerColor.blue => const Color(0xFF2495F2),
-      };
+  Color get _accentColor =>
+      LudoReferenceVisuals.colorFor(widget.playerColor);
 
   @override
   void dispose() {
@@ -99,6 +96,9 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
 
   @override
   Widget build(BuildContext context) {
+    final PlayerColor displayColor =
+        LudoReferenceVisuals.displayColorFor(widget.playerColor);
+
     return Semantics(
       button: widget.onTap != null,
       enabled: widget.onTap != null,
@@ -106,140 +106,184 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
       child: GestureDetector(
         onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            final double t = _controller.value;
-            final double hop = widget.returning
-                ? -math.sin(t * math.pi).abs() * widget.size * 0.72
-                : widget.moving
-                    ? -math.sin(t * math.pi).abs() * widget.size * 0.30
-                    : 0;
-            final double squash = widget.returning
-                ? 1 - math.sin(t * math.pi).abs() * 0.05
-                : widget.moving
-                    ? 1 - math.sin(t * math.pi).abs() * 0.035
-                    : 1;
-            final double shake = widget.captured
-                ? math.sin(t * math.pi * 10) *
-                    widget.size *
-                    0.16 *
-                    (1 - t)
-                : 0;
-            final double captureScale = widget.captured
-                ? 1 - (0.28 * Curves.easeIn.transform(t))
-                : widget.returning
-                    ? 0.92 + (math.sin(t * math.pi).abs() * 0.12)
-                    : 1;
-
-            return Transform.translate(
-              offset: Offset(shake, hop),
-              child: Transform.scale(
-                scaleX: captureScale / squash,
-                scaleY: captureScale * squash,
-                alignment: Alignment.bottomCenter,
-                child: child,
-              ),
-            );
-          },
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 150),
+          opacity: widget.dimmed ? 0.28 : 1,
           child: AnimatedScale(
-            scale: widget.highlighted ? 1.14 : 1,
+            scale: widget.highlighted ? 1.10 : 1,
             duration: const Duration(milliseconds: 170),
             curve: Curves.easeOutBack,
             alignment: Alignment.bottomCenter,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 150),
-              opacity: widget.dimmed ? 0.28 : 1,
-              child: SizedBox(
-                width: widget.size,
-                height: widget.size * 1.34,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.bottomCenter,
-                  children: [
-                    if (widget.highlighted || widget.shielded)
-                      Positioned(
-                        left: -widget.size * 0.18,
-                        right: -widget.size * 0.18,
-                        bottom: widget.size * 0.02,
-                        height: widget.size * 0.72,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: <BoxShadow>[
-                              BoxShadow(
-                                color: (widget.shielded
-                                        ? const Color(0xFF29D9FF)
-                                        : _accentColor)
-                                    .withValues(alpha: 0.72),
-                                blurRadius: widget.size * 0.72,
-                                spreadRadius: widget.size * 0.05,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    Positioned(
-                      bottom: widget.size * 0.02,
-                      child: Container(
-                        width: widget.size * 0.72,
-                        height: widget.size * 0.13,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(999),
-                          boxShadow: const <BoxShadow>[
-                            BoxShadow(
-                              color: Color(0x99000000),
-                              blurRadius: 6,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: SvgPicture.asset(
-                        GameAssetPaths.pawnFor(widget.playerColor),
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    if (widget.shielded)
-                      Positioned(
-                        right: -widget.size * 0.09,
-                        top: widget.size * 0.03,
-                        child: Container(
-                          width: widget.size * 0.39,
-                          height: widget.size * 0.39,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: <Color>[
-                                Color(0xFF67F0FF),
-                                Color(0xFF0876E8),
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) {
+                final double t = _controller.value;
+                final double lift = widget.returning
+                    ? math.sin(t * math.pi).abs()
+                    : widget.moving
+                        ? math.sin(t * math.pi).abs()
+                        : 0;
+                final double hop = widget.returning
+                    ? -lift * widget.size * 0.70
+                    : widget.moving
+                        ? -lift * widget.size * 0.34
+                        : 0;
+                final double squash = widget.returning
+                    ? 1 - lift * 0.055
+                    : widget.moving
+                        ? 1 - lift * 0.040
+                        : 1;
+                final double shake = widget.captured
+                    ? math.sin(t * math.pi * 10) *
+                        widget.size *
+                        0.15 *
+                        (1 - t)
+                    : 0;
+                final double captureScale = widget.captured
+                    ? 1 - (0.28 * Curves.easeIn.transform(t))
+                    : widget.returning
+                        ? 0.92 + lift * 0.12
+                        : 1;
+                final double shadowWidth =
+                    widget.size * (0.73 - lift * 0.20);
+                final double shadowOpacity = 0.46 - lift * 0.20;
+
+                return SizedBox(
+                  width: widget.size,
+                  height: widget.size * 1.36,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.bottomCenter,
+                    children: [
+                      if (widget.highlighted || widget.shielded)
+                        Positioned(
+                          left: -widget.size * 0.20,
+                          right: -widget.size * 0.20,
+                          bottom: widget.size * 0.05,
+                          height: widget.size * 0.72,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: <BoxShadow>[
+                                BoxShadow(
+                                  color: (widget.shielded
+                                          ? const Color(0xFF29D9FF)
+                                          : _accentColor)
+                                      .withValues(alpha: 0.58),
+                                  blurRadius: widget.size * 0.58,
+                                  spreadRadius: widget.size * 0.025,
+                                ),
                               ],
                             ),
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 1,
-                            ),
-                            boxShadow: const <BoxShadow>[
+                          ),
+                        ),
+                      Positioned(
+                        bottom: widget.size * 0.015,
+                        child: Container(
+                          width: shadowWidth,
+                          height: widget.size * 0.115,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            boxShadow: <BoxShadow>[
                               BoxShadow(
-                                color: Color(0xAA00C8FF),
-                                blurRadius: 8,
+                                color: Colors.black.withValues(
+                                  alpha: shadowOpacity,
+                                ),
+                                blurRadius: widget.size * 0.12,
+                                spreadRadius: widget.size * 0.015,
                               ),
                             ],
                           ),
-                          child: Icon(
-                            Icons.shield_rounded,
-                            size: widget.size * 0.23,
-                            color: Colors.white,
+                        ),
+                      ),
+                      Transform.translate(
+                        offset: Offset(shake, hop),
+                        child: Transform.scale(
+                          scaleX: captureScale / squash,
+                          scaleY: captureScale * squash,
+                          alignment: Alignment.bottomCenter,
+                          child: SizedBox(
+                            width: widget.size,
+                            height: widget.size * 1.30,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              alignment: Alignment.center,
+                              children: [
+                                Positioned.fill(
+                                  child: SvgPicture.asset(
+                                    GameAssetPaths.pawnFor(displayColor),
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                                Positioned(
+                                  left: widget.size * 0.20,
+                                  top: widget.size * 0.12,
+                                  child: IgnorePointer(
+                                    child: Container(
+                                      width: widget.size * 0.20,
+                                      height: widget.size * 0.09,
+                                      decoration: BoxDecoration(
+                                        borderRadius:
+                                            BorderRadius.circular(999),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.24,
+                                        ),
+                                        boxShadow: <BoxShadow>[
+                                          BoxShadow(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.22,
+                                            ),
+                                            blurRadius: widget.size * 0.12,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                  ],
-                ),
-              ),
+                      if (widget.shielded)
+                        Positioned(
+                          right: -widget.size * 0.08,
+                          top: widget.size * 0.02,
+                          child: Container(
+                            width: widget.size * 0.39,
+                            height: widget.size * 0.39,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: <Color>[
+                                  Color(0xFF67F0FF),
+                                  Color(0xFF0876E8),
+                                ],
+                              ),
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 1,
+                              ),
+                              boxShadow: const <BoxShadow>[
+                                BoxShadow(
+                                  color: Color(0xAA00C8FF),
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.shield_rounded,
+                              size: widget.size * 0.23,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ),
