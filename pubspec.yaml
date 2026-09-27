@@ -10,6 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_svg: ^2.0.10+1
+  audioplayers: ^6.5.1
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:
@@ -22,3 +24,4 @@ flutter:
     - assets/game/dice/
     - assets/game/powers/
     - assets/game/board/
+    - assets/audio/game/
