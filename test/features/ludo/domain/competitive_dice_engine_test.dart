@@ -93,7 +93,7 @@ void main() {
     });
   });
 
-  group('CompetitiveDiceEngine Phase 2', () {
+  group('CompetitiveDiceEngine Phases 2 and 3', () {
     test('neutral board keeps all faces equally weighted', () {
       final CompetitiveDiceEngine dice =
           CompetitiveDiceEngine(random: Random(3));
@@ -199,6 +199,12 @@ void main() {
             pathPosition: 2,
             status: TokenStatus.active,
           ),
+          LudoToken(
+            id: 1,
+            color: PlayerColor.red,
+            pathPosition: 57,
+            status: TokenStatus.finished,
+          ),
         ],
         yellowTokens: const <LudoToken>[
           LudoToken(
@@ -206,6 +212,10 @@ void main() {
             color: PlayerColor.yellow,
             pathPosition: 31,
             status: TokenStatus.active,
+          ),
+          LudoToken(
+            id: 5,
+            color: PlayerColor.yellow,
           ),
         ],
       );
@@ -249,7 +259,7 @@ void main() {
       );
 
       expect(context.escapeRolls, contains(3));
-      expect(weights.weightFor(3), 115);
+      expect(weights.weightFor(3), 125);
     });
 
     test('stale match adds an action boost to useful rolls', () {
@@ -322,6 +332,315 @@ void main() {
       );
 
       expect(dice.turnsWithoutMajorEvent, 0);
+    });
+
+    test('home-entry opportunity boosts the exact roll', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine();
+      final LudoGameState state = _stateWithTokens(
+        redTokens: const <LudoToken>[
+          LudoToken(
+            id: 0,
+            color: PlayerColor.red,
+            pathPosition: 50,
+            status: TokenStatus.active,
+          ),
+        ],
+        yellowTokens: const <LudoToken>[
+          LudoToken(
+            id: 4,
+            color: PlayerColor.yellow,
+            pathPosition: 50,
+            status: TokenStatus.active,
+          ),
+        ],
+      );
+
+      final context = dice.contextFor(state: state);
+      final DiceWeights weights = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(),
+      );
+
+      expect(context.homeEntryRolls, contains(2));
+      expect(weights.weightFor(2), 112);
+    });
+
+    test('exact finish receives finish and endgame pressure boosts', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine();
+      final LudoGameState state = _stateWithTokens(
+        redTokens: const <LudoToken>[
+          LudoToken(
+            id: 0,
+            color: PlayerColor.red,
+            pathPosition: 57,
+            status: TokenStatus.finished,
+          ),
+          LudoToken(
+            id: 1,
+            color: PlayerColor.red,
+            pathPosition: 57,
+            status: TokenStatus.finished,
+          ),
+          LudoToken(
+            id: 2,
+            color: PlayerColor.red,
+            pathPosition: 55,
+            status: TokenStatus.homePath,
+          ),
+        ],
+        yellowTokens: const <LudoToken>[
+          LudoToken(id: 4, color: PlayerColor.yellow),
+          LudoToken(id: 5, color: PlayerColor.yellow),
+          LudoToken(id: 6, color: PlayerColor.yellow),
+        ],
+      );
+
+      final context = dice.contextFor(state: state);
+      final DiceWeights weights = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(),
+      );
+
+      expect(context.currentPlayerNearWin, isTrue);
+      expect(context.finishRolls, contains(2));
+      expect(weights.weightFor(2), 140);
+    });
+
+    test('blockade creation boosts the required roll', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine();
+      final LudoGameState state = _stateWithTokens(
+        redTokens: const <LudoToken>[
+          LudoToken(
+            id: 0,
+            color: PlayerColor.red,
+            pathPosition: 2,
+            status: TokenStatus.active,
+          ),
+          LudoToken(
+            id: 1,
+            color: PlayerColor.red,
+            pathPosition: 5,
+            status: TokenStatus.active,
+          ),
+        ],
+        yellowTokens: const <LudoToken>[
+          LudoToken(
+            id: 4,
+            color: PlayerColor.yellow,
+            pathPosition: 2,
+            status: TokenStatus.active,
+          ),
+          LudoToken(
+            id: 5,
+            color: PlayerColor.yellow,
+            pathPosition: 5,
+            status: TokenStatus.active,
+          ),
+        ],
+      );
+
+      final context = dice.contextFor(state: state);
+      final DiceWeights weights = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(),
+      );
+
+      expect(context.blockadeRolls, contains(3));
+      expect(weights.weightFor(3), 112);
+    });
+
+    test('significantly behind player gets small useful-action boost', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine();
+      final LudoGameState state = _stateWithTokens(
+        redTokens: const <LudoToken>[
+          LudoToken(
+            id: 0,
+            color: PlayerColor.red,
+            pathPosition: 10,
+            status: TokenStatus.active,
+          ),
+          LudoToken(id: 1, color: PlayerColor.red),
+        ],
+        yellowTokens: const <LudoToken>[
+          LudoToken(
+            id: 4,
+            color: PlayerColor.yellow,
+            pathPosition: 50,
+            status: TokenStatus.active,
+          ),
+          LudoToken(
+            id: 5,
+            color: PlayerColor.yellow,
+            pathPosition: 50,
+            status: TokenStatus.active,
+          ),
+        ],
+      );
+
+      final context = dice.contextFor(state: state);
+      final DiceWeights weights = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(),
+      );
+
+      expect(context.isSignificantlyBehind, isTrue);
+      expect(context.actionRolls, contains(6));
+      expect(weights.weightFor(6), 110);
+    });
+
+    test('opponent near win increases defensive capture pressure', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine();
+      final LudoGameState state = _stateWithTokens(
+        redTokens: const <LudoToken>[
+          LudoToken(
+            id: 0,
+            color: PlayerColor.red,
+            pathPosition: 57,
+            status: TokenStatus.finished,
+          ),
+          LudoToken(
+            id: 1,
+            color: PlayerColor.red,
+            pathPosition: 57,
+            status: TokenStatus.finished,
+          ),
+          LudoToken(
+            id: 2,
+            color: PlayerColor.red,
+            pathPosition: 20,
+            status: TokenStatus.active,
+          ),
+        ],
+        yellowTokens: const <LudoToken>[
+          LudoToken(
+            id: 4,
+            color: PlayerColor.yellow,
+            pathPosition: 57,
+            status: TokenStatus.finished,
+          ),
+          LudoToken(
+            id: 5,
+            color: PlayerColor.yellow,
+            pathPosition: 57,
+            status: TokenStatus.finished,
+          ),
+          LudoToken(
+            id: 6,
+            color: PlayerColor.yellow,
+            pathPosition: 49,
+            status: TokenStatus.active,
+          ),
+        ],
+      );
+
+      final context = dice.contextFor(state: state);
+      final DiceWeights weights = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(),
+      );
+
+      expect(context.opponentNearWin, isTrue);
+      expect(context.captureRolls, contains(3));
+      expect(weights.weightFor(3), 155);
+    });
+
+    test('probability cap prevents a face exceeding forty percent', () {
+      final DiceWeights weights = DiceWeights.fromValues(
+        const <double>[100, 100, 100, 100, 100, 1000],
+      ).cappedAtProbability(
+        CompetitiveDiceEngine.maxSingleFaceProbability,
+      );
+
+      expect(
+        weights.probabilityFor(6),
+        closeTo(0.40, 0.0000001),
+      );
+    });
+
+    test('assist cooldown dampens adaptive boosts', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine();
+      final LudoGameState state = _stateWithTokens(
+        redTokens: const <LudoToken>[
+          LudoToken(
+            id: 0,
+            color: PlayerColor.red,
+            pathPosition: 2,
+            status: TokenStatus.active,
+          ),
+          LudoToken(
+            id: 1,
+            color: PlayerColor.red,
+            pathPosition: 57,
+            status: TokenStatus.finished,
+          ),
+        ],
+        yellowTokens: const <LudoToken>[
+          LudoToken(
+            id: 4,
+            color: PlayerColor.yellow,
+            pathPosition: 31,
+            status: TokenStatus.active,
+          ),
+          LudoToken(id: 5, color: PlayerColor.yellow),
+        ],
+      );
+
+      final DiceWeights normal = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(),
+      );
+      final DiceWeights cooldown = dice.weightsFor(
+        state: state,
+        history: const PlayerDiceHistory(
+          strongAssistCooldown: 2,
+        ),
+      );
+
+      expect(normal.weightFor(3), 135);
+      expect(cooldown.weightFor(3), closeTo(112.25, 0.0001));
+    });
+
+    test('strong assisted roll starts then decrements cooldown', () {
+      final CompetitiveDiceEngine dice = CompetitiveDiceEngine(
+        roller: _FixedWeightedDiceRoller(3),
+      );
+      final LudoGameState state = _stateWithTokens(
+        redTokens: const <LudoToken>[
+          LudoToken(
+            id: 0,
+            color: PlayerColor.red,
+            pathPosition: 2,
+            status: TokenStatus.active,
+          ),
+          LudoToken(
+            id: 1,
+            color: PlayerColor.red,
+            pathPosition: 57,
+            status: TokenStatus.finished,
+          ),
+        ],
+        yellowTokens: const <LudoToken>[
+          LudoToken(
+            id: 4,
+            color: PlayerColor.yellow,
+            pathPosition: 31,
+            status: TokenStatus.active,
+          ),
+          LudoToken(id: 5, color: PlayerColor.yellow),
+        ],
+      );
+
+      dice.roll(state: state);
+      expect(
+        dice.historyFor('player_0').strongAssistCooldown,
+        CompetitiveDiceEngine.strongAssistCooldownRolls,
+      );
+
+      dice.roll(state: state);
+      expect(
+        dice.historyFor('player_0').strongAssistCooldown,
+        CompetitiveDiceEngine.strongAssistCooldownRolls - 1,
+      );
     });
   });
 
@@ -415,4 +734,13 @@ class _FixedDicePolicy implements DicePolicy {
     callCount++;
     return value;
   }
+}
+
+class _FixedWeightedDiceRoller extends WeightedDiceRoller {
+  _FixedWeightedDiceRoller(this.value);
+
+  final int value;
+
+  @override
+  int roll(DiceWeights weights) => value;
 }
