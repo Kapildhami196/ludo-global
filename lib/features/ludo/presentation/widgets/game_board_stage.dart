@@ -29,17 +29,21 @@ class GameBoardStage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
-      aspectRatio: 0.78,
+      aspectRatio: 0.66,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final double width = constraints.maxWidth;
           final double boardSize = width;
           final double cell = width / 15;
-          final double boardTop = width * 0.145;
-          final double avatarSize = cell * 1.68;
-          final double diceSize = cell * 2.10;
-          final double edgeInset = width * 0.025;
-          final double hudGap = cell * 0.34;
+
+          // The reference game keeps a large breathing area above the board,
+          // placing the board visually around the middle of the screen rather
+          // than immediately below the header.
+          final double boardTop = width * 0.34;
+          final double avatarSize = cell * 1.76;
+          final double diceSize = cell * 2.34;
+          final double edgeInset = width * 0.026;
+          final double hudGap = cell * 0.18;
           final Color activeColor =
               LudoReferenceVisuals.colorFor(gameState.currentPlayer.color);
 
@@ -48,7 +52,7 @@ class GameBoardStage extends StatelessWidget {
             children: [
               Positioned(
                 left: 0,
-                top: boardTop + cell * 0.08,
+                top: boardTop + cell * 0.09,
                 width: boardSize,
                 height: boardSize,
                 child: DecoratedBox(
@@ -56,9 +60,9 @@ class GameBoardStage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(cell * 0.18),
                     boxShadow: const <BoxShadow>[
                       BoxShadow(
-                        color: Color(0x70000000),
-                        blurRadius: 8,
-                        offset: Offset(0, 5),
+                        color: Color(0x76000000),
+                        blurRadius: 10,
+                        offset: Offset(0, 6),
                       ),
                     ],
                   ),
@@ -75,10 +79,15 @@ class GameBoardStage extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(cell * 0.18),
                     boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.17),
+                        blurRadius: 7,
+                        offset: const Offset(0, 3),
+                      ),
                       if (diceRolling)
                         BoxShadow(
-                          color: activeColor.withValues(alpha: 0.16),
-                          blurRadius: 14,
+                          color: activeColor.withValues(alpha: 0.17),
+                          blurRadius: 18,
                           spreadRadius: 1,
                         ),
                     ],
@@ -122,19 +131,27 @@ class GameBoardStage extends StatelessWidget {
     final bool top =
         color == PlayerColor.red || color == PlayerColor.green;
 
+    final double cell = boardSize / 15;
     final double avatarX = alignRight
         ? boardSize - edgeInset - avatarSize
         : edgeInset;
     final double avatarY = top
-        ? boardTop - avatarSize - (boardSize / 15) * 0.22
-        : boardTop + boardSize + (boardSize / 15) * 0.20;
+        ? boardTop - avatarSize - cell * 0.30
+        : boardTop + boardSize + cell * 0.24;
 
-    final double diceWidth = diceSize * 1.18;
+    final double diceWidth = diceSize * 1.20;
     final double diceX = alignRight
         ? avatarX - diceWidth - hudGap
         : avatarX + avatarSize + hudGap;
     final double diceY =
         avatarY + ((avatarSize - diceSize) / 2);
+
+    // The die launches diagonally from the active player's slot toward the
+    // center of the play field while scaling toward the viewer.
+    final Offset launchDirection = Offset(
+      alignRight ? -0.78 : 0.78,
+      top ? 0.92 : -0.92,
+    );
 
     final List<Widget> result = <Widget>[
       Positioned(
@@ -167,6 +184,7 @@ class GameBoardStage extends StatelessWidget {
             enabled: diceEnabled,
             onRoll: onRoll,
             size: diceSize,
+            launchDirection: launchDirection,
             tailOnRight: alignRight,
           ),
         ),
