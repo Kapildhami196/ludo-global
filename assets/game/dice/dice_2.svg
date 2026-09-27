@@ -1,20 +1,46 @@
-<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="104" height="104" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="face" x1="12" y1="10" x2="84" y2="88" gradientUnits="userSpaceOnUse">
+    <linearGradient id="front" x1="18" y1="22" x2="82" y2="87" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="0.48" stop-color="#F7FBFF"/>
-      <stop offset="0.78" stop-color="#DCE8F2"/>
-      <stop offset="1" stop-color="#AFC2D2"/>
+      <stop offset="0.48" stop-color="#F8FAFD"/>
+      <stop offset="0.82" stop-color="#DCE4EC"/>
+      <stop offset="1" stop-color="#BCC7D2"/>
     </linearGradient>
-    <radialGradient id="pip" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(44 40) rotate(45) scale(52)">
-      <stop offset="0" stop-color="#244D72"/>
-      <stop offset="0.5" stop-color="#0B2036"/>
-      <stop offset="1" stop-color="#030B14"/>
+    <linearGradient id="top" x1="22" y1="13" x2="86" y2="29" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D7E1EA"/>
+    </linearGradient>
+    <linearGradient id="side" x1="80" y1="23" x2="91" y2="84" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#CCD7E1"/>
+      <stop offset="1" stop-color="#7C8C9C"/>
+    </linearGradient>
+    <radialGradient id="pip" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(46 48) rotate(45) scale(46)">
+      <stop offset="0" stop-color="#183B58"/>
+      <stop offset="0.58" stop-color="#081827"/>
+      <stop offset="1" stop-color="#02070D"/>
     </radialGradient>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3.2"/>
+    </filter>
   </defs>
-  <rect x="12" y="16" width="72" height="72" rx="18" fill="#001120" fill-opacity="0.40"/>
-  <rect x="8" y="8" width="76" height="76" rx="18" fill="url(#face)" stroke="#8DA6BB" stroke-width="2"/>
-  <path d="M20 15C34 10 61 10 74 15" stroke="#FFFFFF" stroke-opacity="0.92" stroke-width="3" stroke-linecap="round"/>
-  <path d="M17 78C30 83 62 84 76 76" stroke="#7A93A9" stroke-opacity="0.55" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="24" cy="24" r="6.2" fill="url(#pip)"/><circle cx="22.4" cy="22.2" r="1.8" fill="#8FB5D8" fill-opacity="0.48"/><circle cx="72" cy="72" r="6.2" fill="url(#pip)"/><circle cx="70.4" cy="70.2" r="1.8" fill="#8FB5D8" fill-opacity="0.48"/>
+
+  <ellipse cx="53" cy="91" rx="35" ry="7" fill="#00101E" fill-opacity="0.30" filter="url(#shadow)"/>
+
+  <path d="M23 17L73 11C79 10 84 12 88 16L93 22L31 29L18 23Z"
+        fill="url(#top)" stroke="#A8B6C3" stroke-width="1.4"/>
+  <path d="M82 22L93 22L91 73C91 80 87 85 81 89L77 91L78 31Z"
+        fill="url(#side)" stroke="#77899A" stroke-width="1.4"/>
+
+  <rect x="16" y="22" width="66" height="66" rx="15"
+        fill="url(#front)" stroke="#8FA1B1" stroke-width="1.8"/>
+
+  <path d="M27 27C39 23 62 23 72 27"
+        stroke="#FFFFFF" stroke-opacity="0.95" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M22 75C35 84 64 85 76 75"
+        stroke="#8496A6" stroke-opacity="0.42" stroke-width="3" stroke-linecap="round"/>
+
+  <circle cx="34" cy="38" r="5.6" fill="url(#pip)"/>
+  <circle cx="32.6" cy="36.5" r="1.6" fill="#6F91AF" fill-opacity="0.42"/>
+  <circle cx="66" cy="70" r="5.6" fill="url(#pip)"/>
+  <circle cx="64.6" cy="68.5" r="1.6" fill="#6F91AF" fill-opacity="0.42"/>
 </svg>
