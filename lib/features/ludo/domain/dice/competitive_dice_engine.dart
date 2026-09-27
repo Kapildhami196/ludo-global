@@ -24,7 +24,17 @@ class CompetitiveDiceEngine implements DicePolicy {
   static const double _allTokensInBaseBoost = 25;
   static const double _captureBoost = 35;
   static const double _escapeBoost = 15;
+  static const double _homeEntryBoost = 12;
+  static const double _finishBoost = 20;
+  static const double _blockadeBoost = 12;
   static const double _staleActionBoost = 15;
+  static const double _behindActionBoost = 10;
+  static const double _endgameDefenseBoost = 20;
+  static const double _endgameFinishBoost = 20;
+
+  static const double maxSingleFaceProbability = 0.40;
+  static const double _cooldownBoostMultiplier = 0.35;
+  static const int strongAssistCooldownRolls = 2;
 
   final WeightedDiceRoller _roller;
   final MatchSituationAnalyzer _analyzer;
@@ -41,13 +51,30 @@ class CompetitiveDiceEngine implements DicePolicy {
   }) {
     final String playerId = state.currentPlayer.id;
     final PlayerDiceHistory history = historyFor(playerId);
-    final DiceWeights weights = weightsFor(
+    final DiceContext context = contextFor(
       state: state,
+      history: history,
+    );
+    final DiceWeights weights = _weightsForContext(
+      context: context,
       history: history,
     );
 
     final int value = _roller.roll(weights);
-    _historyByPlayer[playerId] = history.recordRoll(value);
+
+    final int nextCooldown;
+    if (history.strongAssistCooldown > 0) {
+      nextCooldown = history.strongAssistCooldown - 1;
+    } else if (_isStrongAssistRoll(value, context)) {
+      nextCooldown = strongAssistCooldownRolls;
+    } else {
+      nextCooldown = 0;
+    }
+
+    _historyByPlayer[playerId] = history.recordRoll(
+      value,
+      strongAssistCooldown: nextCooldown,
+    );
     return value;
   }
 
@@ -71,65 +98,162 @@ class CompetitiveDiceEngine implements DicePolicy {
     required LudoGameState state,
     required PlayerDiceHistory history,
   }) {
-    final DiceContext context = contextFor(
-      state: state,
+    return _weightsForContext(
+      context: contextFor(
+        state: state,
+        history: history,
+      ),
       history: history,
     );
+  }
 
+  DiceWeights _weightsForContext({
+    required DiceContext context,
+    required PlayerDiceHistory history,
+  }) {
     DiceWeights weights = DiceWeights.fair(
       baseWeight: _baseWeight,
     );
+    final double scale = history.strongAssistCooldown > 0
+        ? _cooldownBoostMultiplier
+        : 1;
 
     if (context.rollsSinceSix >= 3) {
-      weights = weights.withAddedWeight(
+      weights = _boost(
+        weights,
         6,
         _sixDroughtStartBoost,
+        scale,
       );
     }
     if (context.rollsSinceSix >= 5) {
-      weights = weights.withAddedWeight(
+      weights = _boost(
+        weights,
         6,
         _sixDroughtMediumBoost,
+        scale,
       );
     }
     if (context.rollsSinceSix >= 7) {
-      weights = weights.withAddedWeight(
+      weights = _boost(
+        weights,
         6,
         _sixDroughtLongBoost,
+        scale,
       );
     }
 
     if (context.allTokensInBase) {
-      weights = weights.withAddedWeight(
+      weights = _boost(
+        weights,
         6,
         _allTokensInBaseBoost,
+        scale,
       );
     }
 
     for (final int face in context.captureRolls) {
-      weights = weights.withAddedWeight(
-        face,
-        _captureBoost,
-      );
+      weights = _boost(weights, face, _captureBoost, scale);
     }
 
     for (final int face in context.escapeRolls) {
-      weights = weights.withAddedWeight(
-        face,
-        _escapeBoost,
-      );
+      weights = _boost(weights, face, _escapeBoost, scale);
+    }
+
+    for (final int face in context.homeEntryRolls) {
+      weights = _boost(weights, face, _homeEntryBoost, scale);
+    }
+
+    for (final int face in context.finishRolls) {
+      weights = _boost(weights, face, _finishBoost, scale);
+    }
+
+    for (final int face in context.blockadeRolls) {
+      weights = _boost(weights, face, _blockadeBoost, scale);
     }
 
     if (context.isStaleMatch) {
       for (final int face in context.actionRolls) {
-        weights = weights.withAddedWeight(
+        weights = _boost(
+          weights,
           face,
           _staleActionBoost,
+          scale,
         );
       }
     }
 
-    return weights;
+    if (context.isSignificantlyBehind) {
+      for (final int face in context.actionRolls) {
+        weights = _boost(
+          weights,
+          face,
+          _behindActionBoost,
+          scale,
+        );
+      }
+    }
+
+    if (context.opponentNearWin) {
+      for (final int face in context.defensiveEndgameRolls) {
+        weights = _boost(
+          weights,
+          face,
+          _endgameDefenseBoost,
+          scale,
+        );
+      }
+    }
+
+    if (context.currentPlayerNearWin) {
+      for (final int face in context.finishRolls) {
+        weights = _boost(
+          weights,
+          face,
+          _endgameFinishBoost,
+          scale,
+        );
+      }
+    }
+
+    return weights.cappedAtProbability(
+      maxSingleFaceProbability,
+    );
+  }
+
+  DiceWeights _boost(
+    DiceWeights weights,
+    int face,
+    double amount,
+    double scale,
+  ) {
+    return weights.withAddedWeight(
+      face,
+      amount * scale,
+    );
+  }
+
+  bool _isStrongAssistRoll(
+    int value,
+    DiceContext context,
+  ) {
+    if (context.captureRolls.contains(value) ||
+        context.finishRolls.contains(value)) {
+      return true;
+    }
+
+    if (value == 6 &&
+        (context.allTokensInBase ||
+            context.rollsSinceSix >= 5)) {
+      return true;
+    }
+
+    if (context.opponentNearWin &&
+        context.defensiveEndgameRolls.contains(value)) {
+      return true;
+    }
+
+    return false;
   }
 
   void recordGameEvents(List<LudoGameEvent> events) {
