@@ -964,7 +964,7 @@ class _PowerComputerGameScreenState
           GameBackground(
             referencePurple: true,
             child: SafeArea(
-              child: SingleChildScrollView(
+              child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Column(
                   children: [
@@ -976,7 +976,8 @@ class _PowerComputerGameScreenState
                       onBack: _confirmQuit,
                     ),
                     const SizedBox(height: 4),
-                    GameBoardStage(
+                    Expanded(
+                      child: GameBoardStage(
                         gameState: _state,
                         diceValue: _lastDiceValue,
                         diceRolling: _isRolling,
@@ -1006,12 +1007,12 @@ class _PowerComputerGameScreenState
                           onTokenTap: _onHumanTokenTap,
                         ),
                       ),
+                    ),
                     const SizedBox(height: 6),
                     GameplayCallout(
                       message: _message,
                       color: currentColor,
                     ),
-
                     const SizedBox(height: 8),
                     PowerActionBar(
                       counts: _humanPowerCounts,

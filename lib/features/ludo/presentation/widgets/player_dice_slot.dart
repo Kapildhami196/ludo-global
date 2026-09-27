@@ -116,7 +116,7 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                   child: Container(
                     width: widget.size,
                     height: widget.size * 0.88,
-                    padding: EdgeInsets.all(widget.size * 0.07),
+                    padding: EdgeInsets.all(widget.size * 0.045),
                     decoration: BoxDecoration(
                       borderRadius:
                           BorderRadius.circular(widget.size * 0.19),
@@ -154,7 +154,7 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                         rolling: widget.rolling,
                         onTap: widget.onRoll,
                         accentColor: _accentColor,
-                        size: widget.size * 0.76,
+                        size: widget.size * 0.84,
                         compact: true,
                         launchDirection: widget.launchDirection,
                       ),
