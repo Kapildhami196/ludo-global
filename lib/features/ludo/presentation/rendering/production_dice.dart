@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../widgets/animated_dice.dart';
-import 'flame_dice_3d.dart';
 import 'flame_3d_runtime.dart';
+import 'flame_dice_3d.dart';
 
 class ProductionDice extends StatelessWidget {
   const ProductionDice({
