@@ -56,6 +56,7 @@ class _PowerComputerGameScreenState
   int _autoMoveSequence = 0;
   int? _movingTokenId;
   Set<int> _capturedTokenIds = const <int>{};
+  Set<int> _returningTokenIds = const <int>{};
   GameFxType? _fxType;
   String? _fxLabel;
 
@@ -95,6 +96,7 @@ class _PowerComputerGameScreenState
     _fxSequence = 0;
     _movingTokenId = null;
     _capturedTokenIds = const <int>{};
+    _returningTokenIds = const <int>{};
     _fxType = null;
     _fxLabel = null;
     _isRolling = false;
@@ -667,7 +669,7 @@ class _PowerComputerGameScreenState
         _visualPathOverrides[tokenId] = progress;
       });
       unawaited(_feedback.tokenStep());
-      await Future<void>.delayed(const Duration(milliseconds: 140));
+      await Future<void>.delayed(const Duration(milliseconds: 125));
     }
 
     if (!mounted) {
@@ -682,22 +684,19 @@ class _PowerComputerGameScreenState
       await _triggerFx(GameFxType.capture, durationMs: 480);
     }
 
-    if (reachedHome) {
-      unawaited(_feedback.home());
-      await _triggerFx(GameFxType.home, durationMs: 480);
-    }
+    if (capture != null) {
+      if (!mounted) {
+        return;
+      }
 
-    if (!mounted) {
-      return;
-    }
+      final Set<int> returning = capture.otherTokenIds.toSet();
 
-    setState(() {
-      _visualPathOverrides.remove(tokenId);
-      _movingTokenId = null;
-      _capturedTokenIds = const <int>{};
-      _powerState = result.state;
-      _isMoving = false;
-
+      setState(() {
+        _visualPathOverrides.remove(tokenId);
+        _movingTokenId = null;
+        _capturedTokenIds = const <int>{};
+        _returningTokenIds = returning;
+        _powerState = result.state;
       if (result.powerEvents.any(
         (event) =>
             event.type == PowerGameEventType.bonusRollTriggered,
@@ -712,7 +711,52 @@ class _PowerComputerGameScreenState
       } else {
         _message = 'Move complete.';
       }
-    });
+      });
+
+      await Future<void>.delayed(
+        const Duration(milliseconds: 540),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _returningTokenIds = const <int>{};
+        _isMoving = false;
+      });
+    } else {
+      if (reachedHome) {
+        unawaited(_feedback.home());
+        await _triggerFx(GameFxType.home, durationMs: 480);
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _visualPathOverrides.remove(tokenId);
+        _movingTokenId = null;
+        _capturedTokenIds = const <int>{};
+        _powerState = result.state;
+        _isMoving = false;
+      if (result.powerEvents.any(
+        (event) =>
+            event.type == PowerGameEventType.bonusRollTriggered,
+      )) {
+        _message = 'Bonus Roll activated!';
+      } else if (computerReason != null) {
+        _message = 'Computer used $computerReason.';
+      } else if (result.gameEvents.any(
+        (event) => event.type == LudoGameEventType.extraTurn,
+      )) {
+        _message = 'You earned another roll.';
+      } else {
+        _message = 'Move complete.';
+      }
+      });
+    }
 
     if (won) {
       unawaited(_feedback.win());
@@ -1017,6 +1061,7 @@ class _PowerComputerGameScreenState
                           visualPathOverrides: _visualPathOverrides,
                           movingTokenId: _movingTokenId,
                           capturedTokenIds: _capturedTokenIds,
+                          returningTokenIds: _returningTokenIds,
                           shieldedTokenIds:
                               _powerState.shields.keys.toSet(),
                           powerPickupPositions: <PowerType, int>{
