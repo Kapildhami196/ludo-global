@@ -200,7 +200,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
       });
 
       unawaited(_feedback.tokenStep());
-      await Future<void>.delayed(const Duration(milliseconds: 155));
+      await Future<void>.delayed(const Duration(milliseconds: 125));
     }
 
     if (!mounted) {
