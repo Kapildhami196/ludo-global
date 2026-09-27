@@ -17,9 +17,9 @@ class FlameDice3DGame
         super(
           world: World3D(),
           camera: CameraComponent3D(
-            fovY: 38,
-            position: Vector3(0, 2.35, 4.7),
-            target: Vector3(0, 0.22, 0),
+            fovY: 36,
+            position: Vector3(2.15, 2.45, 5.10),
+            target: Vector3(0, 0.18, 0),
           ),
         );
 
@@ -95,11 +95,11 @@ class LudoDice3DComponent extends MeshComponent {
         super(
           position: Vector3(0, 0.10, 0),
           mesh: CuboidMesh(
-            size: Vector3.all(1.28),
+            size: Vector3.all(1.34),
             material: SpatialMaterial(
-              albedoColor: const Color(0xFFF9FAFC),
-              metallic: 0.08,
-              roughness: 0.23,
+              albedoColor: const Color(0xFFFCFCFD),
+              metallic: 0.05,
+              roughness: 0.18,
             ),
             useFaceNormals: true,
           ),
@@ -108,7 +108,7 @@ class LudoDice3DComponent extends MeshComponent {
     rotation.setFrom(_orientationForValue(_value));
   }
 
-  static const double _half = 0.64;
+  static const double _half = 0.67;
   static const double _pipRadius = 0.073;
   static const double _pipOffset = 0.29;
 
@@ -221,7 +221,10 @@ class LudoDice3DComponent extends MeshComponent {
       _ => Vector3(0, 0, 1),
     };
 
-    final Vector3 cameraDirection = Vector3(0, 0.26, 1)
+    // Intentionally do not point the result face straight at the camera.
+    // The slight yaw/pitch keeps the selected face dominant while always
+    // exposing real top and side geometry.
+    final Vector3 cameraDirection = Vector3(0.10, 0.18, 1)
       ..normalize();
 
     return Quaternion.fromTwoVectors(
