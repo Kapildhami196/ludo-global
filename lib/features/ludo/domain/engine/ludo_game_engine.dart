@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import '../dice/dice_policy.dart';
+import '../dice/fair_dice_policy.dart';
 import '../entities/game_config.dart';
 import '../entities/game_phase.dart';
 import '../entities/ludo_game_action_result.dart';
@@ -13,9 +15,14 @@ import '../rules/classic_rules.dart';
 import 'ludo_board_map.dart';
 
 class LudoGameEngine {
-  LudoGameEngine({Random? random}) : _random = random ?? Random();
+  LudoGameEngine({
+    Random? random,
+    DicePolicy? dicePolicy,
+  })  : _random = random ?? Random(),
+        _dicePolicy = dicePolicy ?? FairDicePolicy(random: random);
 
   final Random _random;
+  final DicePolicy _dicePolicy;
 
   LudoGameState createGame({
     required LudoGameConfig config,
@@ -95,7 +102,7 @@ class LudoGameEngine {
   }) {
     _requirePhase(state, GamePhase.waitingForRoll);
 
-    final int diceValue = forcedValue ?? (_random.nextInt(6) + 1);
+    final int diceValue = forcedValue ?? _dicePolicy.roll(state: state);
     if (diceValue < 1 || diceValue > 6) {
       throw ArgumentError.value(
         diceValue,
