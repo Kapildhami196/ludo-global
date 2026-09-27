@@ -9,8 +9,6 @@ import '../../domain/entities/ludo_token.dart';
 import '../../domain/entities/player_color.dart';
 import '../../domain/entities/power_type.dart';
 import '../../domain/entities/token_status.dart';
-import '../rendering/flame_3d_runtime.dart';
-import '../rendering/flame_pawn_board_3d.dart';
 import '../style/ludo_reference_visuals.dart';
 import 'power_pickup_marker.dart';
 import 'premium_ludo_token.dart';
@@ -26,7 +24,6 @@ class LudoBoard extends StatelessWidget {
     this.returningTokenIds = const <int>{},
     this.shieldedTokenIds = const <int>{},
     this.powerPickupPositions = const <PowerType, int>{},
-    this.prefer3DPawns = false,
     this.onTokenTap,
     super.key,
   });
@@ -40,7 +37,6 @@ class LudoBoard extends StatelessWidget {
   final Set<int> returningTokenIds;
   final Set<int> shieldedTokenIds;
   final Map<PowerType, int> powerPickupPositions;
-  final bool prefer3DPawns;
   final ValueChanged<int>? onTokenTap;
 
   @override
@@ -56,20 +52,9 @@ class LudoBoard extends StatelessWidget {
           final double cell = size / 15;
           final double tokenSize = cell * 1.30;
           final List<_TokenPlacement> placements = _placements(cell);
-          final bool use3DPawns = prefer3DPawns &&
-              gameState != null &&
-              Flame3DRuntime.isAvailable;
-
-          final Widget fallbackPawnLayer = _build2DPawnLayer(
+          final Widget pawnLayer = _buildPawnLayer(
             placements: placements,
             tokenSize: tokenSize,
-            interactive: !use3DPawns,
-          );
-
-          final List<FlamePawnVisualState> pawnVisuals =
-              _build3DPawnVisuals(
-            placements: placements,
-            cell: cell,
           );
 
           return RepaintBoundary(
@@ -106,21 +91,7 @@ class LudoBoard extends StatelessWidget {
                         size: cell * 0.62,
                       ),
                     ),
-                  if (use3DPawns)
-                    Positioned.fill(
-                      child: FlamePawnBoard3D(
-                        pawns: pawnVisuals,
-                        cellSize: cell,
-                        fallback: fallbackPawnLayer,
-                      ),
-                    )
-                  else
-                    Positioned.fill(child: fallbackPawnLayer),
-                  if (use3DPawns)
-                    ..._buildPawnHitboxes(
-                      placements: placements,
-                      tokenSize: tokenSize,
-                    ),
+                  Positioned.fill(child: pawnLayer),
                 ],
               ),
             ),
@@ -130,10 +101,9 @@ class LudoBoard extends StatelessWidget {
     );
   }
 
-  Widget _build2DPawnLayer({
+  Widget _buildPawnLayer({
     required List<_TokenPlacement> placements,
     required double tokenSize,
-    required bool interactive,
   }) {
     return Stack(
       clipBehavior: Clip.none,
@@ -166,8 +136,7 @@ class LudoBoard extends StatelessWidget {
                   returningTokenIds.contains(placement.tokenId),
               shielded:
                   shieldedTokenIds.contains(placement.tokenId),
-              onTap: interactive &&
-                      movableTokenIds.contains(placement.tokenId) &&
+              onTap: movableTokenIds.contains(placement.tokenId) &&
                       onTokenTap != null
                   ? () => onTokenTap!(placement.tokenId)
                   : null,
@@ -175,61 +144,6 @@ class LudoBoard extends StatelessWidget {
           ),
       ],
     );
-  }
-
-  List<FlamePawnVisualState> _build3DPawnVisuals({
-    required List<_TokenPlacement> placements,
-    required double cell,
-  }) {
-    return placements
-        .map(
-          (_TokenPlacement placement) => FlamePawnVisualState(
-            tokenId: placement.tokenId,
-            boardX: placement.center.dx / cell,
-            boardY: placement.center.dy / cell,
-            color: LudoReferenceVisuals.colorFor(
-              placement.playerColor,
-            ),
-            scale: placement.scale,
-            highlighted:
-                movableTokenIds.contains(placement.tokenId),
-            moving: movingTokenId == placement.tokenId,
-            captured:
-                capturedTokenIds.contains(placement.tokenId),
-            returning:
-                returningTokenIds.contains(placement.tokenId),
-          ),
-        )
-        .toList(growable: false);
-  }
-
-  List<Widget> _buildPawnHitboxes({
-    required List<_TokenPlacement> placements,
-    required double tokenSize,
-  }) {
-    return <Widget>[
-      for (final _TokenPlacement placement in placements)
-        if (movableTokenIds.contains(placement.tokenId) &&
-            onTokenTap != null)
-          Positioned(
-            left: placement.center.dx -
-                ((tokenSize * placement.scale) / 2),
-            top: placement.center.dy -
-                ((tokenSize * placement.scale) * 1.12),
-            width: tokenSize * placement.scale,
-            height: tokenSize * placement.scale * 1.30,
-            child: Semantics(
-              button: true,
-              enabled: true,
-              label: 'Movable Ludo pawn',
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onTokenTap!(placement.tokenId),
-                child: const SizedBox.expand(),
-              ),
-            ),
-          ),
-    ];
   }
 
   List<Widget> _playerLabels({

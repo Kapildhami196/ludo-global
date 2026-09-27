@@ -3,9 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/player_color.dart';
-import '../rendering/flame_3d_runtime.dart';
-import '../rendering/production_dice.dart';
 import '../style/ludo_reference_visuals.dart';
+import 'animated_dice.dart';
 
 class PlayerDiceSlot extends StatefulWidget {
   const PlayerDiceSlot({
@@ -86,102 +85,13 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
 
         return Transform.scale(
           scale: pulseScale,
-          child: Flame3DRuntime.isAvailable
-              ? _build3DDiceSlot(wave)
-              : _build2DFallbackSlot(wave),
+          child: _buildDiceSlot(wave),
         );
       },
     );
   }
 
-  Widget _build3DDiceSlot(double wave) {
-    final double sceneSize = widget.size * 1.18;
-
-    return SizedBox(
-      width: widget.size * 1.48,
-      height: widget.size * 1.28,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: <Widget>[
-          Positioned(
-            bottom: widget.size * 0.03,
-            child: Container(
-              width: widget.size * 0.88,
-              height: widget.size * 0.12,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.34),
-                    blurRadius: widget.size * 0.18,
-                    spreadRadius: widget.size * 0.018,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Container(
-            width: widget.size * 1.25,
-            height: widget.size * 1.25,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: <Color>[
-                  _accentColor.withValues(
-                    alpha: 0.13 + wave * 0.06,
-                  ),
-                  _accentColor.withValues(alpha: 0.035),
-                  Colors.transparent,
-                ],
-                stops: const <double>[0, 0.54, 1],
-              ),
-            ),
-          ),
-          SizedBox.square(
-            dimension: sceneSize,
-            child: ProductionDice(
-              value: widget.value,
-              enabled: widget.enabled,
-              rolling: widget.rolling,
-              onTap: widget.onRoll,
-              accentColor: _accentColor,
-              size: sceneSize,
-              launchDirection: widget.launchDirection,
-            ),
-          ),
-          if (!widget.rolling)
-            Positioned(
-              bottom: 0,
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: widget.size * 0.12,
-                  vertical: widget.size * 0.035,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xE6192240),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: _accentColor.withValues(alpha: 0.22),
-                  ),
-                ),
-                child: Text(
-                  widget.enabled ? 'ROLL' : 'WAIT',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.92),
-                    fontSize: widget.size * 0.12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _build2DFallbackSlot(double wave) {
+  Widget _buildDiceSlot(double wave) {
     return SizedBox(
       width: widget.size * 1.20,
       height: widget.size,
@@ -245,7 +155,7 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                 ],
               ),
               child: Center(
-                child: ProductionDice(
+                child: AnimatedDice(
                   value: widget.value,
                   enabled: widget.enabled,
                   rolling: widget.rolling,
