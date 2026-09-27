@@ -134,6 +134,12 @@ void main() {
 
     expect(find.text('VS COMPUTER'), findsOneWidget);
     expect(find.byKey(const Key('roll_dice_button')), findsOneWidget);
+
+    // The computer can be randomly selected to start. Dispose the match,
+    // then advance fake time so any in-flight AI delay can finish its
+    // mounted check without leaving a pending timer behind.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 2));
   });
 }
 
