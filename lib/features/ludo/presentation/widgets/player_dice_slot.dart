@@ -97,7 +97,7 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                   child: CustomPaint(
                     size: Size(widget.size * 0.28, widget.size * 0.28),
                     painter: _DiceBubbleTailPainter(
-                      pointRight: !widget.tailOnRight,
+                      pointRight: widget.tailOnRight,
                     ),
                   ),
                 ),
