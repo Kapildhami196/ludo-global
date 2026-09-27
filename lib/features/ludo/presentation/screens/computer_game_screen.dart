@@ -654,7 +654,7 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
           GameBackground(
             referencePurple: true,
             child: SafeArea(
-              child: SingleChildScrollView(
+              child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Column(
                   children: [
@@ -665,7 +665,8 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
                       onBack: _confirmQuit,
                     ),
                     const SizedBox(height: 4),
-                    GameBoardStage(
+                    Expanded(
+                      child: GameBoardStage(
                         gameState: _state,
                         diceValue: _lastDiceValue,
                         diceRolling: _isRolling,
@@ -688,6 +689,7 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
                           onTokenTap: _onHumanTokenTap,
                         ),
                       ),
+                    ),
                     const SizedBox(height: 6),
                     GameplayCallout(
                       message: _message,
