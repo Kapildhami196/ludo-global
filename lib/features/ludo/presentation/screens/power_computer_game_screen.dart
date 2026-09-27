@@ -195,6 +195,7 @@ class _PowerComputerGameScreenState
           : 'Rolling...';
     });
 
+    unawaited(_feedback.diceControl());
     unawaited(_feedback.diceRoll());
     await Future<void>.delayed(const Duration(milliseconds: 650));
     if (!mounted) {
@@ -215,6 +216,8 @@ class _PowerComputerGameScreenState
     required bool isComputer,
     String? prefix,
   }) {
+    _playPowerEventFeedback(result);
+
     final LudoGameEvent? diceEvent = _eventOfType(
       result.gameEvents,
       LudoGameEventType.diceRolled,
@@ -247,6 +250,24 @@ class _PowerComputerGameScreenState
         _message = prefix ?? 'Turn resolved.';
       }
     });
+  }
+
+  void _playPowerEventFeedback(PowerLudoActionResult result) {
+    final bool bonusTriggered = result.powerEvents.any(
+      (event) =>
+          event.type == PowerGameEventType.bonusRollTriggered,
+    );
+
+    if (bonusTriggered) {
+      unawaited(_feedback.bonusRoll());
+      return;
+    }
+
+    if (result.powerEvents.any(
+      (event) => event.type == PowerGameEventType.powerCollected,
+    )) {
+      unawaited(_feedback.powerPickup());
+    }
   }
 
   void _onHumanTokenTap(int tokenId) {
@@ -318,7 +339,7 @@ class _PowerComputerGameScreenState
             _message =
                 'Double Distance armed. Tap a glowing token.';
           });
-          unawaited(_feedback.tap());
+          unawaited(_feedback.doubleDistance());
         } on StateError catch (error) {
           _showRuleMessage(error.message);
         }
@@ -409,7 +430,7 @@ class _PowerComputerGameScreenState
         _powerState = result.state;
         _message = 'Shield active on your token.';
       });
-      unawaited(_feedback.home());
+      unawaited(_feedback.shield());
     } on StateError catch (error) {
       _showRuleMessage(error.message);
     }
@@ -541,7 +562,7 @@ class _PowerComputerGameScreenState
               _powerState = result.state;
               _message = '$computerName used Shield.';
             });
-            unawaited(_feedback.home());
+            unawaited(_feedback.shield());
             await Future<void>.delayed(
               const Duration(milliseconds: 330),
             );
@@ -558,6 +579,7 @@ class _PowerComputerGameScreenState
               _message =
                   '$computerName used Dice Control: $value.';
             });
+            unawaited(_feedback.diceControl());
             unawaited(_feedback.diceRoll());
             await Future<void>.delayed(
               const Duration(milliseconds: 650),
@@ -602,7 +624,7 @@ class _PowerComputerGameScreenState
             _message =
                 '${_state.currentPlayer.name} used Double Distance.';
           });
-          unawaited(_feedback.tap());
+          unawaited(_feedback.doubleDistance());
           await Future<void>.delayed(
             const Duration(milliseconds: 350),
           );
@@ -656,6 +678,8 @@ class _PowerComputerGameScreenState
     required int tokenId,
     required String? computerReason,
   }) async {
+    _playPowerEventFeedback(result);
+
     final LudoGameEvent moveEvent = result.gameEvents.firstWhere(
       (event) =>
           event.type == LudoGameEventType.tokenMoved ||
