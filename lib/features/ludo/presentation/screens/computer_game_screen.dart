@@ -22,6 +22,7 @@ import '../widgets/game_fx_overlay.dart';
 import '../widgets/gameplay_callout.dart';
 import '../widgets/gameplay_header.dart';
 import '../widgets/ludo_board.dart';
+import '../widgets/match_result_dialog.dart';
 
 class ComputerGameScreen extends StatefulWidget {
   const ComputerGameScreen({
@@ -550,49 +551,26 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: LudoGlobalColors.surface,
-          icon: Icon(
-            humanWon
-                ? Icons.emoji_events_rounded
-                : Icons.smart_toy_rounded,
-            size: 62,
-            color: humanWon
-                ? LudoGlobalColors.gold
-                : LudoGlobalColors.purple,
-          ),
-          title: Text(
-            humanWon ? 'You win!' : '$winner wins',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
-          content: Text(
-            humanWon
-                ? 'Great match against the computer.'
-                : 'Try again or change the AI difficulty.',
-            textAlign: TextAlign.center,
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                setState(_resetGame);
-              },
-              icon: const Icon(Icons.replay_rounded),
-              label: const Text('Play Again'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                Navigator.of(context).pop();
-              },
-              child: const Text('Back'),
-            ),
-          ],
-        );
-      },
+      builder: (dialogContext) => MatchResultDialog(
+        title: humanWon ? 'You win!' : '$winner wins',
+        subtitle: humanWon
+            ? 'Great match against the computer.'
+            : 'Try again or change the AI difficulty.',
+        accentColor: humanWon
+            ? LudoGlobalColors.gold
+            : LudoGlobalColors.purple,
+        icon: humanWon
+            ? Icons.emoji_events_rounded
+            : Icons.smart_toy_rounded,
+        onPlayAgain: () {
+          Navigator.of(dialogContext).pop();
+          setState(_resetGame);
+        },
+        onBack: () {
+          Navigator.of(dialogContext).pop();
+          Navigator.of(context).pop();
+        },
+      ),
     );
   }
 
