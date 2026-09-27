@@ -717,7 +717,7 @@ class _PowerComputerGameScreenState
       } else {
         unawaited(_feedback.tokenStep());
       }
-      await Future<void>.delayed(const Duration(milliseconds: 125));
+      await Future<void>.delayed(const Duration(milliseconds: 155));
     }
 
     if (!mounted) {
@@ -964,7 +964,7 @@ class _PowerComputerGameScreenState
           GameBackground(
             child: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Column(
                   children: [
                     GameplayHeader(

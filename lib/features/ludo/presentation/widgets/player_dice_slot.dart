@@ -15,6 +15,7 @@ class PlayerDiceSlot extends StatefulWidget {
     required this.enabled,
     required this.onRoll,
     required this.size,
+    required this.launchDirection,
     this.tailOnRight = false,
     super.key,
   });
@@ -26,6 +27,7 @@ class PlayerDiceSlot extends StatefulWidget {
   final bool enabled;
   final VoidCallback onRoll;
   final double size;
+  final Offset launchDirection;
   final bool tailOnRight;
 
   @override
@@ -79,12 +81,12 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
       builder: (context, _) {
         final double wave =
             (math.sin(_controller.value * math.pi * 2) + 1) / 2;
-        final double pulseScale = 0.992 + wave * 0.016;
+        final double pulseScale = 0.994 + wave * 0.012;
 
         return Transform.scale(
           scale: pulseScale,
           child: SizedBox(
-            width: widget.size * 1.18,
+            width: widget.size * 1.20,
             height: widget.size,
             child: Stack(
               clipBehavior: Clip.none,
@@ -93,47 +95,55 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                 Positioned(
                   left: widget.tailOnRight ? null : 0,
                   right: widget.tailOnRight ? 0 : null,
-                  top: widget.size * 0.45,
+                  top: widget.size * 0.43,
                   child: CustomPaint(
-                    size: Size(widget.size * 0.28, widget.size * 0.28),
+                    size: Size(
+                      widget.size * 0.30,
+                      widget.size * 0.30,
+                    ),
                     painter: _DiceBubbleTailPainter(
                       pointRight: widget.tailOnRight,
                     ),
                   ),
                 ),
                 Positioned(
-                  left: widget.tailOnRight ? 0 : widget.size * 0.18,
-                  right: widget.tailOnRight ? widget.size * 0.18 : 0,
+                  left: widget.tailOnRight
+                      ? 0
+                      : widget.size * 0.20,
+                  right: widget.tailOnRight
+                      ? widget.size * 0.20
+                      : 0,
                   child: Container(
                     width: widget.size,
-                    height: widget.size * 0.90,
-                    padding: EdgeInsets.all(widget.size * 0.09),
+                    height: widget.size * 0.92,
+                    padding: EdgeInsets.all(widget.size * 0.055),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(widget.size * 0.19),
+                      borderRadius:
+                          BorderRadius.circular(widget.size * 0.19),
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: <Color>[
-                          Color(0xFF262653),
+                          Color(0xFF2B2B59),
                           Color(0xFF161638),
                         ],
                       ),
                       border: Border.all(
-                        color: const Color(0xFF0D102D),
-                        width: widget.size * 0.035,
+                        color: const Color(0xFF0B0E28),
+                        width: widget.size * 0.036,
                       ),
                       boxShadow: <BoxShadow>[
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.44),
-                          blurRadius: widget.size * 0.14,
+                          color: Colors.black.withValues(alpha: 0.48),
+                          blurRadius: widget.size * 0.15,
                           offset: Offset(0, widget.size * 0.07),
                         ),
                         BoxShadow(
                           color: _accentColor.withValues(
-                            alpha: 0.10 + wave * 0.09,
+                            alpha: 0.08 + wave * 0.08,
                           ),
-                          blurRadius: widget.size * 0.20,
-                          spreadRadius: widget.size * 0.01,
+                          blurRadius: widget.size * 0.18,
+                          spreadRadius: widget.size * 0.006,
                         ),
                       ],
                     ),
@@ -144,8 +154,9 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                         rolling: widget.rolling,
                         onTap: widget.onRoll,
                         accentColor: _accentColor,
-                        size: widget.size * 0.72,
+                        size: widget.size * 0.83,
                         compact: true,
+                        launchDirection: widget.launchDirection,
                       ),
                     ),
                   ),
@@ -172,15 +183,15 @@ class _DiceBubbleTailPainter extends CustomPainter {
 
     if (pointRight) {
       path
-        ..moveTo(0, size.height * 0.16)
+        ..moveTo(0, size.height * 0.14)
         ..lineTo(size.width, size.height * 0.50)
-        ..lineTo(0, size.height * 0.84)
+        ..lineTo(0, size.height * 0.86)
         ..close();
     } else {
       path
-        ..moveTo(size.width, size.height * 0.16)
+        ..moveTo(size.width, size.height * 0.14)
         ..lineTo(0, size.height * 0.50)
-        ..lineTo(size.width, size.height * 0.84)
+        ..lineTo(size.width, size.height * 0.86)
         ..close();
     }
 
@@ -191,7 +202,7 @@ class _DiceBubbleTailPainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = const Color(0xFF0D102D)
+        ..color = const Color(0xFF0B0E28)
         ..style = PaintingStyle.stroke
         ..strokeWidth = size.width * 0.12,
     );
