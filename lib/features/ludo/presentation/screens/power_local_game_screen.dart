@@ -1108,7 +1108,7 @@ class _PowerTurnCard extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w900),
                 ),
                 const Text(
-                  'YOUR POWER TURN',
+                  'CURRENT TURN',
                   style: TextStyle(
                     color: LudoGlobalColors.textSecondary,
                     fontSize: 9,
