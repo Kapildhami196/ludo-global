@@ -115,8 +115,8 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                       : 0,
                   child: Container(
                     width: widget.size,
-                    height: widget.size * 0.92,
-                    padding: EdgeInsets.all(widget.size * 0.055),
+                    height: widget.size * 0.88,
+                    padding: EdgeInsets.all(widget.size * 0.07),
                     decoration: BoxDecoration(
                       borderRadius:
                           BorderRadius.circular(widget.size * 0.19),
@@ -142,8 +142,8 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                           color: _accentColor.withValues(
                             alpha: 0.08 + wave * 0.08,
                           ),
-                          blurRadius: widget.size * 0.18,
-                          spreadRadius: widget.size * 0.006,
+                          blurRadius: widget.size * 0.14,
+                          spreadRadius: widget.size * 0.004,
                         ),
                       ],
                     ),
@@ -154,7 +154,7 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                         rolling: widget.rolling,
                         onTap: widget.onRoll,
                         accentColor: _accentColor,
-                        size: widget.size * 0.83,
+                        size: widget.size * 0.76,
                         compact: true,
                         launchDirection: widget.launchDirection,
                       ),

@@ -955,6 +955,7 @@ class _PowerLocalGameScreenState
       body: Stack(
         children: [
           GameBackground(
+            referencePurple: true,
             child: SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {

@@ -617,6 +617,7 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
       body: Stack(
         children: [
           GameBackground(
+            referencePurple: true,
             child: SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {
