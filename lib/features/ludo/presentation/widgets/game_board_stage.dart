@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/ludo_game_state.dart';
@@ -28,90 +30,92 @@ class GameBoardStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 0.58,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final double width = constraints.maxWidth;
-          final double boardInset = width * 0.0125;
-          final double boardLeft = boardInset;
-          final double boardSize = width - (boardInset * 2);
-          final double cell = boardSize / 15;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double width = constraints.maxWidth;
+        final double height = constraints.maxHeight;
 
-          // Matches the reference composition: a large open HUD area above,
-          // with the square board centered lower in the gameplay viewport.
-          final double boardTop = boardSize * 0.50;
-          final double avatarSize = cell * 1.46;
-          final double diceSize = cell * 2.10;
-          final double edgeInset = cell * 0.28;
-          final double hudGap = cell * 0.14;
-          final Color activeColor =
-              LudoReferenceVisuals.colorFor(gameState.currentPlayer.color);
+        // Keep the whole gameplay scene on one screen. The board is centered
+        // inside the available stage and scales down only when vertical space
+        // is tighter (small phones / Power mode).
+        final double boardSize = math.min(
+          width * 0.985,
+          height / 1.30,
+        );
+        final double boardLeft = (width - boardSize) / 2;
+        final double boardTop = (height - boardSize) / 2;
+        final double cell = boardSize / 15;
 
-          return Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned(
-                left: boardLeft,
-                top: boardTop + cell * 0.09,
-                width: boardSize,
-                height: boardSize,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(cell * 0.17),
-                    boxShadow: const <BoxShadow>[
-                      BoxShadow(
-                        color: Color(0x78000000),
-                        blurRadius: 9,
-                        offset: Offset(0, 5),
-                      ),
-                    ],
-                  ),
+        final double avatarSize = cell * 1.58;
+        final double diceSize = cell * 2.70;
+        final double edgeInset = cell * 0.20;
+        final double hudGap = cell * 0.10;
+        final Color activeColor =
+            LudoReferenceVisuals.colorFor(gameState.currentPlayer.color);
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              left: boardLeft,
+              top: boardTop + cell * 0.085,
+              width: boardSize,
+              height: boardSize,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(cell * 0.17),
+                  boxShadow: const <BoxShadow>[
+                    BoxShadow(
+                      color: Color(0x78000000),
+                      blurRadius: 10,
+                      offset: Offset(0, 6),
+                    ),
+                  ],
                 ),
               ),
-              Positioned(
-                left: boardLeft,
-                top: boardTop,
-                width: boardSize,
-                height: boardSize,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOutCubic,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(cell * 0.17),
-                    boxShadow: <BoxShadow>[
+            ),
+            Positioned(
+              left: boardLeft,
+              top: boardTop,
+              width: boardSize,
+              height: boardSize,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(cell * 0.17),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.16),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                    if (diceRolling)
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.16),
-                        blurRadius: 6,
-                        offset: const Offset(0, 3),
+                        color: activeColor.withValues(alpha: 0.13),
+                        blurRadius: 14,
+                        spreadRadius: 1,
                       ),
-                      if (diceRolling)
-                        BoxShadow(
-                          color: activeColor.withValues(alpha: 0.13),
-                          blurRadius: 14,
-                          spreadRadius: 1,
-                        ),
-                    ],
-                  ),
-                  child: RepaintBoundary(child: board),
+                  ],
                 ),
+                child: RepaintBoundary(child: board),
               ),
-              for (final player in gameState.players)
-                ..._hudForPlayer(
-                  playerId: player.id,
-                  color: player.color,
-                  boardLeft: boardLeft,
-                  boardTop: boardTop,
-                  boardSize: boardSize,
-                  avatarSize: avatarSize,
-                  diceSize: diceSize,
-                  edgeInset: edgeInset,
-                  hudGap: hudGap,
-                ),
-            ],
-          );
-        },
-      ),
+            ),
+            for (final player in gameState.players)
+              ..._hudForPlayer(
+                playerId: player.id,
+                color: player.color,
+                boardLeft: boardLeft,
+                boardTop: boardTop,
+                boardSize: boardSize,
+                avatarSize: avatarSize,
+                diceSize: diceSize,
+                edgeInset: edgeInset,
+                hudGap: hudGap,
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -139,8 +143,8 @@ class GameBoardStage extends StatelessWidget {
         ? boardLeft + boardSize - edgeInset - avatarSize
         : boardLeft + edgeInset;
     final double avatarY = top
-        ? boardTop - avatarSize - cell * 0.34
-        : boardTop + boardSize + cell * 0.25;
+        ? boardTop - avatarSize - cell * 0.28
+        : boardTop + boardSize + cell * 0.22;
 
     final double diceWidth = diceSize * 1.18;
     final double diceX = alignRight
@@ -149,11 +153,11 @@ class GameBoardStage extends StatelessWidget {
     final double diceY =
         avatarY + ((avatarSize - diceSize) / 2);
 
-    // The reference die only leaves the holder a modest distance and grows
-    // enough to read as a 3D toss without covering the board.
+    // Reference behavior: the die rolls mostly vertically toward the viewer,
+    // not in a large circular orbit across the board.
     final Offset launchDirection = Offset(
-      alignRight ? -0.56 : 0.56,
-      top ? 0.42 : -0.42,
+      alignRight ? -0.18 : 0.18,
+      top ? 0.30 : -0.30,
     );
 
     final List<Widget> result = <Widget>[

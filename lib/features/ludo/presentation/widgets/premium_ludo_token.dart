@@ -137,17 +137,17 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                         ? math.sin(t * math.pi).abs()
                         : 0;
                 final double hop = widget.returning
-                    ? -lift * widget.size * 0.62
+                    ? -lift * widget.size * 0.52
                     : widget.moving
-                        ? -lift * widget.size * 0.40
+                        ? -lift * widget.size * 0.28
                         : 0;
                 final double squash = widget.returning
                     ? 1 - lift * 0.05
                     : widget.moving
                         ? 1 - lift * 0.055
                         : 1;
-                final double stretch = widget.moving
-                    ? 1 + lift * 0.065
+                final double screenPop = widget.moving
+                    ? 1 + lift * 0.14
                     : 1;
                 final double shake = widget.captured
                     ? math.sin(t * math.pi * 10) *
@@ -217,15 +217,28 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                       Transform.translate(
                         offset: Offset(shake, hop),
                         child: Transform.scale(
-                          scaleX: captureScale / squash,
-                          scaleY: captureScale * squash * stretch,
+                          scaleX:
+                              captureScale / squash * screenPop,
+                          scaleY:
+                              captureScale * squash * screenPop,
                           alignment: Alignment.bottomCenter,
-                          child: SizedBox(
-                            width: widget.size,
-                            height: widget.size * 1.22,
-                            child: SvgPicture.asset(
-                              GameAssetPaths.pawnFor(displayColor),
-                              fit: BoxFit.contain,
+                          child: Transform(
+                            alignment: Alignment.bottomCenter,
+                            transform: Matrix4.identity()
+                              ..setEntry(3, 2, 0.0024)
+                              ..rotateX(-0.28),
+                            child: Transform.scale(
+                              scaleX: 1.10,
+                              scaleY: 0.90,
+                              alignment: Alignment.bottomCenter,
+                              child: SizedBox(
+                                width: widget.size,
+                                height: widget.size * 1.12,
+                                child: SvgPicture.asset(
+                                  GameAssetPaths.pawnFor(displayColor),
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
                             ),
                           ),
                         ),
