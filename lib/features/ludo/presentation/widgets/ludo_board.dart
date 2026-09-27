@@ -758,7 +758,7 @@ class _LudoBoardPainter extends CustomPainter {
     required PlayerColor engineColor,
   }) {
     final Color color = LudoReferenceVisuals.colorFor(engineColor);
-    final Color soft = LudoReferenceVisuals.softColorFor(engineColor);
+    final Color dark = LudoReferenceVisuals.darkColorFor(engineColor);
 
     for (final Offset point in cells) {
       final Rect rect = Rect.fromLTWH(
@@ -776,7 +776,7 @@ class _LudoBoardPainter extends CustomPainter {
             end: Alignment.bottomRight,
             colors: <Color>[
               color,
-              Color.lerp(color, LudoReferenceVisuals.darkColorFor(engineColor), 0.18)!,
+              Color.lerp(color, dark, 0.18)!,
             ],
           ).createShader(rect),
       );
