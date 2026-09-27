@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/ludo_global_tokens.dart';
 import '../../domain/engine/ludo_board_map.dart';
 import '../../domain/entities/ludo_game_state.dart';
 import '../../domain/entities/ludo_player.dart';
@@ -10,8 +9,7 @@ import '../../domain/entities/ludo_token.dart';
 import '../../domain/entities/player_color.dart';
 import '../../domain/entities/power_type.dart';
 import '../../domain/entities/token_status.dart';
-import 'board_decoration_layer.dart';
-import 'board_lighting_overlay.dart';
+import '../style/ludo_reference_visuals.dart';
 import 'power_pickup_marker.dart';
 import 'premium_ludo_token.dart';
 
@@ -52,9 +50,8 @@ class LudoBoard extends StatelessWidget {
             constraints.maxHeight,
           );
           final double cell = size / 15;
-          final double tokenSize = cell * 0.62;
-          final List<_TokenPlacement> placements =
-              _placements(cell);
+          final double tokenSize = cell * 0.92;
+          final List<_TokenPlacement> placements = _placements(cell);
 
           return RepaintBoundary(
             child: SizedBox.square(
@@ -67,39 +64,34 @@ class LudoBoard extends StatelessWidget {
                       painter: _LudoBoardPainter(),
                     ),
                   ),
-                  const Positioned.fill(
-                    child: BoardDecorationLayer(),
-                  ),
-                  Positioned.fill(
-                    child: BoardLightingOverlay(
-                      activeColor: _uiColorFor(
-                        gameState?.currentPlayer.color ??
-                            PlayerColor.red,
-                      ),
+                  if (gameState != null)
+                    ..._playerLabels(
+                      players: gameState!.players,
+                      cell: cell,
                     ),
-                  ),
                   for (final MapEntry<PowerType, int> entry
                       in powerPickupPositions.entries)
                     Positioned(
                       key: ValueKey<String>(
                         '${entry.key.name}-${entry.value}',
                       ),
-                      left: (LudoBoardMap.commonPath[entry.value].column + 0.5) *
-                              cell -
-                          (cell * 0.3),
+                      left:
+                          (LudoBoardMap.commonPath[entry.value].column + 0.5) *
+                                  cell -
+                              (cell * 0.31),
                       top: (LudoBoardMap.commonPath[entry.value].row + 0.5) *
                               cell -
-                          (cell * 0.3),
+                          (cell * 0.31),
                       child: PowerPickupMarker(
                         type: entry.key,
-                        size: cell * 0.6,
+                        size: cell * 0.62,
                       ),
                     ),
                   for (final _TokenPlacement placement in placements)
                     AnimatedPositioned(
                       duration: returningTokenIds.contains(placement.tokenId)
                           ? const Duration(milliseconds: 520)
-                          : const Duration(milliseconds: 120),
+                          : const Duration(milliseconds: 125),
                       curve: returningTokenIds.contains(placement.tokenId)
                           ? Curves.easeInOutCubic
                           : Curves.easeOutCubic,
@@ -134,13 +126,68 @@ class LudoBoard extends StatelessWidget {
     );
   }
 
-  Color _uiColorFor(PlayerColor color) {
-    return switch (color) {
-      PlayerColor.red => LudoGlobalColors.red,
-      PlayerColor.green => LudoGlobalColors.green,
-      PlayerColor.yellow => LudoGlobalColors.gold,
-      PlayerColor.blue => LudoGlobalColors.electricBlue,
-    };
+  List<Widget> _playerLabels({
+    required List<LudoPlayer> players,
+    required double cell,
+  }) {
+    final List<Widget> labels = <Widget>[];
+
+    for (final LudoPlayer player in players) {
+      final int finished =
+          player.tokens.where((token) => token.isFinished).length;
+      final Widget label = _BoardPlayerLabel(
+        playerName: player.name,
+        progressLabel: '$finished/${player.tokens.length}',
+        color: LudoReferenceVisuals.colorFor(player.color),
+        darkColor: LudoReferenceVisuals.darkColorFor(player.color),
+        height: cell * 0.54,
+      );
+
+      switch (player.color) {
+        case PlayerColor.red:
+          labels.add(
+            Positioned(
+              left: cell * 1.00,
+              top: cell * 0.10,
+              width: cell * 4.65,
+              child: label,
+            ),
+          );
+          break;
+        case PlayerColor.green:
+          labels.add(
+            Positioned(
+              right: cell * 0.42,
+              top: cell * 0.10,
+              width: cell * 4.65,
+              child: label,
+            ),
+          );
+          break;
+        case PlayerColor.yellow:
+          labels.add(
+            Positioned(
+              right: cell * 0.42,
+              bottom: cell * 0.12,
+              width: cell * 4.65,
+              child: label,
+            ),
+          );
+          break;
+        case PlayerColor.blue:
+          labels.add(
+            Positioned(
+              left: cell * 1.00,
+              bottom: cell * 0.12,
+              width: cell * 4.65,
+              child: label,
+            ),
+          );
+          break;
+      }
+    }
+
+    return labels;
   }
 
   List<_TokenPlacement> _placements(double cell) {
@@ -158,19 +205,16 @@ class LudoBoard extends StatelessWidget {
         final LudoToken token = player.tokens[tokenIndex];
         Offset center;
 
-        final int? visualProgress =
-            visualPathOverrides[token.id];
+        final int? visualProgress = visualPathOverrides[token.id];
 
-        if (visualProgress == null &&
-            token.status == TokenStatus.base) {
+        if (visualProgress == null && token.status == TokenStatus.base) {
           center = _baseAnchor(
             player.color,
             tokenIndex,
             cell,
           );
         } else {
-          final int pathPosition =
-              visualProgress ?? token.pathPosition;
+          final int pathPosition = visualProgress ?? token.pathPosition;
           final boardCell = LudoBoardMap.cellFor(
             color: player.color,
             pathPosition: pathPosition,
@@ -180,20 +224,18 @@ class LudoBoard extends StatelessWidget {
             (boardCell.row + 0.5) * cell,
           );
 
-          final String key =
-              '${boardCell.row}:${boardCell.column}';
+          final String key = '${boardCell.row}:${boardCell.column}';
           final int stackIndex = stackCounts[key] ?? 0;
           stackCounts[key] = stackIndex + 1;
 
           if (stackIndex > 0) {
             const List<Offset> offsets = <Offset>[
-              Offset(-0.13, -0.10),
-              Offset(0.13, -0.10),
-              Offset(-0.13, 0.12),
-              Offset(0.13, 0.12),
+              Offset(-0.17, -0.12),
+              Offset(0.17, -0.12),
+              Offset(-0.17, 0.13),
+              Offset(0.17, 0.13),
             ];
-            final Offset delta =
-                offsets[stackIndex % offsets.length];
+            final Offset delta = offsets[stackIndex % offsets.length];
             center += Offset(delta.dx * cell, delta.dy * cell);
           }
         }
@@ -280,6 +322,72 @@ class LudoBoard extends StatelessWidget {
   }
 }
 
+class _BoardPlayerLabel extends StatelessWidget {
+  const _BoardPlayerLabel({
+    required this.playerName,
+    required this.progressLabel,
+    required this.color,
+    required this.darkColor,
+    required this.height,
+  });
+
+  final String playerName;
+  final String progressLabel;
+  final Color color;
+  final Color darkColor;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      child: Row(
+        children: [
+          Container(
+            height: height * 0.80,
+            constraints: BoxConstraints(minWidth: height * 1.45),
+            padding: EdgeInsets.symmetric(horizontal: height * 0.26),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: darkColor.withValues(alpha: 0.78),
+              borderRadius: BorderRadius.circular(height * 0.28),
+            ),
+            child: Text(
+              progressLabel,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: height * 0.41,
+                fontWeight: FontWeight.w900,
+                height: 1,
+              ),
+            ),
+          ),
+          SizedBox(width: height * 0.12),
+          Expanded(
+            child: Text(
+              playerName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: darkColor,
+                fontSize: height * 0.66,
+                fontWeight: FontWeight.w900,
+                height: 1,
+                shadows: <Shadow>[
+                  Shadow(
+                    color: color.withValues(alpha: 0.28),
+                    blurRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TokenPlacement {
   const _TokenPlacement({
     required this.tokenId,
@@ -297,21 +405,25 @@ class _TokenPlacement {
 class _LudoBoardPainter extends CustomPainter {
   const _LudoBoardPainter();
 
+  static const Color _grid = Color(0xFF92A2B2);
+  static const Color _safeStar = Color(0xFF7DA7D3);
+
   @override
   void paint(Canvas canvas, Size size) {
     final double cell = size.width / 15;
+    final double radius = cell * 0.18;
     final RRect boardShape = RRect.fromRectAndRadius(
       Offset.zero & size,
-      Radius.circular(cell * 0.52),
+      Radius.circular(radius),
     );
 
     canvas.drawRRect(
-      boardShape.shift(Offset(0, cell * 0.18)),
+      boardShape.shift(Offset(0, cell * 0.10)),
       Paint()
-        ..color = const Color(0xAA000817)
+        ..color = const Color(0x8A000514)
         ..maskFilter = const MaskFilter.blur(
           BlurStyle.normal,
-          8,
+          5,
         ),
     );
 
@@ -320,41 +432,32 @@ class _LudoBoardPainter extends CustomPainter {
 
     canvas.drawRect(
       Offset.zero & size,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[
-            Color(0xFFFDFEFF),
-            Color(0xFFEAF1F7),
-            Color(0xFFC9D7E4),
-          ],
-        ).createShader(Offset.zero & size),
+      Paint()..color = const Color(0xFFF7F8FA),
     );
 
     _drawBase(
       canvas,
       cell,
       const Offset(0, 0),
-      LudoGlobalColors.red,
+      PlayerColor.red,
     );
     _drawBase(
       canvas,
       cell,
       const Offset(9, 0),
-      LudoGlobalColors.green,
+      PlayerColor.green,
     );
     _drawBase(
       canvas,
       cell,
       const Offset(9, 9),
-      LudoGlobalColors.gold,
+      PlayerColor.yellow,
     );
     _drawBase(
       canvas,
       cell,
       const Offset(0, 9),
-      LudoGlobalColors.electricBlue,
+      PlayerColor.blue,
     );
 
     for (int row = 0; row < 15; row++) {
@@ -373,7 +476,7 @@ class _LudoBoardPainter extends CustomPainter {
           cell,
           column,
           row,
-          const Color(0xFFF9FBFC),
+          const Color(0xFFFBFCFD),
         );
       }
     }
@@ -385,7 +488,7 @@ class _LudoBoardPainter extends CustomPainter {
         for (int column = 1; column <= 5; column++)
           Offset(column.toDouble(), 7),
       ],
-      color: LudoGlobalColors.red,
+      engineColor: PlayerColor.red,
     );
     _fillLane(
       canvas,
@@ -394,7 +497,7 @@ class _LudoBoardPainter extends CustomPainter {
         for (int row = 1; row <= 5; row++)
           Offset(7, row.toDouble()),
       ],
-      color: LudoGlobalColors.green,
+      engineColor: PlayerColor.green,
     );
     _fillLane(
       canvas,
@@ -403,7 +506,7 @@ class _LudoBoardPainter extends CustomPainter {
         for (int column = 9; column <= 13; column++)
           Offset(column.toDouble(), 7),
       ],
-      color: LudoGlobalColors.gold,
+      engineColor: PlayerColor.yellow,
     );
     _fillLane(
       canvas,
@@ -412,47 +515,55 @@ class _LudoBoardPainter extends CustomPainter {
         for (int row = 9; row <= 13; row++)
           Offset(7, row.toDouble()),
       ],
-      color: LudoGlobalColors.electricBlue,
+      engineColor: PlayerColor.blue,
     );
 
-    _drawStartCell(
-      canvas,
-      cell,
-      1,
-      6,
-      LudoGlobalColors.red,
-    );
-    _drawStartCell(
-      canvas,
-      cell,
-      8,
-      1,
-      LudoGlobalColors.green,
-    );
-    _drawStartCell(
-      canvas,
-      cell,
-      13,
-      8,
-      LudoGlobalColors.gold,
-    );
-    _drawStartCell(
-      canvas,
-      cell,
-      6,
-      13,
-      LudoGlobalColors.electricBlue,
-    );
+    _drawStartCell(canvas, cell, 1, 6, PlayerColor.red);
+    _drawStartCell(canvas, cell, 8, 1, PlayerColor.green);
+    _drawStartCell(canvas, cell, 13, 8, PlayerColor.yellow);
+    _drawStartCell(canvas, cell, 6, 13, PlayerColor.blue);
 
-    _drawSafeCell(canvas, cell, 6, 2);
-    _drawSafeCell(canvas, cell, 12, 6);
-    _drawSafeCell(canvas, cell, 8, 12);
-    _drawSafeCell(canvas, cell, 2, 8);
+    _drawSafeStar(canvas, cell, 2, 8);
+    _drawSafeStar(canvas, cell, 6, 2);
+    _drawSafeStar(canvas, cell, 12, 6);
+    _drawSafeStar(canvas, cell, 8, 12);
+
+    _drawDirectionArrow(
+      canvas,
+      cell,
+      column: 0,
+      row: 7,
+      direction: _ArrowDirection.right,
+      color: LudoReferenceVisuals.darkColorFor(PlayerColor.red),
+    );
+    _drawDirectionArrow(
+      canvas,
+      cell,
+      column: 7,
+      row: 0,
+      direction: _ArrowDirection.down,
+      color: LudoReferenceVisuals.darkColorFor(PlayerColor.green),
+    );
+    _drawDirectionArrow(
+      canvas,
+      cell,
+      column: 14,
+      row: 7,
+      direction: _ArrowDirection.left,
+      color: LudoReferenceVisuals.darkColorFor(PlayerColor.yellow),
+    );
+    _drawDirectionArrow(
+      canvas,
+      cell,
+      column: 7,
+      row: 14,
+      direction: _ArrowDirection.up,
+      color: LudoReferenceVisuals.darkColorFor(PlayerColor.blue),
+    );
 
     _drawCenter(canvas, cell);
 
     canvas.restore();
-
     _drawOuterBorder(canvas, size, cell);
   }
 
@@ -460,8 +571,12 @@ class _LudoBoardPainter extends CustomPainter {
     Canvas canvas,
     double cell,
     Offset origin,
-    Color color,
+    PlayerColor engineColor,
   ) {
+    final Color color = LudoReferenceVisuals.colorFor(engineColor);
+    final Color dark = LudoReferenceVisuals.darkColorFor(engineColor);
+    final Color soft = LudoReferenceVisuals.softColorFor(engineColor);
+
     final Rect baseRect = Rect.fromLTWH(
       origin.dx * cell,
       origin.dy * cell,
@@ -469,51 +584,35 @@ class _LudoBoardPainter extends CustomPainter {
       cell * 6,
     );
 
-    final HSLColor hsl = HSLColor.fromColor(color);
-    final Color dark = hsl
-        .withLightness(
-          (hsl.lightness - 0.20).clamp(0.0, 1.0).toDouble(),
-        )
-        .toColor();
-    final Color light = hsl
-        .withLightness(
-          (hsl.lightness + 0.17).clamp(0.0, 1.0).toDouble(),
-        )
-        .toColor();
-
     canvas.drawRect(
       baseRect,
       Paint()
         ..shader = LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: <Color>[light, color, dark],
+          colors: <Color>[soft, color],
+          stops: const <double>[0, 0.76],
         ).createShader(baseRect),
     );
 
-    final Rect panelShadow = Rect.fromLTWH(
-      (origin.dx + 0.86) * cell,
-      (origin.dy + 0.96) * cell,
-      cell * 4.28,
-      cell * 4.28,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        panelShadow,
-        Radius.circular(cell * 0.52),
-      ),
-      Paint()..color = const Color(0x55000A18),
+    final Rect innerRect = Rect.fromLTWH(
+      (origin.dx + 0.90) * cell,
+      (origin.dy + 0.88) * cell,
+      cell * 4.20,
+      cell * 4.20,
     );
 
-    final Rect innerRect = Rect.fromLTWH(
-      (origin.dx + 0.78) * cell,
-      (origin.dy + 0.78) * cell,
-      cell * 4.28,
-      cell * 4.28,
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        innerRect.shift(Offset(0, cell * 0.08)),
+        Radius.circular(cell * 0.24),
+      ),
+      Paint()..color = const Color(0x35000000),
     );
+
     final RRect inner = RRect.fromRectAndRadius(
       innerRect,
-      Radius.circular(cell * 0.54),
+      Radius.circular(cell * 0.24),
     );
 
     canvas.drawRRect(
@@ -523,18 +622,16 @@ class _LudoBoardPainter extends CustomPainter {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: <Color>[
-            light.withValues(alpha: 0.98),
-            color,
-            dark,
+            dark.withValues(alpha: 0.68),
+            dark.withValues(alpha: 0.90),
           ],
-          stops: const <double>[0, 0.55, 1],
         ).createShader(innerRect),
     );
 
     canvas.drawRRect(
       inner,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.52)
+        ..color = Colors.white.withValues(alpha: 0.18)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
@@ -549,31 +646,14 @@ class _LudoBoardPainter extends CustomPainter {
     for (final Offset hole in holes) {
       final Offset center = Offset(hole.dx * cell, hole.dy * cell);
       canvas.drawCircle(
-        center.translate(0, cell * 0.07),
-        cell * 0.46,
-        Paint()..color = const Color(0x66000816),
+        center.translate(0, cell * 0.04),
+        cell * 0.40,
+        Paint()..color = Colors.black.withValues(alpha: 0.16),
       );
       canvas.drawCircle(
         center,
-        cell * 0.43,
-        Paint()
-          ..shader = RadialGradient(
-            center: const Alignment(-0.35, -0.35),
-            colors: <Color>[
-              color.withValues(alpha: 0.20),
-              dark.withValues(alpha: 0.48),
-            ],
-          ).createShader(
-            Rect.fromCircle(center: center, radius: cell * 0.43),
-          ),
-      );
-      canvas.drawCircle(
-        center,
-        cell * 0.43,
-        Paint()
-          ..color = Colors.white.withValues(alpha: 0.40)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1,
+        cell * 0.37,
+        Paint()..color = dark.withValues(alpha: 0.32),
       );
     }
   }
@@ -595,37 +675,40 @@ class _LudoBoardPainter extends CustomPainter {
     canvas.drawRect(
       rect,
       Paint()
-        ..shader = LinearGradient(
+        ..shader = const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: <Color>[
-            Colors.white,
-            color,
-            const Color(0xFFD4DEE7),
+            Color(0xFFFFFFFF),
+            Color(0xFFF4F6F8),
+            Color(0xFFE3E7EC),
           ],
-          stops: const <double>[0, 0.64, 1],
+          stops: <double>[0, 0.62, 1],
         ).createShader(rect),
     );
-
-    final Paint grid = Paint()
-      ..color = const Color(0xFF7F93A8)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.72;
-    canvas.drawRect(rect, grid);
 
     canvas.drawLine(
       rect.topLeft.translate(1, 1),
       rect.topRight.translate(-1, 1),
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.76)
-        ..strokeWidth = 1,
+        ..color = Colors.white.withValues(alpha: 0.95)
+        ..strokeWidth = 1.15,
     );
+
     canvas.drawLine(
       rect.bottomLeft.translate(1, -1),
       rect.bottomRight.translate(-1, -1),
       Paint()
-        ..color = const Color(0x55728AA0)
+        ..color = const Color(0xFFBBC5CF)
         ..strokeWidth = 1.15,
+    );
+
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..color = _grid
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.82,
     );
   }
 
@@ -633,8 +716,11 @@ class _LudoBoardPainter extends CustomPainter {
     Canvas canvas,
     double cell, {
     required List<Offset> cells,
-    required Color color,
+    required PlayerColor engineColor,
   }) {
+    final Color color = LudoReferenceVisuals.colorFor(engineColor);
+    final Color soft = LudoReferenceVisuals.softColorFor(engineColor);
+
     for (final Offset point in cells) {
       final Rect rect = Rect.fromLTWH(
         point.dx * cell,
@@ -642,12 +728,6 @@ class _LudoBoardPainter extends CustomPainter {
         cell,
         cell,
       );
-      final HSLColor hsl = HSLColor.fromColor(color);
-      final Color light = hsl
-          .withLightness(
-            (hsl.lightness + 0.18).clamp(0.0, 1.0).toDouble(),
-          )
-          .toColor();
 
       canvas.drawRect(
         rect,
@@ -655,22 +735,24 @@ class _LudoBoardPainter extends CustomPainter {
           ..shader = LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: <Color>[light, color],
+            colors: <Color>[soft, color],
           ).createShader(rect),
       );
+
       canvas.drawRect(
         rect,
         Paint()
-          ..color = const Color(0xFF5D7085)
+          ..color = _grid
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.75,
+          ..strokeWidth = 0.82,
       );
+
       canvas.drawLine(
         rect.topLeft.translate(1, 1),
         rect.topRight.translate(-1, 1),
         Paint()
-          ..color = Colors.white.withValues(alpha: 0.42)
-          ..strokeWidth = 0.9,
+          ..color = Colors.white.withValues(alpha: 0.34)
+          ..strokeWidth = 1,
       );
     }
   }
@@ -680,29 +762,46 @@ class _LudoBoardPainter extends CustomPainter {
     double cell,
     int column,
     int row,
-    Color color,
+    PlayerColor engineColor,
   ) {
+    final Color color = LudoReferenceVisuals.colorFor(engineColor);
     final Rect rect = Rect.fromLTWH(
       column * cell,
       row * cell,
       cell,
       cell,
     );
-    _drawTrackCell(canvas, cell, column, row, color);
-    canvas.drawCircle(
-      rect.center,
-      cell * 0.17,
+
+    canvas.drawRect(
+      rect,
       Paint()
-        ..shader = RadialGradient(
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: <Color>[
-            Colors.white,
-            Colors.white.withValues(alpha: 0.35),
+            LudoReferenceVisuals.softColorFor(engineColor),
+            color,
           ],
         ).createShader(rect),
     );
+
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..color = _grid
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.82,
+    );
+
+    _drawStar(
+      canvas,
+      rect.center,
+      cell * 0.31,
+      LudoReferenceVisuals.darkColorFor(engineColor),
+    );
   }
 
-  void _drawSafeCell(
+  void _drawSafeStar(
     Canvas canvas,
     double cell,
     int column,
@@ -712,169 +811,165 @@ class _LudoBoardPainter extends CustomPainter {
       (column + 0.5) * cell,
       (row + 0.5) * cell,
     );
+    _drawStar(canvas, center, cell * 0.31, _safeStar);
+  }
+
+  void _drawStar(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    Color color,
+  ) {
     final Path star = Path();
     const int points = 5;
 
     for (int index = 0; index < points * 2; index++) {
-      final double radius =
-          index.isEven ? cell * 0.29 : cell * 0.13;
+      final double r = index.isEven ? radius : radius * 0.46;
       final double angle =
           (-math.pi / 2) + (index * math.pi / points);
-      final Offset p = center +
-          Offset(math.cos(angle), math.sin(angle)) * radius;
+      final Offset point = center +
+          Offset(math.cos(angle), math.sin(angle)) * r;
+
       if (index == 0) {
-        star.moveTo(p.dx, p.dy);
+        star.moveTo(point.dx, point.dy);
       } else {
-        star.lineTo(p.dx, p.dy);
+        star.lineTo(point.dx, point.dy);
       }
     }
     star.close();
 
     canvas.drawPath(
-      star.shift(Offset(0, cell * 0.05)),
-      Paint()..color = const Color(0x55708498),
-    );
-    canvas.drawPath(
       star,
       Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[
-            Color(0xFFCBD7E2),
-            Color(0xFF738AA1),
-          ],
-        ).createShader(
-          Rect.fromCircle(center: center, radius: cell * 0.30),
-        ),
+        ..color = Colors.black.withValues(alpha: 0.12)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5),
     );
-    canvas.drawPath(
-      star,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.55)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.8,
+    canvas.drawPath(star, Paint()..color = color);
+  }
+
+  void _drawDirectionArrow(
+    Canvas canvas,
+    double cell, {
+    required int column,
+    required int row,
+    required _ArrowDirection direction,
+    required Color color,
+  }) {
+    final Offset center = Offset(
+      (column + 0.5) * cell,
+      (row + 0.5) * cell,
     );
+    final double shaft = cell * 0.28;
+    final double head = cell * 0.19;
+
+    Offset start;
+    Offset end;
+    switch (direction) {
+      case _ArrowDirection.right:
+        start = center.translate(-shaft, 0);
+        end = center.translate(shaft, 0);
+        break;
+      case _ArrowDirection.left:
+        start = center.translate(shaft, 0);
+        end = center.translate(-shaft, 0);
+        break;
+      case _ArrowDirection.down:
+        start = center.translate(0, -shaft);
+        end = center.translate(0, shaft);
+        break;
+      case _ArrowDirection.up:
+        start = center.translate(0, shaft);
+        end = center.translate(0, -shaft);
+        break;
+    }
+
+    final Paint paint = Paint()
+      ..color = color.withValues(alpha: 0.72)
+      ..strokeWidth = cell * 0.075
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawLine(start, end, paint);
+
+    final Path arrowHead = Path();
+    switch (direction) {
+      case _ArrowDirection.right:
+        arrowHead
+          ..moveTo(end.dx, end.dy)
+          ..lineTo(end.dx - head, end.dy - head)
+          ..lineTo(end.dx - head, end.dy + head);
+        break;
+      case _ArrowDirection.left:
+        arrowHead
+          ..moveTo(end.dx, end.dy)
+          ..lineTo(end.dx + head, end.dy - head)
+          ..lineTo(end.dx + head, end.dy + head);
+        break;
+      case _ArrowDirection.down:
+        arrowHead
+          ..moveTo(end.dx, end.dy)
+          ..lineTo(end.dx - head, end.dy - head)
+          ..lineTo(end.dx + head, end.dy - head);
+        break;
+      case _ArrowDirection.up:
+        arrowHead
+          ..moveTo(end.dx, end.dy)
+          ..lineTo(end.dx - head, end.dy + head)
+          ..lineTo(end.dx + head, end.dy + head);
+        break;
+    }
+    arrowHead.close();
+    canvas.drawPath(arrowHead, Paint()..color = color.withValues(alpha: 0.72));
   }
 
   void _drawCenter(Canvas canvas, double cell) {
-    final Rect center = Rect.fromLTWH(
+    final Rect rect = Rect.fromLTWH(
       6 * cell,
       6 * cell,
       3 * cell,
       3 * cell,
     );
-    final Offset c = center.center;
+    final Offset center = rect.center;
 
-    final List<(Color, Path)> triangles = <(Color, Path)>[
-      (
-        LudoGlobalColors.red,
-        Path()
-          ..moveTo(center.left, center.top)
-          ..lineTo(center.left, center.bottom)
-          ..lineTo(c.dx, c.dy)
-          ..close(),
-      ),
-      (
-        LudoGlobalColors.green,
-        Path()
-          ..moveTo(center.left, center.top)
-          ..lineTo(center.right, center.top)
-          ..lineTo(c.dx, c.dy)
-          ..close(),
-      ),
-      (
-        LudoGlobalColors.gold,
-        Path()
-          ..moveTo(center.right, center.top)
-          ..lineTo(center.right, center.bottom)
-          ..lineTo(c.dx, c.dy)
-          ..close(),
-      ),
-      (
-        LudoGlobalColors.electricBlue,
-        Path()
-          ..moveTo(center.left, center.bottom)
-          ..lineTo(center.right, center.bottom)
-          ..lineTo(c.dx, c.dy)
-          ..close(),
-      ),
-    ];
+    final Path top = Path()
+      ..moveTo(rect.left, rect.top)
+      ..lineTo(rect.right, rect.top)
+      ..lineTo(center.dx, center.dy)
+      ..close();
+    final Path right = Path()
+      ..moveTo(rect.right, rect.top)
+      ..lineTo(rect.right, rect.bottom)
+      ..lineTo(center.dx, center.dy)
+      ..close();
+    final Path bottom = Path()
+      ..moveTo(rect.right, rect.bottom)
+      ..lineTo(rect.left, rect.bottom)
+      ..lineTo(center.dx, center.dy)
+      ..close();
+    final Path left = Path()
+      ..moveTo(rect.left, rect.bottom)
+      ..lineTo(rect.left, rect.top)
+      ..lineTo(center.dx, center.dy)
+      ..close();
 
-    for (final (Color color, Path path) in triangles) {
-      final HSLColor hsl = HSLColor.fromColor(color);
-      final Color light = hsl
-          .withLightness(
-            (hsl.lightness + 0.18).clamp(0.0, 1.0).toDouble(),
-          )
-          .toColor();
-
-      canvas.drawPath(
-        path,
-        Paint()
-          ..shader = LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: <Color>[light, color],
-          ).createShader(center),
-      );
-    }
-
-    final Rect medallion = Rect.fromCircle(
-      center: c,
-      radius: cell * 0.57,
-    );
-    canvas.drawCircle(
-      c.translate(0, cell * 0.08),
-      cell * 0.58,
-      Paint()..color = const Color(0x66000000),
-    );
-    canvas.drawCircle(
-      c,
-      cell * 0.56,
+    canvas.drawPath(
+      top,
       Paint()
-        ..shader = const RadialGradient(
-          center: Alignment(-0.30, -0.32),
-          colors: <Color>[
-            Color(0xFFFFF29B),
-            Color(0xFFFFC72E),
-            Color(0xFFCE7800),
-          ],
-        ).createShader(medallion),
+        ..color = LudoReferenceVisuals.colorFor(PlayerColor.green),
     );
-    canvas.drawCircle(
-      c,
-      cell * 0.56,
+    canvas.drawPath(
+      right,
       Paint()
-        ..color = const Color(0xFFFFF1A0)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.1,
+        ..color = LudoReferenceVisuals.colorFor(PlayerColor.yellow),
     );
-
-    final TextPainter crown = TextPainter(
-      text: TextSpan(
-        text: '♛',
-        style: TextStyle(
-          color: const Color(0xFF7B4100),
-          fontSize: cell * 0.82,
-          fontWeight: FontWeight.w900,
-          shadows: const <Shadow>[
-            Shadow(
-              color: Colors.white,
-              blurRadius: 1,
-              offset: Offset(0, -0.5),
-            ),
-          ],
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    crown.paint(
-      canvas,
-      Offset(
-        c.dx - crown.width / 2,
-        c.dy - crown.height / 2 - cell * 0.03,
-      ),
+    canvas.drawPath(
+      bottom,
+      Paint()
+        ..color = LudoReferenceVisuals.colorFor(PlayerColor.blue),
+    );
+    canvas.drawPath(
+      left,
+      Paint()
+        ..color = LudoReferenceVisuals.colorFor(PlayerColor.red),
     );
   }
 
@@ -884,36 +979,37 @@ class _LudoBoardPainter extends CustomPainter {
     double cell,
   ) {
     final RRect border = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      Radius.circular(cell * 0.52),
+      Rect.fromLTWH(
+        cell * 0.04,
+        cell * 0.04,
+        size.width - cell * 0.08,
+        size.height - cell * 0.08,
+      ),
+      Radius.circular(cell * 0.16),
     );
+
     canvas.drawRRect(
       border,
       Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[
-            Color(0xFFFFF4BB),
-            Color(0xFFB57A20),
-            Color(0xFF344B63),
-          ],
-        ).createShader(Offset.zero & size)
+        ..color = const Color(0xFF26384C)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.4,
+        ..strokeWidth = cell * 0.085,
     );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          cell * 0.10,
-          cell * 0.10,
-          size.width - cell * 0.20,
-          size.height - cell * 0.20,
-        ),
-        Radius.circular(cell * 0.44),
+
+    final RRect inner = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        cell * 0.10,
+        cell * 0.10,
+        size.width - cell * 0.20,
+        size.height - cell * 0.20,
       ),
+      Radius.circular(cell * 0.13),
+    );
+
+    canvas.drawRRect(
+      inner,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.32)
+        ..color = Colors.white.withValues(alpha: 0.24)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.8,
     );
@@ -921,4 +1017,11 @@ class _LudoBoardPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _LudoBoardPainter oldDelegate) => false;
+}
+
+enum _ArrowDirection {
+  right,
+  left,
+  down,
+  up,
 }
