@@ -3,8 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/player_color.dart';
+import '../rendering/production_dice.dart';
 import '../style/ludo_reference_visuals.dart';
-import 'animated_dice.dart';
 
 class PlayerDiceSlot extends StatefulWidget {
   const PlayerDiceSlot({
@@ -148,14 +148,13 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                       ],
                     ),
                     child: Center(
-                      child: AnimatedDice(
+                      child: ProductionDice(
                         value: widget.value,
                         enabled: widget.enabled,
                         rolling: widget.rolling,
                         onTap: widget.onRoll,
                         accentColor: _accentColor,
                         size: widget.size * 0.84,
-                        compact: true,
                         launchDirection: widget.launchDirection,
                       ),
                     ),
