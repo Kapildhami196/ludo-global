@@ -957,69 +957,60 @@ class _PowerLocalGameScreenState
           GameBackground(
             referencePurple: true,
             child: SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight -
-                            (LudoGlobalSpacing.sm * 2),
-                      ),
-                      child: Column(
-                        children: [
-                          GameplayHeader(
-                            title: 'POWER LUDO',
-                            badge: 'LOCAL',
-                            leadingIcon: Icons.bolt_rounded,
-                            accentColor: LudoGlobalColors.gold,
-                            onBack: _confirmQuit,
-                            onMenu: _openGameMenu,
-                          ),
-                          const SizedBox(height: 4),
-                          GameBoardStage(
-                              gameState: _state,
-                              diceValue: _lastDiceValue,
-                              diceRolling: _isRolling,
-                              diceEnabled: _canRoll,
-                              onRoll: () => unawaited(_rollDice()),
-                              board: LudoBoard(
-                                gameState: _state,
-                                activePlayerCount: _state.players.length,
-                                movableTokenIds:
-                                    _state.movableTokenIds.toSet(),
-                                visualPathOverrides:
-                                    _visualPathOverrides,
-                                movingTokenId: _movingTokenId,
-                                capturedTokenIds: _capturedTokenIds,
-                                returningTokenIds: _returningTokenIds,
-                                shieldedTokenIds:
-                                    _powerState.shields.keys.toSet(),
-                                powerPickupPositions: <PowerType, int>{
-                                  for (final entry
-                                      in _powerState.pickups.entries)
-                                    entry.key: entry.value.globalIndex,
-                                },
-                                onTokenTap: _onTokenTap,
-                              ),
-                            ),
-                          const SizedBox(height: 6),
-                          GameplayCallout(
-                            message: _message,
-                            color: currentColor,
-                          ),
-                          const SizedBox(height: 8),
-                          PowerActionBar(
-                            counts: _powerCounts,
-                            enabledPowers: _enabledPowers,
-                            activePowers: _activePowers,
-                            onPowerTap: _onPowerTap,
-                          ),
-                        ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  children: [
+                    GameplayHeader(
+                      title: 'POWER LUDO',
+                      badge: 'LOCAL',
+                      leadingIcon: Icons.bolt_rounded,
+                      accentColor: LudoGlobalColors.gold,
+                      onBack: _confirmQuit,
+                      onMenu: _openGameMenu,
+                    ),
+                    const SizedBox(height: 4),
+                    Expanded(
+                      child: GameBoardStage(
+                        gameState: _state,
+                        diceValue: _lastDiceValue,
+                        diceRolling: _isRolling,
+                        diceEnabled: _canRoll,
+                        onRoll: () => unawaited(_rollDice()),
+                        board: LudoBoard(
+                          gameState: _state,
+                          activePlayerCount: _state.players.length,
+                          movableTokenIds:
+                              _state.movableTokenIds.toSet(),
+                          visualPathOverrides: _visualPathOverrides,
+                          movingTokenId: _movingTokenId,
+                          capturedTokenIds: _capturedTokenIds,
+                          returningTokenIds: _returningTokenIds,
+                          shieldedTokenIds:
+                              _powerState.shields.keys.toSet(),
+                          powerPickupPositions: <PowerType, int>{
+                            for (final entry
+                                in _powerState.pickups.entries)
+                              entry.key: entry.value.globalIndex,
+                          },
+                          onTokenTap: _onTokenTap,
+                        ),
                       ),
                     ),
-                  );
-                },
+                    const SizedBox(height: 6),
+                    GameplayCallout(
+                      message: _message,
+                      color: currentColor,
+                    ),
+                    const SizedBox(height: 8),
+                    PowerActionBar(
+                      counts: _powerCounts,
+                      enabledPowers: _enabledPowers,
+                      activePowers: _activePowers,
+                      onPowerTap: _onPowerTap,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
