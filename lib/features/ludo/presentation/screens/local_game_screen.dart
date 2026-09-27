@@ -220,7 +220,12 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
         _visualPathOverrides[tokenId] = progress;
       });
 
-      unawaited(_feedback.tokenStep());
+      if (moveEvent.type == LudoGameEventType.tokenReleased &&
+          progress == to) {
+        unawaited(_feedback.pawnRelease());
+      } else {
+        unawaited(_feedback.tokenStep());
+      }
       await Future<void>.delayed(const Duration(milliseconds: 125));
     }
 
@@ -244,6 +249,8 @@ class _LocalGameScreenState extends State<LocalGameScreen> {
 
       final Set<int> returning =
           captureEvent.otherTokenIds.toSet();
+
+      unawaited(_feedback.returnHome());
 
       setState(() {
         _visualPathOverrides.remove(tokenId);
