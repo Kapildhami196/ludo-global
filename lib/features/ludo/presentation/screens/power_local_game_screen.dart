@@ -907,7 +907,7 @@ class _PowerLocalGameScreenState
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.all(LudoGlobalSpacing.sm),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
                         minHeight: constraints.maxHeight -
@@ -925,7 +925,7 @@ class _PowerLocalGameScreenState
                           ),
                           const SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.all(7),
+                            padding: const EdgeInsets.all(3),
                             decoration: BoxDecoration(
                               color: const Color(0xFF061127),
                               borderRadius: BorderRadius.circular(
