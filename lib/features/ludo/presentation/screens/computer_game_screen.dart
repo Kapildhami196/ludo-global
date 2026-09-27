@@ -770,6 +770,7 @@ class _ComputerGameScreenState extends State<ComputerGameScreen> {
                       value: _lastDiceValue,
                       enabled: canHumanRoll,
                       rolling: _isRolling,
+                      accentColor: currentColor,
                       onTap: () => unawaited(_humanRoll()),
                     ),
                     const SizedBox(height: 10),

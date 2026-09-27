@@ -1049,6 +1049,7 @@ class _PowerComputerGameScreenState
                       value: _lastDiceValue,
                       enabled: _canHumanRoll,
                       rolling: _isRolling,
+                      accentColor: currentColor,
                       onTap: () => unawaited(_humanRoll()),
                     ),
                     const SizedBox(height: 12),

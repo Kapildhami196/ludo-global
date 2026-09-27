@@ -78,18 +78,6 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
 
   @override
   Widget build(BuildContext context) {
-    final HSLColor hsl = HSLColor.fromColor(widget.color);
-    final Color highlight = hsl
-        .withLightness(
-          (hsl.lightness + 0.25).clamp(0.0, 1.0).toDouble(),
-        )
-        .toColor();
-    final Color shadow = hsl
-        .withLightness(
-          (hsl.lightness - 0.18).clamp(0.0, 1.0).toDouble(),
-        )
-        .toColor();
-
     return Semantics(
       button: widget.onTap != null,
       enabled: widget.onTap != null,
@@ -102,13 +90,13 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
           builder: (context, child) {
             final double t = _controller.value;
             final double hop = widget.moving
-                ? -math.sin(t * math.pi).abs() * 6
+                ? -math.sin(t * math.pi).abs() * 7
                 : 0;
             final double shake = widget.captured
                 ? math.sin(t * math.pi * 9) * 5 * (1 - t)
                 : 0;
             final double captureScale = widget.captured
-                ? 1 - (0.2 * Curves.easeIn.transform(t))
+                ? 1 - (0.24 * Curves.easeIn.transform(t))
                 : 1;
 
             return Transform.translate(
@@ -120,114 +108,61 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
             );
           },
           child: AnimatedScale(
-            scale: widget.highlighted ? 1.12 : 1,
+            scale: widget.highlighted ? 1.13 : 1,
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOutBack,
             child: Opacity(
               opacity: widget.dimmed ? 0.28 : 1,
               child: SizedBox(
                 width: widget.size,
-                height: widget.size * 1.15,
+                height: widget.size * 1.34,
                 child: Stack(
-                  alignment: Alignment.bottomCenter,
+                  clipBehavior: Clip.none,
                   children: [
-                    if (widget.highlighted || widget.shielded)
-                      Positioned.fill(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: (widget.shielded
-                                        ? const Color(0xFF42D9FF)
-                                        : widget.color)
-                                    .withValues(alpha: 0.78),
-                                blurRadius: widget.size * 0.68,
-                                spreadRadius: widget.shielded ? 3 : 2,
-                              ),
-                            ],
-                          ),
+                    Positioned.fill(
+                      child: CustomPaint(
+                        painter: _PawnPainter(
+                          color: widget.color,
+                          highlighted: widget.highlighted,
+                          shielded: widget.shielded,
                         ),
-                      ),
-                    Container(
-                      width: widget.size * 0.92,
-                      height: widget.size * 0.3,
-                      decoration: BoxDecoration(
-                        color: shadow.withValues(alpha: 0.48),
-                        borderRadius: BorderRadius.all(
-                          Radius.elliptical(
-                            widget.size,
-                            widget.size * 0.35,
-                          ),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: widget.color.withValues(alpha: 0.38),
-                            blurRadius: 8,
-                          ),
-                        ],
                       ),
                     ),
                     if (widget.shielded)
                       Positioned(
-                        top: 0,
-                        right: 0,
+                        right: -widget.size * 0.08,
+                        top: widget.size * 0.02,
                         child: Container(
-                          width: widget.size * 0.42,
-                          height: widget.size * 0.42,
-                          decoration: const BoxDecoration(
+                          width: widget.size * 0.38,
+                          height: widget.size * 0.38,
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Color(0xFF0B78D1),
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: <Color>[
+                                Color(0xFF4CEBFF),
+                                Color(0xFF0876E8),
+                              ],
+                            ),
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 1,
+                            ),
+                            boxShadow: const <BoxShadow>[
+                              BoxShadow(
+                                color: Color(0xAA00C8FF),
+                                blurRadius: 8,
+                              ),
+                            ],
                           ),
                           child: Icon(
                             Icons.shield_rounded,
-                            size: widget.size * 0.25,
+                            size: widget.size * 0.22,
                             color: Colors.white,
                           ),
                         ),
                       ),
-                    Positioned(
-                      bottom: widget.size * 0.12,
-                      child: Container(
-                        width: widget.size * 0.72,
-                        height: widget.size * 0.72,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            center: const Alignment(-0.35, -0.45),
-                            colors: [
-                              highlight,
-                              widget.color,
-                              shadow,
-                            ],
-                          ),
-                          border: Border.all(
-                            color: Colors.white.withValues(
-                              alpha: widget.highlighted ? 0.95 : 0.65,
-                            ),
-                            width: widget.highlighted ? 2 : 1.2,
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x66000000),
-                              blurRadius: 5,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Align(
-                          alignment: const Alignment(-0.35, -0.45),
-                          child: Container(
-                            width: widget.size * 0.14,
-                            height: widget.size * 0.14,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withValues(alpha: 0.66),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -236,5 +171,176 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
         ),
       ),
     );
+  }
+}
+
+class _PawnPainter extends CustomPainter {
+  const _PawnPainter({
+    required this.color,
+    required this.highlighted,
+    required this.shielded,
+  });
+
+  final Color color;
+  final bool highlighted;
+  final bool shielded;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final HSLColor hsl = HSLColor.fromColor(color);
+    final Color light = hsl
+        .withLightness((hsl.lightness + 0.24).clamp(0.0, 1.0).toDouble())
+        .toColor();
+    final Color dark = hsl
+        .withLightness((hsl.lightness - 0.20).clamp(0.0, 1.0).toDouble())
+        .toColor();
+    final Color deep = hsl
+        .withLightness((hsl.lightness - 0.30).clamp(0.0, 1.0).toDouble())
+        .toColor();
+
+    final Rect whole = Offset.zero & size;
+    final double w = size.width;
+    final double h = size.height;
+
+    if (highlighted || shielded) {
+      final Color glowColor =
+          shielded ? const Color(0xFF29D9FF) : color;
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(w * 0.5, h * 0.72),
+          width: w * 1.18,
+          height: h * 0.75,
+        ),
+        Paint()
+          ..color = glowColor.withValues(alpha: 0.20)
+          ..maskFilter = const MaskFilter.blur(
+            BlurStyle.normal,
+            12,
+          ),
+      );
+    }
+
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(w * 0.5, h * 0.94),
+        width: w * 0.84,
+        height: h * 0.14,
+      ),
+      Paint()
+        ..color = const Color(0x77000000)
+        ..maskFilter = const MaskFilter.blur(
+          BlurStyle.normal,
+          4,
+        ),
+    );
+
+    final Path body = Path()
+      ..moveTo(w * 0.39, h * 0.34)
+      ..quadraticBezierTo(w * 0.42, h * 0.44, w * 0.37, h * 0.52)
+      ..quadraticBezierTo(w * 0.31, h * 0.64, w * 0.23, h * 0.70)
+      ..quadraticBezierTo(w * 0.17, h * 0.76, w * 0.18, h * 0.84)
+      ..lineTo(w * 0.82, h * 0.84)
+      ..quadraticBezierTo(w * 0.83, h * 0.76, w * 0.77, h * 0.70)
+      ..quadraticBezierTo(w * 0.69, h * 0.64, w * 0.63, h * 0.52)
+      ..quadraticBezierTo(w * 0.58, h * 0.44, w * 0.61, h * 0.34)
+      ..close();
+
+    final Paint bodyPaint = Paint()
+      ..shader = LinearGradient(
+        begin: const Alignment(-0.8, -1),
+        end: const Alignment(0.9, 1),
+        stops: const <double>[0, 0.42, 1],
+        colors: <Color>[light, color, dark],
+      ).createShader(whole);
+
+    canvas.drawPath(body, bodyPaint);
+    canvas.drawPath(
+      body,
+      Paint()
+        ..color = deep.withValues(alpha: 0.78)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.1,
+    );
+
+    final Rect base = Rect.fromCenter(
+      center: Offset(w * 0.5, h * 0.84),
+      width: w * 0.76,
+      height: h * 0.18,
+    );
+    canvas.drawOval(
+      base,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[light, color, deep],
+        ).createShader(base),
+    );
+    canvas.drawOval(
+      base,
+      Paint()
+        ..color = deep.withValues(alpha: 0.75)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.1,
+    );
+
+    final Rect head = Rect.fromCircle(
+      center: Offset(w * 0.5, h * 0.24),
+      radius: w * 0.19,
+    );
+    canvas.drawOval(
+      head,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-0.38, -0.42),
+          radius: 0.95,
+          colors: <Color>[
+            Colors.white.withValues(alpha: 0.88),
+            light,
+            color,
+            dark,
+          ],
+          stops: const <double>[0, 0.18, 0.58, 1],
+        ).createShader(head),
+    );
+    canvas.drawOval(
+      head,
+      Paint()
+        ..color = deep.withValues(alpha: 0.85)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.1,
+    );
+
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(w * 0.43, h * 0.19),
+        width: w * 0.10,
+        height: h * 0.06,
+      ),
+      Paint()..color = Colors.white.withValues(alpha: 0.65),
+    );
+
+    canvas.drawPath(
+      Path()
+        ..moveTo(w * 0.32, h * 0.71)
+        ..quadraticBezierTo(
+          w * 0.40,
+          h * 0.58,
+          w * 0.43,
+          h * 0.44,
+        ),
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.32)
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = math.max(1, w * 0.07),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _PawnPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.highlighted != highlighted ||
+        oldDelegate.shielded != shielded;
   }
 }

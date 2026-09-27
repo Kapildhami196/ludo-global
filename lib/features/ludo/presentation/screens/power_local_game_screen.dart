@@ -962,28 +962,12 @@ class _PowerLocalGameScreenState
                             color: currentColor,
                           ),
                           const SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _PowerSmallControl(
-                                icon: Icons.chat_bubble_rounded,
-                                label: 'Chat',
-                                onTap: () {},
-                              ),
-                              const SizedBox(width: 18),
-                              AnimatedDice(
-                                value: _lastDiceValue,
-                                enabled: _canRoll,
-                                rolling: _isRolling,
-                                onTap: () => unawaited(_rollDice()),
-                              ),
-                              const SizedBox(width: 18),
-                              _PowerSmallControl(
-                                icon: Icons.emoji_emotions_rounded,
-                                label: 'Emotes',
-                                onTap: () {},
-                              ),
-                            ],
+                          AnimatedDice(
+                            value: _lastDiceValue,
+                            enabled: _canRoll,
+                            rolling: _isRolling,
+                            accentColor: currentColor,
+                            onTap: () => unawaited(_rollDice()),
                           ),
                           const SizedBox(height: 12),
                           PowerActionBar(
@@ -1124,7 +1108,7 @@ class _PowerTurnCard extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w900),
                 ),
                 const Text(
-                  'YOUR POWER TURN',
+                  'CURRENT TURN',
                   style: TextStyle(
                     color: LudoGlobalColors.textSecondary,
                     fontSize: 9,
@@ -1185,47 +1169,3 @@ class _PowerStatusBanner extends StatelessWidget {
     );
   }
 }
-
-class _PowerSmallControl extends StatelessWidget {
-  const _PowerSmallControl({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: 58,
-        height: 54,
-        decoration: BoxDecoration(
-          color: LudoGlobalColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: LudoGlobalColors.border),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 21, color: LudoGlobalColors.cyan),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 8,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
