@@ -26,9 +26,6 @@ class AnimatedDice extends StatefulWidget {
   final Color accentColor;
   final double size;
   final bool compact;
-
-  /// Direction, expressed in die-size units, used when the die flies toward
-  /// the camera/board during a roll.
   final Offset launchDirection;
 
   @override
@@ -39,7 +36,7 @@ class _AnimatedDiceState extends State<AnimatedDice>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 680),
+    duration: const Duration(milliseconds: 650),
   );
 
   bool _settling = false;
@@ -62,7 +59,7 @@ class _AnimatedDiceState extends State<AnimatedDice>
       _settleSequence++;
       _controller
         ..stop()
-        ..duration = const Duration(milliseconds: 680)
+        ..duration = const Duration(milliseconds: 650)
         ..repeat();
       return;
     }
@@ -114,67 +111,44 @@ class _AnimatedDiceState extends State<AnimatedDice>
             builder: (context, _) {
               final double t = _controller.value;
 
-              double launchProgress = 0;
-              double zRotation = -0.035;
+              double travel = 0;
+              double scale = 1;
+              double zRotation = -0.025;
               double xRotation = 0;
               double yRotation = 0;
               int previewValue = widget.value.clamp(1, 6).toInt();
 
               if (widget.rolling) {
-                final double flightT =
-                    (t / 0.72).clamp(0.0, 1.0).toDouble();
-                launchProgress =
-                    Curves.easeOutCubic.transform(flightT);
-                zRotation = t * math.pi * 5.4;
-                xRotation =
-                    math.sin(t * math.pi * 5) * 0.62;
-                yRotation =
-                    math.cos(t * math.pi * 4.5) * 0.58;
-                previewValue = ((t * 31).floor() % 6) + 1;
+                travel = math.sin(t * math.pi).abs();
+                scale = 1 + travel * 0.46;
+                zRotation = t * math.pi * 4.8;
+                xRotation = math.sin(t * math.pi * 3.6) * 0.38;
+                yRotation = math.cos(t * math.pi * 4.2) * 0.34;
+                previewValue = ((t * 29).floor() % 6) + 1;
               } else if (_settling) {
-                final double returnT = t <= 0.62
-                    ? 0
-                    : ((t - 0.62) / 0.38)
-                        .clamp(0.0, 1.0)
-                        .toDouble();
-                final double easedReturn =
-                    Curves.easeInOutCubic.transform(returnT);
-                launchProgress = 1 - easedReturn;
-                zRotation = 0.16 * launchProgress;
-                xRotation = -0.10 * launchProgress;
-                yRotation = 0.12 * launchProgress;
+                final double bounceWindow =
+                    (t / 0.22).clamp(0.0, 1.0).toDouble();
+                final double bounce =
+                    math.sin(bounceWindow * math.pi).abs();
+                scale = 1 + bounce * 0.08;
+                zRotation = -0.025 + bounce * 0.045;
               }
 
-              final double scale =
-                  1 + (launchProgress * 1.48);
               final Offset launchOffset = Offset(
-                widget.launchDirection.dx *
-                    widget.size *
-                    launchProgress,
-                widget.launchDirection.dy *
-                    widget.size *
-                    launchProgress,
+                widget.launchDirection.dx * widget.size * travel,
+                widget.launchDirection.dy * widget.size * travel,
               );
-
-              final double flightArc = widget.rolling
-                  ? -math.sin(
-                        (t / 0.72)
-                                .clamp(0.0, 1.0)
-                                .toDouble() *
-                            math.pi,
-                      ) *
-                      widget.size *
-                      0.34
-                  : 0;
+              final double arc =
+                  -travel * widget.size * 0.18;
 
               final Matrix4 transform = Matrix4.identity()
-                ..setEntry(3, 2, 0.0028)
+                ..setEntry(3, 2, 0.0022)
                 ..rotateX(xRotation)
                 ..rotateY(yRotation)
                 ..rotateZ(zRotation);
 
               return Transform.translate(
-                offset: launchOffset.translate(0, flightArc),
+                offset: launchOffset.translate(0, arc),
                 child: Transform.scale(
                   scale: scale,
                   child: Transform(
@@ -187,7 +161,7 @@ class _AnimatedDiceState extends State<AnimatedDice>
                       active: widget.enabled ||
                           widget.rolling ||
                           _settling,
-                      depth: launchProgress,
+                      travel: travel,
                     ),
                   ),
                 ),
@@ -206,21 +180,20 @@ class _DiceFace extends StatelessWidget {
     required this.size,
     required this.accentColor,
     required this.active,
-    required this.depth,
+    required this.travel,
   });
 
   final int value;
   final double size;
   final Color accentColor;
   final bool active;
-  final double depth;
+  final double travel;
 
   @override
   Widget build(BuildContext context) {
-    final double faceSize = size * 0.86;
-    final double extrusion = size * (0.055 + depth * 0.035);
+    final double faceSize = size * 0.90;
     final double shadowWidth =
-        size * (0.72 - depth * 0.16);
+        size * (0.72 - travel * 0.12);
 
     return SizedBox.square(
       dimension: size,
@@ -229,19 +202,22 @@ class _DiceFace extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Positioned(
-            bottom: size * 0.015,
+            bottom: size * 0.02,
             child: Container(
               width: shadowWidth,
-              height: size * 0.115,
+              height: size * 0.10,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(999),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
                     color: Colors.black.withValues(
-                      alpha: 0.44 - depth * 0.18,
+                      alpha: 0.30 - travel * 0.10,
                     ),
-                    blurRadius: size * 0.14,
-                    spreadRadius: size * 0.012,
+                    blurRadius: size * 0.12,
+                    offset: Offset(
+                      size * 0.025,
+                      size * 0.03,
+                    ),
                   ),
                 ],
               ),
@@ -249,81 +225,24 @@ class _DiceFace extends StatelessWidget {
           ),
           if (active)
             Container(
-              width: size * 0.90,
-              height: size * 0.90,
+              width: size * 0.88,
+              height: size * 0.88,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(size * 0.22),
+                borderRadius: BorderRadius.circular(size * 0.20),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: accentColor.withValues(
-                      alpha: 0.18 + depth * 0.10,
-                    ),
-                    blurRadius: size * 0.24,
-                    spreadRadius: size * 0.01,
+                    color: accentColor.withValues(alpha: 0.11),
+                    blurRadius: size * 0.16,
+                    spreadRadius: size * 0.005,
                   ),
                 ],
               ),
             ),
-          Transform.translate(
-            offset: Offset(extrusion, extrusion),
-            child: Container(
-              width: faceSize,
-              height: faceSize,
-              decoration: BoxDecoration(
-                borderRadius:
-                    BorderRadius.circular(faceSize * 0.22),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: <Color>[
-                    Color(0xFFDDE6EE),
-                    Color(0xFF8A9AAC),
-                    Color(0xFF5D6C7D),
-                  ],
-                ),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.28),
-                    blurRadius: size * 0.06,
-                    offset: Offset(
-                      size * 0.035,
-                      size * 0.045,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Transform.translate(
-            offset: Offset(
-              -extrusion * 0.42,
-              -extrusion * 0.52,
-            ),
-            child: SvgPicture.asset(
-              GameAssetPaths.diceFor(value),
-              width: faceSize,
-              height: faceSize,
-            ),
-          ),
-          Positioned(
-            top: size * 0.11,
-            left: size * 0.19,
-            child: IgnorePointer(
-              child: Container(
-                width: size * 0.28,
-                height: size * 0.055,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.34),
-                  borderRadius: BorderRadius.circular(999),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.22),
-                      blurRadius: size * 0.05,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          SvgPicture.asset(
+            GameAssetPaths.diceFor(value),
+            width: faceSize,
+            height: faceSize,
+            fit: BoxFit.contain,
           ),
         ],
       ),
