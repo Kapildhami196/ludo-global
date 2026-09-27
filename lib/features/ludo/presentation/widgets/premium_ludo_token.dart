@@ -14,6 +14,7 @@ class PremiumLudoToken extends StatefulWidget {
     this.dimmed = false,
     this.highlighted = false,
     this.moving = false,
+    this.movementStep,
     this.captured = false,
     this.returning = false,
     this.shielded = false,
@@ -26,6 +27,7 @@ class PremiumLudoToken extends StatefulWidget {
   final bool dimmed;
   final bool highlighted;
   final bool moving;
+  final int? movementStep;
   final bool captured;
   final bool returning;
   final bool shielded;
@@ -39,7 +41,7 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 150),
+    duration: const Duration(milliseconds: 155),
   );
 
   @override
@@ -51,6 +53,17 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
   @override
   void didUpdateWidget(covariant PremiumLudoToken oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    final bool movedOneStep = widget.moving &&
+        oldWidget.movementStep != widget.movementStep;
+
+    if (movedOneStep) {
+      _controller
+        ..duration = const Duration(milliseconds: 155)
+        ..forward(from: 0);
+      return;
+    }
+
     if (oldWidget.moving != widget.moving ||
         oldWidget.captured != widget.captured ||
         oldWidget.returning != widget.returning) {
@@ -75,8 +88,8 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
 
     if (widget.moving) {
       _controller
-        ..duration = const Duration(milliseconds: 150)
-        ..repeat();
+        ..duration = const Duration(milliseconds: 155)
+        ..forward(from: 0);
       return;
     }
 
@@ -110,8 +123,8 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
           duration: const Duration(milliseconds: 150),
           opacity: widget.dimmed ? 0.28 : 1,
           child: AnimatedScale(
-            scale: widget.highlighted ? 1.10 : 1,
-            duration: const Duration(milliseconds: 170),
+            scale: widget.highlighted ? 1.09 : 1,
+            duration: const Duration(milliseconds: 160),
             curve: Curves.easeOutBack,
             alignment: Alignment.bottomCenter,
             child: AnimatedBuilder(
@@ -124,15 +137,18 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                         ? math.sin(t * math.pi).abs()
                         : 0;
                 final double hop = widget.returning
-                    ? -lift * widget.size * 0.70
+                    ? -lift * widget.size * 0.62
                     : widget.moving
-                        ? -lift * widget.size * 0.34
+                        ? -lift * widget.size * 0.40
                         : 0;
                 final double squash = widget.returning
-                    ? 1 - lift * 0.055
+                    ? 1 - lift * 0.05
                     : widget.moving
-                        ? 1 - lift * 0.040
+                        ? 1 - lift * 0.055
                         : 1;
+                final double stretch = widget.moving
+                    ? 1 + lift * 0.065
+                    : 1;
                 final double shake = widget.captured
                     ? math.sin(t * math.pi * 10) *
                         widget.size *
@@ -145,21 +161,23 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                         ? 0.92 + lift * 0.12
                         : 1;
                 final double shadowWidth =
-                    widget.size * (0.73 - lift * 0.20);
-                final double shadowOpacity = 0.46 - lift * 0.20;
+                    widget.size * (0.80 - lift * 0.28);
+                final double shadowHeight =
+                    widget.size * (0.13 - lift * 0.035);
+                final double shadowOpacity = 0.46 - lift * 0.23;
 
                 return SizedBox(
                   width: widget.size,
-                  height: widget.size * 1.36,
+                  height: widget.size * 1.30,
                   child: Stack(
                     clipBehavior: Clip.none,
                     alignment: Alignment.bottomCenter,
                     children: [
                       if (widget.highlighted || widget.shielded)
                         Positioned(
-                          left: -widget.size * 0.20,
-                          right: -widget.size * 0.20,
-                          bottom: widget.size * 0.05,
+                          left: -widget.size * 0.18,
+                          right: -widget.size * 0.18,
+                          bottom: widget.size * 0.04,
                           height: widget.size * 0.72,
                           child: DecoratedBox(
                             decoration: BoxDecoration(
@@ -181,7 +199,7 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                         bottom: widget.size * 0.015,
                         child: Container(
                           width: shadowWidth,
-                          height: widget.size * 0.115,
+                          height: shadowHeight,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(999),
                             boxShadow: <BoxShadow>[
@@ -190,7 +208,7 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                                   alpha: shadowOpacity,
                                 ),
                                 blurRadius: widget.size * 0.12,
-                                spreadRadius: widget.size * 0.015,
+                                spreadRadius: widget.size * 0.012,
                               ),
                             ],
                           ),
@@ -200,58 +218,25 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                         offset: Offset(shake, hop),
                         child: Transform.scale(
                           scaleX: captureScale / squash,
-                          scaleY: captureScale * squash,
+                          scaleY: captureScale * squash * stretch,
                           alignment: Alignment.bottomCenter,
                           child: SizedBox(
                             width: widget.size,
-                            height: widget.size * 1.30,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              alignment: Alignment.center,
-                              children: [
-                                Positioned.fill(
-                                  child: SvgPicture.asset(
-                                    GameAssetPaths.pawnFor(displayColor),
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                                Positioned(
-                                  left: widget.size * 0.20,
-                                  top: widget.size * 0.12,
-                                  child: IgnorePointer(
-                                    child: Container(
-                                      width: widget.size * 0.20,
-                                      height: widget.size * 0.09,
-                                      decoration: BoxDecoration(
-                                        borderRadius:
-                                            BorderRadius.circular(999),
-                                        color: Colors.white.withValues(
-                                          alpha: 0.24,
-                                        ),
-                                        boxShadow: <BoxShadow>[
-                                          BoxShadow(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.22,
-                                            ),
-                                            blurRadius: widget.size * 0.12,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            height: widget.size * 1.22,
+                            child: SvgPicture.asset(
+                              GameAssetPaths.pawnFor(displayColor),
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),
                       ),
                       if (widget.shielded)
                         Positioned(
-                          right: -widget.size * 0.08,
-                          top: widget.size * 0.02,
+                          right: -widget.size * 0.06,
+                          top: widget.size * 0.01,
                           child: Container(
-                            width: widget.size * 0.39,
-                            height: widget.size * 0.39,
+                            width: widget.size * 0.38,
+                            height: widget.size * 0.38,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: const LinearGradient(
