@@ -252,8 +252,7 @@ class LudoBoard extends StatelessWidget {
     final Offset point = positions[tokenIndex % positions.length];
     return Offset(point.dx * cell, point.dy * cell);
   }
-
-
+}
 
 class _TokenPlacement {
   const _TokenPlacement({
