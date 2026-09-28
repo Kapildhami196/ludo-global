@@ -230,7 +230,7 @@ LudoGameState _redCaptureState() {
       LudoToken(
         id: 1,
         color: PlayerColor.red,
-        pathPosition: 57,
+        pathPosition: 56,
         status: TokenStatus.finished,
       ),
     ],
@@ -274,7 +274,7 @@ LudoGameState _yellowCaptureState() {
       LudoToken(
         id: 5,
         color: PlayerColor.yellow,
-        pathPosition: 57,
+        pathPosition: 56,
         status: TokenStatus.finished,
       ),
     ],
