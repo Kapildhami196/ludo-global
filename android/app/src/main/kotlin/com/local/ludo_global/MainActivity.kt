@@ -1,4 +1,4 @@
-package com.example.ludo_global
+package com.local.ludo_global
 
 import io.flutter.embedding.android.FlutterActivity
 
