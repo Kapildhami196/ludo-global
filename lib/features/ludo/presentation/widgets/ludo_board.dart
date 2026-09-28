@@ -108,20 +108,37 @@ class LudoBoard extends StatelessWidget {
     required List<_TokenPlacement> placements,
     required double tokenSize,
   }) {
-    final List<_TokenPlacement> orderedPlacements = <_TokenPlacement>[
-      ...placements.where(
-        (placement) => !movableTokenIds.contains(placement.tokenId),
-      ),
-      ...placements.where(
-        (placement) => movableTokenIds.contains(placement.tokenId),
-      ),
-    ];
+    // Paint from the back of the board toward the viewer. Pawns lower on
+    // screen are painted later, while non-movable pawns remain transparent
+    // to taps via IgnorePointer below.
+    final List<_TokenPlacement> depthSortedPlacements =
+        List<_TokenPlacement>.of(placements)
+          ..sort((_TokenPlacement a, _TokenPlacement b) {
+            final int vertical = a.center.dy.compareTo(b.center.dy);
+            if (vertical != 0) {
+              return vertical;
+            }
+
+            final int horizontal = a.center.dx.compareTo(b.center.dx);
+            if (horizontal != 0) {
+              return horizontal;
+            }
+
+            final bool aMovable = movableTokenIds.contains(a.tokenId);
+            final bool bMovable = movableTokenIds.contains(b.tokenId);
+            if (aMovable != bMovable) {
+              return aMovable ? 1 : -1;
+            }
+
+            return a.tokenId.compareTo(b.tokenId);
+          });
 
     return Stack(
       clipBehavior: Clip.none,
       children: <Widget>[
-        for (final _TokenPlacement placement in orderedPlacements)
+        for (final _TokenPlacement placement in depthSortedPlacements)
           AnimatedPositioned(
+            key: ValueKey<String>('token-position-${placement.tokenId}'),
             duration: returningTokenIds.contains(placement.tokenId)
                 ? const Duration(milliseconds: 520)
                 : const Duration(milliseconds: 155),

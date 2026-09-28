@@ -18,6 +18,7 @@ import 'package:ludo_global/features/ludo/domain/power/power_ludo_engine.dart';
 import 'package:ludo_global/features/ludo/domain/power/power_ludo_state.dart';
 import 'package:ludo_global/features/ludo/domain/power/power_rules.dart';
 import 'package:ludo_global/features/ludo/domain/power/shield_effect.dart';
+import 'package:ludo_global/features/ludo/domain/rules/classic_rules.dart';
 
 void main() {
   final PowerLudoEngine engine = PowerLudoEngine(
@@ -369,9 +370,9 @@ PowerLudoState _stateWithTokens({
           pathPosition: progresses[index],
           status: progresses[index] < 0
               ? TokenStatus.base
-              : progresses[index] < 52
+              : progresses[index] < ClassicRules.sharedPathProgressLength
                   ? TokenStatus.active
-                  : progresses[index] < 57
+                  : progresses[index] < ClassicRules.finishProgress
                       ? TokenStatus.homePath
                       : TokenStatus.finished,
         ),

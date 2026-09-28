@@ -139,7 +139,7 @@ class MatchSituationAnalyzer {
     }
 
     final int targetPosition = token.pathPosition + diceValue;
-    if (targetPosition >= ClassicRules.commonPathLength) {
+    if (targetPosition >= ClassicRules.sharedPathProgressLength) {
       return false;
     }
 
@@ -188,7 +188,7 @@ class MatchSituationAnalyzer {
 
     final int targetPosition = token.pathPosition + diceValue;
 
-    if (targetPosition >= ClassicRules.commonPathLength) {
+    if (targetPosition >= ClassicRules.sharedPathProgressLength) {
       return targetPosition <= ClassicRules.finishProgress;
     }
 
@@ -209,7 +209,7 @@ class MatchSituationAnalyzer {
     }
 
     final int targetPosition = token.pathPosition + diceValue;
-    return targetPosition >= ClassicRules.commonPathLength &&
+    return targetPosition >= ClassicRules.sharedPathProgressLength &&
         targetPosition < ClassicRules.finishProgress;
   }
 
@@ -235,7 +235,7 @@ class MatchSituationAnalyzer {
     }
 
     final int targetPosition = token.pathPosition + diceValue;
-    if (targetPosition >= ClassicRules.commonPathLength) {
+    if (targetPosition >= ClassicRules.sharedPathProgressLength) {
       return false;
     }
 
@@ -296,7 +296,7 @@ class MatchSituationAnalyzer {
         }
 
         if (opponentToken.pathPosition + distance >=
-            ClassicRules.commonPathLength) {
+            ClassicRules.sharedPathProgressLength) {
           continue;
         }
 
@@ -358,7 +358,7 @@ class MatchSituationAnalyzer {
   }) {
     final int lastSharedPosition = min(
       toPosition,
-      ClassicRules.commonPathLength - 1,
+      ClassicRules.sharedPathProgressLength - 1,
     );
 
     if (fromPosition >= lastSharedPosition) {

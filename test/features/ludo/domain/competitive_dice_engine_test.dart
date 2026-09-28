@@ -202,7 +202,7 @@ void main() {
           LudoToken(
             id: 1,
             color: PlayerColor.red,
-            pathPosition: 57,
+            pathPosition: 56,
             status: TokenStatus.finished,
           ),
         ],
@@ -361,8 +361,8 @@ void main() {
         history: const PlayerDiceHistory(),
       );
 
-      expect(context.homeEntryRolls, contains(2));
-      expect(weights.weightFor(2), 112);
+      expect(context.homeEntryRolls, contains(1));
+      expect(weights.weightFor(1), 112);
     });
 
     test('exact finish receives finish and endgame pressure boosts', () {
@@ -372,19 +372,19 @@ void main() {
           LudoToken(
             id: 0,
             color: PlayerColor.red,
-            pathPosition: 57,
+            pathPosition: 56,
             status: TokenStatus.finished,
           ),
           LudoToken(
             id: 1,
             color: PlayerColor.red,
-            pathPosition: 57,
+            pathPosition: 56,
             status: TokenStatus.finished,
           ),
           LudoToken(
             id: 2,
             color: PlayerColor.red,
-            pathPosition: 55,
+            pathPosition: 54,
             status: TokenStatus.homePath,
           ),
         ],
@@ -495,13 +495,13 @@ void main() {
           LudoToken(
             id: 0,
             color: PlayerColor.red,
-            pathPosition: 57,
+            pathPosition: 56,
             status: TokenStatus.finished,
           ),
           LudoToken(
             id: 1,
             color: PlayerColor.red,
-            pathPosition: 57,
+            pathPosition: 56,
             status: TokenStatus.finished,
           ),
           LudoToken(
@@ -515,13 +515,13 @@ void main() {
           LudoToken(
             id: 4,
             color: PlayerColor.yellow,
-            pathPosition: 57,
+            pathPosition: 56,
             status: TokenStatus.finished,
           ),
           LudoToken(
             id: 5,
             color: PlayerColor.yellow,
-            pathPosition: 57,
+            pathPosition: 56,
             status: TokenStatus.finished,
           ),
           LudoToken(
@@ -571,7 +571,7 @@ void main() {
           LudoToken(
             id: 1,
             color: PlayerColor.red,
-            pathPosition: 57,
+            pathPosition: 56,
             status: TokenStatus.finished,
           ),
         ],
@@ -616,7 +616,7 @@ void main() {
           LudoToken(
             id: 1,
             color: PlayerColor.red,
-            pathPosition: 57,
+            pathPosition: 56,
             status: TokenStatus.finished,
           ),
         ],

@@ -10,6 +10,7 @@ import '../entities/ludo_game_state.dart';
 import '../entities/ludo_token.dart';
 import '../entities/power_type.dart';
 import '../entities/token_status.dart';
+import '../rules/classic_rules.dart';
 import 'board_power_pickup.dart';
 import 'power_game_event.dart';
 import 'power_inventory.dart';
@@ -289,7 +290,7 @@ class PowerLudoEngine {
     final int? toPosition = moveEvent.toPosition;
     if (toPosition != null &&
         toPosition >= 0 &&
-        toPosition < 52) {
+        toPosition < ClassicRules.sharedPathProgressLength) {
       final int globalIndex = LudoBoardMap.globalIndexFor(
         color: state.gameState.currentPlayer.color,
         pathPosition: toPosition,
