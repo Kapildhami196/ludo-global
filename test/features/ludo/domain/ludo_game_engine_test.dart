@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ludo_global/features/ludo/domain/engine/ludo_board_map.dart';
+import 'package:ludo_global/features/ludo/domain/entities/board_cell.dart';
 import 'package:ludo_global/features/ludo/domain/engine/ludo_game_engine.dart';
 import 'package:ludo_global/features/ludo/domain/entities/game_config.dart';
 import 'package:ludo_global/features/ludo/domain/entities/game_phase.dart';
@@ -51,6 +52,40 @@ void main() {
         ),
         13,
       );
+    });
+  });
+
+    test('enters each home lane directly after its arrow cell', () {
+      const Map<PlayerColor, BoardCell> arrowCells = <PlayerColor, BoardCell>{
+        PlayerColor.yellow: BoardCell(row: 7, column: 0),
+        PlayerColor.blue: BoardCell(row: 0, column: 7),
+        PlayerColor.red: BoardCell(row: 7, column: 14),
+        PlayerColor.green: BoardCell(row: 14, column: 7),
+      };
+      const Map<PlayerColor, BoardCell> firstHomeCells =
+          <PlayerColor, BoardCell>{
+        PlayerColor.yellow: BoardCell(row: 7, column: 1),
+        PlayerColor.blue: BoardCell(row: 1, column: 7),
+        PlayerColor.red: BoardCell(row: 7, column: 13),
+        PlayerColor.green: BoardCell(row: 13, column: 7),
+      };
+
+      for (final PlayerColor color in PlayerColor.values) {
+        expect(
+          LudoBoardMap.cellFor(
+            color: color,
+            pathPosition: ClassicRules.sharedPathProgressLength - 1,
+          ),
+          arrowCells[color],
+        );
+        expect(
+          LudoBoardMap.cellFor(
+            color: color,
+            pathPosition: ClassicRules.sharedPathProgressLength,
+          ),
+          firstHomeCells[color],
+        );
+      }
     });
   });
 
@@ -228,7 +263,7 @@ void main() {
 
     test('exact roll is required to finish', () {
       final LudoGameState state = _stateWithTokens(
-        redProgress: 55,
+        redProgress: 54,
         redStatus: TokenStatus.homePath,
       );
 
@@ -264,7 +299,7 @@ void main() {
               LudoToken(
                 id: 0,
                 color: PlayerColor.red,
-                pathPosition: 55,
+                pathPosition: 54,
                 status: TokenStatus.homePath,
               ),
               LudoToken(
@@ -303,7 +338,7 @@ void main() {
 
     test('a six with no legal move still grants one extra roll', () {
       final LudoGameState state = _stateWithTokens(
-        redProgress: 56,
+        redProgress: 55,
         redStatus: TokenStatus.homePath,
       ).copyWith(
         consecutiveSixes: 0,
