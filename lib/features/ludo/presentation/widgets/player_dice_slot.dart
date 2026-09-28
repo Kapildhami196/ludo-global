@@ -38,7 +38,7 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1700),
+    duration: const Duration(milliseconds: 1150),
   );
 
   @override
@@ -84,17 +84,21 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
-        final double wave = (math.sin(
+        // Start bright, fade low, then return bright so the current
+        // player's roll action is immediately obvious.
+        final double wave = (math.cos(
                   _controller.value * math.pi * 2,
                 ) +
                 1) /
             2;
 
-        final double pulseScale = 0.994 + wave * 0.012;
+        final double attention = widget.enabled && !widget.rolling ? wave : 0;
+        final double pulseScale =
+            widget.enabled ? 0.995 + (attention * 0.025) : 1;
 
         return Transform.scale(
           scale: pulseScale,
-          child: _buildDiceSlot(wave),
+          child: _buildDiceSlot(attention),
         );
       },
     );
@@ -170,10 +174,14 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                   ),
                   BoxShadow(
                     color: _accentColor.withValues(
-                      alpha: 0.08 + wave * 0.08,
+                      alpha: widget.enabled
+                          ? 0.18 + (wave * 0.42)
+                          : 0.08,
                     ),
-                    blurRadius: widget.size * 0.14,
-                    spreadRadius: widget.size * 0.004,
+                    blurRadius: widget.size *
+                        (widget.enabled ? 0.18 + (wave * 0.22) : 0.14),
+                    spreadRadius: widget.size *
+                        (widget.enabled ? 0.010 + (wave * 0.030) : 0.004),
                   ),
                 ],
               ),
@@ -197,6 +205,7 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                   rolling: widget.rolling,
                   onTap: widget.onRoll,
                   accentColor: _accentColor,
+                  attentionPulse: wave,
 
                   // OLD:
                   // size: widget.size * 0.84,
