@@ -485,7 +485,7 @@ class LudoGameEngine {
     if (progress < 0) {
       return TokenStatus.base;
     }
-    if (progress < ClassicRules.commonPathLength) {
+    if (progress < ClassicRules.sharedPathProgressLength) {
       return TokenStatus.active;
     }
     if (progress < ClassicRules.finishProgress) {
@@ -502,7 +502,7 @@ class LudoGameEngine {
   }) {
     final int lastSharedPosition = min(
       toPosition,
-      ClassicRules.commonPathLength - 1,
+      ClassicRules.sharedPathProgressLength - 1,
     );
 
     if (fromPosition >= lastSharedPosition) {
