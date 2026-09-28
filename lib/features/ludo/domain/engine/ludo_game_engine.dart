@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '../dice/dice_policy.dart';
 import '../dice/fair_dice_policy.dart';
 import '../entities/game_config.dart';
