@@ -252,7 +252,7 @@ class LudoBoard extends StatelessWidget {
             cell,
           );
         } else {
-          scale = 0.78;
+          scale = 0.94;
           final int pathPosition = visualProgress ?? token.pathPosition;
           final boardCell = LudoBoardMap.cellFor(
             color: player.color,
@@ -268,7 +268,7 @@ class LudoBoard extends StatelessWidget {
           stackCounts[key] = stackIndex + 1;
 
           if (stackIndex > 0) {
-            scale = 0.66;
+            scale = 0.78;
             const List<Offset> offsets = <Offset>[
               Offset(0.20, -0.10),
               Offset(-0.20, 0.11),
