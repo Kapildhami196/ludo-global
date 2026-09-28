@@ -15,9 +15,9 @@ class LudoToken {
   /// Progress relative to this token's own starting square.
   ///
   /// - -1: in base
-  /// - 0..51: common path
-  /// - 52..56: colored home lane
-  /// - 57: finished in the center
+  /// - 0..50: common path
+  /// - 51..55: colored home lane
+  /// - 56: finished in the center
   final int pathPosition;
   final TokenStatus status;
 
