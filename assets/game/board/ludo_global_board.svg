@@ -24,28 +24,28 @@
 <rect x="900" y="900" width="600" height="600" fill="url(#redGrad)" stroke="#1F2328" stroke-width="2" rx="0"/>
 <rect x="88" y="88" width="424" height="424" rx="3" fill="#9d7508" stroke="#1F2328" stroke-width="2" filter="url(#softShadow)"/>
 <!-- Yellow pawn holders -->
-<ellipse cx="200" cy="210" rx="38" ry="22" fill="#8B7000" opacity="0.38"/>
-<ellipse cx="400" cy="210" rx="38" ry="22" fill="#8B7000" opacity="0.38"/>
-<ellipse cx="200" cy="410" rx="38" ry="22" fill="#8B7000" opacity="0.38"/>
-<ellipse cx="400" cy="410" rx="38" ry="22" fill="#8B7000" opacity="0.38"/>
+<ellipse cx="200" cy="210" rx="38" ry="22" fill="#E9D47D" opacity="0.88"/>
+<ellipse cx="400" cy="210" rx="38" ry="22" fill="#E9D47D" opacity="0.88"/>
+<ellipse cx="200" cy="410" rx="38" ry="22" fill="#E9D47D" opacity="0.88"/>
+<ellipse cx="400" cy="410" rx="38" ry="22" fill="#E9D47D" opacity="0.88"/>
 <rect x="988" y="88" width="424" height="424" rx="3" fill="#07527d" stroke="#1F2328" stroke-width="2" filter="url(#softShadow)"/>
 <!-- Blue pawn holders -->
-<ellipse cx="1100" cy="210" rx="38" ry="22" fill="#075585" opacity="0.40"/>
-<ellipse cx="1300" cy="210" rx="38" ry="22" fill="#075585" opacity="0.40"/>
-<ellipse cx="1100" cy="410" rx="38" ry="22" fill="#075585" opacity="0.40"/>
-<ellipse cx="1300" cy="410" rx="38" ry="22" fill="#075585" opacity="0.40"/>
+<ellipse cx="1100" cy="210" rx="38" ry="22" fill="#8DCAE9" opacity="0.88"/>
+<ellipse cx="1300" cy="210" rx="38" ry="22" fill="#8DCAE9" opacity="0.88"/>
+<ellipse cx="1100" cy="410" rx="38" ry="22" fill="#8DCAE9" opacity="0.88"/>
+<ellipse cx="1300" cy="410" rx="38" ry="22" fill="#8DCAE9" opacity="0.88"/>
 <rect x="88" y="988" width="424" height="424" rx="3" fill="#06532e" stroke="#1F2328" stroke-width="2" filter="url(#softShadow)"/>
 <!-- Green pawn holders -->
-<ellipse cx="200" cy="1110" rx="38" ry="22" fill="#075D34" opacity="0.40"/>
-<ellipse cx="400" cy="1110" rx="38" ry="22" fill="#075D34" opacity="0.40"/>
-<ellipse cx="200" cy="1310" rx="38" ry="22" fill="#075D34" opacity="0.40"/>
-<ellipse cx="400" cy="1310" rx="38" ry="22" fill="#075D34" opacity="0.40"/>
+<ellipse cx="200" cy="1110" rx="38" ry="22" fill="#88DDB2" opacity="0.88"/>
+<ellipse cx="400" cy="1110" rx="38" ry="22" fill="#88DDB2" opacity="0.88"/>
+<ellipse cx="200" cy="1310" rx="38" ry="22" fill="#88DDB2" opacity="0.88"/>
+<ellipse cx="400" cy="1310" rx="38" ry="22" fill="#88DDB2" opacity="0.88"/>
 <rect x="988" y="988" width="424" height="424" rx="3" fill="#79140c" stroke="#1F2328" stroke-width="2" filter="url(#softShadow)"/>
 <!-- Red pawn holders -->
-<ellipse cx="1100" cy="1110" rx="38" ry="22" fill="#851614" opacity="0.40"/>
-<ellipse cx="1300" cy="1110" rx="38" ry="22" fill="#851614" opacity="0.40"/>
-<ellipse cx="1100" cy="1310" rx="38" ry="22" fill="#851614" opacity="0.40"/>
-<ellipse cx="1300" cy="1310" rx="38" ry="22" fill="#851614" opacity="0.40"/>
+<ellipse cx="1100" cy="1110" rx="38" ry="22" fill="#E99799" opacity="0.88"/>
+<ellipse cx="1300" cy="1110" rx="38" ry="22" fill="#E99799" opacity="0.88"/>
+<ellipse cx="1100" cy="1310" rx="38" ry="22" fill="#E99799" opacity="0.88"/>
+<ellipse cx="1300" cy="1310" rx="38" ry="22" fill="#E99799" opacity="0.88"/>
 <rect x="600" y="0" width="100" height="100" fill="#FAFAF8" stroke="#1F2328" stroke-width="2" rx="0"/>
 <rect x="700" y="0" width="100" height="100" fill="#FAFAF8" stroke="#1F2328" stroke-width="2" rx="0"/>
 <rect x="800" y="0" width="100" height="100" fill="#FAFAF8" stroke="#1F2328" stroke-width="2" rx="0"/>
