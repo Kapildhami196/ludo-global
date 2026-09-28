@@ -28,14 +28,15 @@ class GameFxOverlay extends StatefulWidget {
 
 class _GameFxOverlayState extends State<GameFxOverlay>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  );
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
     if (widget.type != null) {
       _controller.forward(from: 0);
     }

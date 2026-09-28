@@ -62,6 +62,10 @@ void main() {
     });
 
     test('landing exactly on held power collects and relocates it', () {
+      final int landingGlobalIndex = LudoBoardMap.globalIndexFor(
+        color: PlayerColor.red,
+        pathPosition: 5,
+      );
       final PowerLudoState state = _stateWithTokens(
         redProgresses: const <int>[2],
         greenProgresses: const <int>[],
@@ -69,7 +73,7 @@ void main() {
         diceValue: 3,
         movableTokenIds: const <int>[0],
         pickups: _pickups(
-          doubleDistance: 5,
+          doubleDistance: landingGlobalIndex,
           shield: 10,
           diceControl: 15,
           bonusRoll: 18,
@@ -86,7 +90,7 @@ void main() {
       );
       expect(
         result.state.pickups[PowerType.doubleDistance]!.globalIndex,
-        isNot(5),
+        isNot(landingGlobalIndex),
       );
       expect(
         result.powerEvents.any(
@@ -99,6 +103,10 @@ void main() {
     });
 
     test('passing over a pickup does not collect it', () {
+      final int passingGlobalIndex = LudoBoardMap.globalIndexFor(
+        color: PlayerColor.red,
+        pathPosition: 4,
+      );
       final PowerLudoState state = _stateWithTokens(
         redProgresses: const <int>[2],
         greenProgresses: const <int>[],
@@ -106,7 +114,7 @@ void main() {
         diceValue: 3,
         movableTokenIds: const <int>[0],
         pickups: _pickups(
-          doubleDistance: 4,
+          doubleDistance: passingGlobalIndex,
           shield: 10,
           diceControl: 15,
           bonusRoll: 18,
@@ -123,11 +131,15 @@ void main() {
       );
       expect(
         result.state.pickups[PowerType.doubleDistance]!.globalIndex,
-        4,
+        passingGlobalIndex,
       );
     });
 
     test('Bonus Roll triggers immediately on exact landing and relocates', () {
+      final int landingGlobalIndex = LudoBoardMap.globalIndexFor(
+        color: PlayerColor.red,
+        pathPosition: 5,
+      );
       final PowerLudoState state = _stateWithTokens(
         redProgresses: const <int>[2],
         greenProgresses: const <int>[-1],
@@ -138,7 +150,7 @@ void main() {
           doubleDistance: 10,
           shield: 15,
           diceControl: 18,
-          bonusRoll: 5,
+          bonusRoll: landingGlobalIndex,
         ),
       );
 
@@ -152,7 +164,7 @@ void main() {
       );
       expect(
         result.state.pickups[PowerType.bonusRoll]!.globalIndex,
-        isNot(5),
+        isNot(landingGlobalIndex),
       );
       expect(
         result.powerEvents.any(
