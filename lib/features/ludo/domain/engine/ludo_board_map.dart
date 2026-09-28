@@ -105,7 +105,7 @@ abstract final class LudoBoardMap {
     required int pathPosition,
   }) {
     assert(pathPosition >= 0);
-    assert(pathPosition < ClassicRules.commonPathLength);
+    assert(pathPosition < ClassicRules.sharedPathProgressLength);
 
     final int offset = startOffsets[color]!;
     return (offset + pathPosition) % ClassicRules.commonPathLength;
@@ -115,13 +115,13 @@ abstract final class LudoBoardMap {
     required PlayerColor color,
     required int pathPosition,
   }) {
-    if (pathPosition < ClassicRules.commonPathLength) {
+    if (pathPosition < ClassicRules.sharedPathProgressLength) {
       return commonPath[
           globalIndexFor(color: color, pathPosition: pathPosition)];
     }
 
     if (pathPosition < ClassicRules.finishProgress) {
-      return homeLanes[color]![pathPosition - ClassicRules.commonPathLength];
+      return homeLanes[color]![pathPosition - ClassicRules.sharedPathProgressLength];
     }
 
     if (pathPosition == ClassicRules.finishProgress) {
