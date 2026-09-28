@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import '../dice/dice_policy.dart';
 import '../dice/fair_dice_policy.dart';
 import '../entities/game_config.dart';
@@ -473,12 +471,7 @@ class LudoGameEngine {
       return false;
     }
 
-    return !_crossesOpponentBlockade(
-      state: state,
-      movingColor: token.color,
-      fromPosition: token.pathPosition,
-      toPosition: targetPosition,
-    );
+    return true;
   }
 
   TokenStatus _statusForProgress(int progress) {
@@ -492,64 +485,6 @@ class LudoGameEngine {
       return TokenStatus.homePath;
     }
     return TokenStatus.finished;
-  }
-
-  bool _crossesOpponentBlockade({
-    required LudoGameState state,
-    required PlayerColor movingColor,
-    required int fromPosition,
-    required int toPosition,
-  }) {
-    final int lastSharedPosition = min(
-      toPosition,
-      ClassicRules.commonPathLength - 1,
-    );
-
-    if (fromPosition >= lastSharedPosition) {
-      return false;
-    }
-
-    for (int progress = fromPosition + 1;
-        progress <= lastSharedPosition;
-        progress++) {
-      final int globalIndex = LudoBoardMap.globalIndexFor(
-        color: movingColor,
-        pathPosition: progress,
-      );
-
-      if (LudoBoardMap.isSafeGlobalIndex(globalIndex)) {
-        continue;
-      }
-
-      for (final LudoPlayer opponent in state.players) {
-        if (opponent.color == movingColor) {
-          continue;
-        }
-
-        int count = 0;
-        for (final LudoToken token in opponent.tokens) {
-          if (token.status != TokenStatus.active) {
-            continue;
-          }
-
-          final int opponentGlobalIndex =
-              LudoBoardMap.globalIndexFor(
-            color: opponent.color,
-            pathPosition: token.pathPosition,
-          );
-
-          if (opponentGlobalIndex == globalIndex) {
-            count++;
-          }
-        }
-
-        if (count >= 2) {
-          return true;
-        }
-      }
-    }
-
-    return false;
   }
 
   LudoGameState _advanceTurn(LudoGameState state) {
