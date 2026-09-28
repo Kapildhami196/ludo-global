@@ -108,11 +108,31 @@ class LudoBoard extends StatelessWidget {
     required List<_TokenPlacement> placements,
     required double tokenSize,
   }) {
+    // Paint from the back of the board toward the viewer. This keeps a pawn
+    // on a lower row visually in front of a pawn above it instead of letting
+    // player iteration order decide which pawn covers the other.
+    final List<_TokenPlacement> depthSortedPlacements =
+        List<_TokenPlacement>.of(placements)
+          ..sort((_TokenPlacement a, _TokenPlacement b) {
+            final int vertical = a.center.dy.compareTo(b.center.dy);
+            if (vertical != 0) {
+              return vertical;
+            }
+
+            final int horizontal = a.center.dx.compareTo(b.center.dx);
+            if (horizontal != 0) {
+              return horizontal;
+            }
+
+            return a.tokenId.compareTo(b.tokenId);
+          });
+
     return Stack(
       clipBehavior: Clip.none,
       children: <Widget>[
-        for (final _TokenPlacement placement in placements)
+        for (final _TokenPlacement placement in depthSortedPlacements)
           AnimatedPositioned(
+            key: ValueKey<String>('token-position-${placement.tokenId}'),
             duration: returningTokenIds.contains(placement.tokenId)
                 ? const Duration(milliseconds: 520)
                 : const Duration(milliseconds: 155),
@@ -232,7 +252,7 @@ class LudoBoard extends StatelessWidget {
             cell,
           );
         } else {
-          scale = 0.94;
+          scale = 0.78;
           final int pathPosition = visualProgress ?? token.pathPosition;
           final boardCell = LudoBoardMap.cellFor(
             color: player.color,
@@ -248,7 +268,7 @@ class LudoBoard extends StatelessWidget {
           stackCounts[key] = stackIndex + 1;
 
           if (stackIndex > 0) {
-            scale = 0.78;
+            scale = 0.66;
             const List<Offset> offsets = <Offset>[
               Offset(0.20, -0.10),
               Offset(-0.20, 0.11),
