@@ -1,8 +1,18 @@
 abstract final class ClassicRules {
   static const int tokensPerPlayer = 4;
+  /// Number of physical cells in the shared outer ring.
   static const int commonPathLength = 52;
+
+  /// Number of shared-track progress positions a token actually traverses.
+  ///
+  /// A token starts at progress 0 and reaches its color-specific entry arrow
+  /// at progress 50. The next step must enter the home lane directly instead
+  /// of visiting the extra outer-ring cell beside the arrow.
+  static const int sharedPathProgressLength = 51;
+
   static const int homeLaneLength = 5;
-  static const int finishProgress = 57;
+  static const int finishProgress =
+      sharedPathProgressLength + homeLaneLength;
   static const int rollRequiredToLeaveBase = 6;
   static const int consecutiveSixLimit = 3;
 
