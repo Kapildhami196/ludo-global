@@ -53,7 +53,6 @@ void main() {
         13,
       );
     });
-  });
 
     test('enters each home lane directly after its arrow cell', () {
       const Map<PlayerColor, BoardCell> arrowCells = <PlayerColor, BoardCell>{
