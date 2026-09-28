@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/assets/game_asset_paths.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
+import '../../../../core/widgets/game_asset_picture.dart';
 import '../../../../core/widgets/game_background.dart';
 import '../../domain/entities/game_config.dart';
+import '../../domain/entities/power_type.dart';
 import '../widgets/ludo_board.dart';
 
 class LudoBoardPreviewScreen extends StatelessWidget {
@@ -15,19 +18,29 @@ class LudoBoardPreviewScreen extends StatelessWidget {
   final LudoGameMode mode;
   final List<String> playerNames;
 
-  static const List<Color> _playerColors = [
-    LudoGlobalColors.red,
-    LudoGlobalColors.green,
-    LudoGlobalColors.gold,
-    LudoGlobalColors.electricBlue,
-  ];
+  static List<Color> _playerColors(int playerCount) => switch (playerCount) {
+        2 => const <Color>[
+            LudoGlobalColors.red,
+            LudoGlobalColors.gold,
+          ],
+        3 => const <Color>[
+            LudoGlobalColors.red,
+            LudoGlobalColors.green,
+            LudoGlobalColors.gold,
+          ],
+        _ => const <Color>[
+            LudoGlobalColors.red,
+            LudoGlobalColors.green,
+            LudoGlobalColors.gold,
+            LudoGlobalColors.electricBlue,
+          ],
+      };
 
-  static const List<String> _playerLabels = [
-    'RED',
-    'GREEN',
-    'YELLOW',
-    'BLUE',
-  ];
+  static List<String> _playerLabels(int playerCount) => switch (playerCount) {
+        2 => const <String>['RED', 'YELLOW'],
+        3 => const <String>['RED', 'GREEN', 'YELLOW'],
+        _ => const <String>['RED', 'GREEN', 'YELLOW', 'BLUE'],
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -43,8 +56,8 @@ class LudoBoardPreviewScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(LudoGlobalSpacing.md),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight -
-                        (LudoGlobalSpacing.md * 2),
+                    minHeight:
+                        constraints.maxHeight - (LudoGlobalSpacing.md * 2),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -70,8 +83,7 @@ class LudoBoardPreviewScreen extends StatelessWidget {
                                 Text(
                                   '$modeName • Local Pass-and-Play',
                                   style: const TextStyle(
-                                    color:
-                                        LudoGlobalColors.textSecondary,
+                                    color: LudoGlobalColors.textSecondary,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -85,8 +97,7 @@ class LudoBoardPreviewScreen extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: mode == LudoGameMode.power
-                                  ? LudoGlobalColors.red
-                                      .withValues(alpha: 0.2)
+                                  ? LudoGlobalColors.red.withValues(alpha: 0.2)
                                   : LudoGlobalColors.electricBlue
                                       .withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(
@@ -108,8 +119,8 @@ class LudoBoardPreviewScreen extends StatelessWidget {
                       const SizedBox(height: 14),
                       _PlayerStrip(
                         playerNames: playerNames,
-                        colors: _playerColors,
-                        labels: _playerLabels,
+                        colors: _playerColors(playerNames.length),
+                        labels: _playerLabels(playerNames.length),
                       ),
                       const SizedBox(height: 14),
                       Container(
@@ -142,8 +153,7 @@ class LudoBoardPreviewScreen extends StatelessWidget {
                               icon: Icons.chat_bubble_rounded,
                               label: 'Chat',
                               onTap: () {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(
+                                ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
                                       'Quick chat will be added with gameplay.',
@@ -161,8 +171,7 @@ class LudoBoardPreviewScreen extends StatelessWidget {
                               icon: Icons.emoji_emotions_rounded,
                               label: 'Emotes',
                               onTap: () {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(
+                                ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
                                       'Player reactions will be added later.',
@@ -182,8 +191,8 @@ class LudoBoardPreviewScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: LudoGlobalColors.surface
-                              .withValues(alpha: 0.88),
+                          color:
+                              LudoGlobalColors.surface.withValues(alpha: 0.88),
                           borderRadius: BorderRadius.circular(
                             LudoGlobalRadius.medium,
                           ),
@@ -314,8 +323,7 @@ class _DicePreview extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: LudoGlobalColors.electricBlue
-                .withValues(alpha: 0.32),
+            color: LudoGlobalColors.electricBlue.withValues(alpha: 0.32),
             blurRadius: 15,
           ),
         ],
@@ -389,24 +397,24 @@ class _PowerPreviewBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const List<(IconData, String, Color)> powers = [
+    const List<(PowerType, String, Color)> powers = [
       (
-        Icons.close_rounded,
+        PowerType.doubleDistance,
         'Double',
         LudoGlobalColors.red,
       ),
       (
-        Icons.shield_rounded,
+        PowerType.shield,
         'Shield',
         LudoGlobalColors.electricBlue,
       ),
       (
-        Icons.gps_fixed_rounded,
+        PowerType.diceControl,
         'Control',
         LudoGlobalColors.purple,
       ),
       (
-        Icons.star_rounded,
+        PowerType.bonusRoll,
         'Bonus',
         LudoGlobalColors.gold,
       ),
@@ -434,7 +442,7 @@ class _PowerPreviewBar extends StatelessWidget {
           const SizedBox(height: 9),
           Row(
             children: [
-              for (final (IconData icon, String label, Color color)
+              for (final (PowerType type, String label, Color color)
                   in powers) ...[
                 if (label != 'Double') const SizedBox(width: 7),
                 Expanded(
@@ -451,7 +459,12 @@ class _PowerPreviewBar extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        Icon(icon, color: color, size: 23),
+                        SizedBox.square(
+                          dimension: 23,
+                          child: GameAssetPicture.asset(
+                            GameAssetPaths.powerFor(type),
+                          ),
+                        ),
                         const SizedBox(height: 3),
                         Text(
                           label,

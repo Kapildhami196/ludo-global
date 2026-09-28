@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/assets/game_asset_paths.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
+import '../../../../core/widgets/game_asset_picture.dart';
 import '../../domain/entities/power_type.dart';
 
 class PowerPickupMarker extends StatefulWidget {
@@ -55,10 +55,8 @@ class _PowerPickupMarkerState extends State<PowerPickupMarker>
             builder: (context, child) {
               final double wave =
                   (math.sin(_controller.value * math.pi * 2) + 1) / 2;
-              final double scale =
-                  entranceScale * (0.96 + wave * 0.07);
-              final double lift =
-                  -widget.size * (0.025 + wave * 0.035);
+              final double scale = entranceScale * (0.96 + wave * 0.07);
+              final double lift = -widget.size * (0.025 + wave * 0.035);
 
               return Transform.translate(
                 offset: Offset(0, lift),
@@ -80,8 +78,7 @@ class _PowerPickupMarkerState extends State<PowerPickupMarker>
                                 color: _glowColor.withValues(
                                   alpha: 0.22 + wave * 0.28,
                                 ),
-                                blurRadius:
-                                    widget.size * (0.30 + wave * 0.38),
+                                blurRadius: widget.size * (0.30 + wave * 0.38),
                                 spreadRadius: wave * widget.size * 0.035,
                               ),
                             ],
@@ -114,7 +111,7 @@ class _PowerPickupMarkerState extends State<PowerPickupMarker>
               ),
             ],
           ),
-          child: SvgPicture.asset(
+          child: GameAssetPicture.asset(
             GameAssetPaths.powerFor(widget.type),
             fit: BoxFit.contain,
           ),

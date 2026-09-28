@@ -44,14 +44,18 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
   @override
   void initState() {
     super.initState();
+
     if (widget.active) {
       _controller.repeat();
     }
   }
 
   @override
-  void didUpdateWidget(covariant PlayerDiceSlot oldWidget) {
+  void didUpdateWidget(
+    covariant PlayerDiceSlot oldWidget,
+  ) {
     super.didUpdateWidget(oldWidget);
+
     if (widget.active && !oldWidget.active) {
       _controller.repeat();
     } else if (!widget.active && oldWidget.active) {
@@ -61,8 +65,9 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
     }
   }
 
-  Color get _accentColor =>
-      LudoReferenceVisuals.colorFor(widget.color);
+  Color get _accentColor => LudoReferenceVisuals.colorFor(
+        widget.color,
+      );
 
   @override
   void dispose() {
@@ -79,8 +84,12 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
-        final double wave =
-            (math.sin(_controller.value * math.pi * 2) + 1) / 2;
+        final double wave = (math.sin(
+                  _controller.value * math.pi * 2,
+                ) +
+                1) /
+            2;
+
         final double pulseScale = 0.994 + wave * 0.012;
 
         return Transform.scale(
@@ -99,6 +108,7 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
+          // Speech-bubble pointer.
           Positioned(
             left: widget.tailOnRight ? null : 0,
             right: widget.tailOnRight ? 0 : null,
@@ -113,20 +123,26 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
               ),
             ),
           ),
+
           Positioned(
-            left: widget.tailOnRight
-                ? 0
-                : widget.size * 0.20,
-            right: widget.tailOnRight
-                ? widget.size * 0.20
-                : 0,
+            left: widget.tailOnRight ? 0 : widget.size * 0.20,
+            right: widget.tailOnRight ? widget.size * 0.20 : 0,
             child: Container(
               width: widget.size,
+
+              // Keep the surrounding dice bubble compact.
               height: widget.size * 0.88,
-              padding: EdgeInsets.all(widget.size * 0.045),
+
+              // Reduced padding significantly so the dice has
+              // more usable room.
+              padding: EdgeInsets.all(
+                widget.size * 0.010,
+              ),
+
               decoration: BoxDecoration(
-                borderRadius:
-                    BorderRadius.circular(widget.size * 0.19),
+                borderRadius: BorderRadius.circular(
+                  widget.size * 0.19,
+                ),
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -136,14 +152,21 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                   ],
                 ),
                 border: Border.all(
-                  color: const Color(0xFF0B0E28),
+                  color: const Color(
+                    0xFF0B0E28,
+                  ),
                   width: widget.size * 0.036,
                 ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.48),
+                    color: Colors.black.withValues(
+                      alpha: 0.48,
+                    ),
                     blurRadius: widget.size * 0.15,
-                    offset: Offset(0, widget.size * 0.07),
+                    offset: Offset(
+                      0,
+                      widget.size * 0.07,
+                    ),
                   ),
                   BoxShadow(
                     color: _accentColor.withValues(
@@ -154,14 +177,33 @@ class _PlayerDiceSlotState extends State<PlayerDiceSlot>
                   ),
                 ],
               ),
-              child: Center(
+
+              // ------------------------------------------------
+              // BIGGER DICE
+              // ------------------------------------------------
+              //
+              // OverflowBox prevents the bubble's 0.88-height
+              // constraint from shrinking the dice again.
+              //
+              child: OverflowBox(
+                alignment: Alignment.center,
+                minWidth: 0,
+                minHeight: 0,
+                maxWidth: widget.size * 1.10,
+                maxHeight: widget.size * 1.10,
                 child: AnimatedDice(
                   value: widget.value,
                   enabled: widget.enabled,
                   rolling: widget.rolling,
                   onTap: widget.onRoll,
                   accentColor: _accentColor,
-                  size: widget.size * 0.84,
+
+                  // OLD:
+                  // size: widget.size * 0.84,
+
+                  // NEW:
+                  size: widget.size * 0.96,
+
                   launchDirection: widget.launchDirection,
                 ),
               ),
@@ -181,38 +223,67 @@ class _DiceBubbleTailPainter extends CustomPainter {
   final bool pointRight;
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(
+    Canvas canvas,
+    Size size,
+  ) {
     final Path path = Path();
 
     if (pointRight) {
       path
-        ..moveTo(0, size.height * 0.14)
-        ..lineTo(size.width, size.height * 0.50)
-        ..lineTo(0, size.height * 0.86)
+        ..moveTo(
+          0,
+          size.height * 0.14,
+        )
+        ..lineTo(
+          size.width,
+          size.height * 0.50,
+        )
+        ..lineTo(
+          0,
+          size.height * 0.86,
+        )
         ..close();
     } else {
       path
-        ..moveTo(size.width, size.height * 0.14)
-        ..lineTo(0, size.height * 0.50)
-        ..lineTo(size.width, size.height * 0.86)
+        ..moveTo(
+          size.width,
+          size.height * 0.14,
+        )
+        ..lineTo(
+          0,
+          size.height * 0.50,
+        )
+        ..lineTo(
+          size.width,
+          size.height * 0.86,
+        )
         ..close();
     }
 
     canvas.drawPath(
       path,
-      Paint()..color = const Color(0xFF171737),
+      Paint()
+        ..color = const Color(
+          0xFF171737,
+        ),
     );
+
     canvas.drawPath(
       path,
       Paint()
-        ..color = const Color(0xFF0B0E28)
+        ..color = const Color(
+          0xFF0B0E28,
+        )
         ..style = PaintingStyle.stroke
         ..strokeWidth = size.width * 0.12,
     );
   }
 
   @override
-  bool shouldRepaint(covariant _DiceBubbleTailPainter oldDelegate) {
+  bool shouldRepaint(
+    covariant _DiceBubbleTailPainter oldDelegate,
+  ) {
     return oldDelegate.pointRight != pointRight;
   }
 }

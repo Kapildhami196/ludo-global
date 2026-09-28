@@ -5,8 +5,8 @@ import '../../domain/entities/player_color.dart';
 
 /// Presentation-only visual tokens for the reference gameplay board.
 ///
-/// The board now keeps the engine's natural color orientation:
-/// red top-left, green top-right, yellow bottom-right, blue bottom-left.
+/// Board orientation: yellow top-left, blue top-right, green bottom-left,
+/// red bottom-right.
 abstract final class LudoReferenceVisuals {
   static PlayerColor displayColorFor(PlayerColor engineColor) => engineColor;
 

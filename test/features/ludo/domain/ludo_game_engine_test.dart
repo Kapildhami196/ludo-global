@@ -28,28 +28,28 @@ void main() {
           color: PlayerColor.red,
           pathPosition: 0,
         ),
-        0,
+        26,
       );
       expect(
         LudoBoardMap.globalIndexFor(
           color: PlayerColor.green,
           pathPosition: 0,
         ),
-        13,
+        39,
       );
       expect(
         LudoBoardMap.globalIndexFor(
           color: PlayerColor.yellow,
           pathPosition: 0,
         ),
-        26,
+        0,
       );
       expect(
         LudoBoardMap.globalIndexFor(
           color: PlayerColor.blue,
           pathPosition: 0,
         ),
-        39,
+        13,
       );
     });
   });
@@ -69,8 +69,7 @@ void main() {
       expect(state.players.length, 4);
       expect(
         state.players.every(
-          (player) =>
-              player.tokens.length == ClassicRules.tokensPerPlayer,
+          (player) => player.tokens.length == ClassicRules.tokensPerPlayer,
         ),
         isTrue,
       );
@@ -98,7 +97,8 @@ void main() {
       );
     });
 
-    test('starting player may be explicitly controlled for deterministic play', () {
+    test('starting player may be explicitly controlled for deterministic play',
+        () {
       final LudoGameState state = engine.createGame(
         config: const LudoGameConfig(
           mode: LudoGameMode.normal,
@@ -150,10 +150,12 @@ void main() {
       LudoGameState state = _newTwoPlayerGame(engine);
 
       var action = engine.rollDice(state, forcedValue: 6);
-      state = engine.moveToken(
-        action.state,
-        action.state.movableTokenIds.first,
-      ).state;
+      state = engine
+          .moveToken(
+            action.state,
+            action.state.movableTokenIds.first,
+          )
+          .state;
 
       action = engine.rollDice(state, forcedValue: 6);
       final int activeTokenId = action.state.currentPlayer.tokens
@@ -180,8 +182,7 @@ void main() {
         rolled.state.movableTokenIds.single,
       );
 
-      final LudoToken greenToken =
-          moved.state.players[1].tokens.first;
+      final LudoToken greenToken = moved.state.players[1].tokens.first;
 
       expect(greenToken.status, TokenStatus.base);
       expect(greenToken.pathPosition, -1);
@@ -200,15 +201,14 @@ void main() {
         rolled.state.movableTokenIds.single,
       );
 
-      final LudoToken greenToken =
-          moved.state.players[1].tokens.first;
+      final LudoToken greenToken = moved.state.players[1].tokens.first;
 
       expect(
         LudoBoardMap.globalIndexFor(
           color: PlayerColor.red,
           pathPosition: 8,
         ),
-        8,
+        34,
       );
       expect(greenToken.status, TokenStatus.active);
       expect(greenToken.pathPosition, 47);
@@ -316,7 +316,9 @@ void main() {
       expect(rolled.state.consecutiveSixes, 1);
     });
 
-    test('three opponent tokens on one unsafe cell remain an impassable blockade', () {
+    test(
+        'three opponent tokens on one unsafe cell remain an impassable blockade',
+        () {
       final LudoGameState state = _stateWithTokens(
         redProgress: 2,
         greenProgresses: const <int>[44, 44, 44],

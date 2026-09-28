@@ -133,10 +133,10 @@ class GameBoardStage extends StatelessWidget {
     final player =
         gameState.players.firstWhere((candidate) => candidate.id == playerId);
     final bool active = playerId == gameState.currentPlayer.id;
+    // Match the supplied board: yellow/blue on top, green/red on bottom.
     final bool alignRight =
-        color == PlayerColor.green || color == PlayerColor.yellow;
-    final bool top =
-        color == PlayerColor.red || color == PlayerColor.green;
+        color == PlayerColor.blue || color == PlayerColor.red;
+    final bool top = color == PlayerColor.yellow || color == PlayerColor.blue;
 
     final double cell = boardSize / 15;
     final double avatarX = alignRight
@@ -150,8 +150,7 @@ class GameBoardStage extends StatelessWidget {
     final double diceX = alignRight
         ? avatarX - diceWidth - hudGap
         : avatarX + avatarSize + hudGap;
-    final double diceY =
-        avatarY + ((avatarSize - diceSize) / 2);
+    final double diceY = avatarY + ((avatarSize - diceSize) / 2);
 
     // Reference behavior: the die rolls mostly vertically toward the viewer,
     // not in a large circular orbit across the board.
@@ -170,8 +169,7 @@ class GameBoardStage extends StatelessWidget {
           player: player,
           active: active,
           isComputer: computerPlayerIds.contains(playerId),
-          consecutiveSixes:
-              active ? gameState.consecutiveSixes : 0,
+          consecutiveSixes: active ? gameState.consecutiveSixes : 0,
           alignRight: alignRight,
           size: avatarSize,
         ),

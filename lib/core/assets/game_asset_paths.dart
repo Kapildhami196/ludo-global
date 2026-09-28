@@ -14,20 +14,15 @@ abstract final class GameAssetPaths {
   static const String dice5 = 'assets/game/dice/dice_5.svg';
   static const String dice6 = 'assets/game/dice/dice_6.svg';
 
-  static const String doubleDistance =
-      'assets/game/powers/double_distance.svg';
-  static const String shield = 'assets/game/powers/shield.svg';
-  static const String diceControl =
-      'assets/game/powers/dice_control.svg';
-  static const String bonusRoll =
-      'assets/game/powers/bonus_roll.svg';
+  static const String doubleDistance = 'assets/game/powers/double_distance.png';
+  static const String shield = 'assets/game/powers/shield.png';
+  static const String diceControl = 'assets/game/powers/dice_control.png';
+  static const String bonusRoll = 'assets/game/powers/bonus_roll.png';
 
-  static const String safeStar =
-      'assets/game/board/safe_star.svg';
-  static const String directionArrow =
-      'assets/game/board/direction_arrow.svg';
-  static const String centerGoal =
-      'assets/game/board/center_goal.svg';
+  static const String ludoBoard = 'assets/game/board/ludo_global_board.png';
+  static const String safeStar = 'assets/game/board/safe_star.svg';
+  static const String directionArrow = 'assets/game/board/direction_arrow.svg';
+  static const String centerGoal = 'assets/game/board/center_goal.svg';
 
   static String pawnFor(PlayerColor color) {
     return switch (color) {

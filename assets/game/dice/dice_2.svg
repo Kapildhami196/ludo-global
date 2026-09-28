@@ -1,46 +1,64 @@
-<svg width="104" height="104" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none"
+xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="front" x1="18" y1="22" x2="82" y2="87" gradientUnits="userSpaceOnUse">
+    <linearGradient id="body" x1="26" y1="20" x2="101" y2="105" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="0.48" stop-color="#F8FAFD"/>
-      <stop offset="0.82" stop-color="#DCE4EC"/>
-      <stop offset="1" stop-color="#BCC7D2"/>
+      <stop offset="0.30" stop-color="#FCFCFF"/>
+      <stop offset="0.70" stop-color="#E8EAF1"/>
+      <stop offset="1" stop-color="#C6CBD7"/>
     </linearGradient>
-    <linearGradient id="top" x1="22" y1="13" x2="86" y2="29" gradientUnits="userSpaceOnUse">
+    <linearGradient id="edge" x1="24" y1="24" x2="103" y2="104" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="1" stop-color="#D7E1EA"/>
+      <stop offset="0.45" stop-color="#EEF2F8"/>
+      <stop offset="1" stop-color="#9DA7B8"/>
     </linearGradient>
-    <linearGradient id="side" x1="80" y1="23" x2="91" y2="84" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#CCD7E1"/>
-      <stop offset="1" stop-color="#7C8C9C"/>
-    </linearGradient>
-    <radialGradient id="pip" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(46 48) rotate(45) scale(46)">
-      <stop offset="0" stop-color="#183B58"/>
-      <stop offset="0.58" stop-color="#081827"/>
-      <stop offset="1" stop-color="#02070D"/>
+    <radialGradient id="pipGrad" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+      gradientTransform="translate(60 58) rotate(45) scale(15)">
+      <stop offset="0" stop-color="#173E74"/>
+      <stop offset="0.52" stop-color="#081A35"/>
+      <stop offset="1" stop-color="#020812"/>
     </radialGradient>
-    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="3.2"/>
+    <linearGradient id="shine" x1="37" y1="26" x2="94" y2="89" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white" stop-opacity="0.95"/>
+      <stop offset="0.44" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="8" y="8" width="112" height="116" filterUnits="userSpaceOnUse"
+      color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#00152E" flood-opacity="0.34"/>
+    </filter>
+    <filter id="softGlow" x="11" y="11" width="106" height="106" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="1.2"/>
     </filter>
   </defs>
 
-  <ellipse cx="53" cy="91" rx="35" ry="7" fill="#00101E" fill-opacity="0.30" filter="url(#shadow)"/>
+  <!-- soft contact shadow -->
+  <ellipse cx="64" cy="108" rx="35" ry="8" fill="#07172B" fill-opacity="0.16"/>
 
-  <path d="M23 17L73 11C79 10 84 12 88 16L93 22L31 29L18 23Z"
-        fill="url(#top)" stroke="#A8B6C3" stroke-width="1.4"/>
-  <path d="M82 22L93 22L91 73C91 80 87 85 81 89L77 91L78 31Z"
-        fill="url(#side)" stroke="#77899A" stroke-width="1.4"/>
+  <g filter="url(#shadow)">
+    <!-- bevel / outer shell -->
+    <rect x="20" y="16" width="88" height="88" rx="24" fill="url(#edge)"/>
+    <rect x="23" y="19" width="82" height="82" rx="21" fill="url(#body)" stroke="white" stroke-width="2"/>
 
-  <rect x="16" y="22" width="66" height="66" rx="15"
-        fill="url(#front)" stroke="#8FA1B1" stroke-width="1.8"/>
+    <!-- subtle bottom depth -->
+    <path d="M28 91C35 99 43 102 55 102H86C96 102 103 95 105 86V89C105 99 97 107 87 107H43C32 107 23 98 23 87V79C24 84 25 88 28 91Z"
+      fill="#9EA7B6" fill-opacity="0.44"/>
 
-  <path d="M27 27C39 23 62 23 72 27"
-        stroke="#FFFFFF" stroke-opacity="0.95" stroke-width="2.6" stroke-linecap="round"/>
-  <path d="M22 75C35 84 64 85 76 75"
-        stroke="#8496A6" stroke-opacity="0.42" stroke-width="3" stroke-linecap="round"/>
+    <!-- top glossy plane -->
+    <path d="M36 25H85C95 25 101 31 102 40C84 30 53 27 29 43C31 33 33 28 36 25Z"
+      fill="url(#shine)"/>
+    <path d="M34 27C49 22 78 21 94 31" stroke="white" stroke-opacity="0.78"
+      stroke-width="4" stroke-linecap="round"/>
 
-  <circle cx="34" cy="38" r="5.6" fill="url(#pip)"/>
-  <circle cx="32.6" cy="36.5" r="1.6" fill="#6F91AF" fill-opacity="0.42"/>
-  <circle cx="66" cy="70" r="5.6" fill="url(#pip)"/>
-  <circle cx="64.6" cy="68.5" r="1.6" fill="#6F91AF" fill-opacity="0.42"/>
+  <g>
+    <circle cx="43" cy="44.5" r="7.6" fill="#07172B" fill-opacity="0.42"/>
+    <circle cx="43" cy="43" r="7.2" fill="url(#pipGrad)"/>
+    <ellipse cx="40.8" cy="40.5" rx="2.3" ry="1.7" fill="white" fill-opacity="0.48"/>
+  </g>
+  <g>
+    <circle cx="85" cy="86.5" r="7.6" fill="#07172B" fill-opacity="0.42"/>
+    <circle cx="85" cy="85" r="7.2" fill="url(#pipGrad)"/>
+    <ellipse cx="82.8" cy="82.5" rx="2.3" ry="1.7" fill="white" fill-opacity="0.48"/>
+  </g>
+  </g>
 </svg>

@@ -10,7 +10,7 @@ import '../style/ludo_reference_visuals.dart';
 class PremiumLudoToken extends StatefulWidget {
   const PremiumLudoToken({
     required this.playerColor,
-    this.size = 30,
+    this.size = 50,
     this.dimmed = false,
     this.highlighted = false,
     this.moving = false,
@@ -54,8 +54,8 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
   void didUpdateWidget(covariant PremiumLudoToken oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    final bool movedOneStep = widget.moving &&
-        oldWidget.movementStep != widget.movementStep;
+    final bool movedOneStep =
+        widget.moving && oldWidget.movementStep != widget.movementStep;
 
     if (movedOneStep) {
       _controller
@@ -98,8 +98,7 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
       ..reset();
   }
 
-  Color get _accentColor =>
-      LudoReferenceVisuals.colorFor(widget.playerColor);
+  Color get _accentColor => LudoReferenceVisuals.colorFor(widget.playerColor);
 
   @override
   void dispose() {
@@ -131,40 +130,36 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
               animation: _controller,
               builder: (context, _) {
                 final double t = _controller.value;
+
                 final double lift = widget.returning
                     ? math.sin(t * math.pi).abs()
                     : widget.moving
                         ? math.sin(t * math.pi).abs()
                         : 0;
+
                 final double hop = widget.returning
                     ? -lift * widget.size * 0.52
                     : widget.moving
                         ? -lift * widget.size * 0.28
                         : 0;
+
                 final double squash = widget.returning
                     ? 1 - lift * 0.05
                     : widget.moving
                         ? 1 - lift * 0.055
                         : 1;
-                final double screenPop = widget.moving
-                    ? 1 + lift * 0.14
-                    : 1;
+
+                final double screenPop = widget.moving ? 1 + lift * 0.10 : 1;
+
                 final double shake = widget.captured
-                    ? math.sin(t * math.pi * 10) *
-                        widget.size *
-                        0.15 *
-                        (1 - t)
+                    ? math.sin(t * math.pi * 10) * widget.size * 0.15 * (1 - t)
                     : 0;
+
                 final double captureScale = widget.captured
                     ? 1 - (0.28 * Curves.easeIn.transform(t))
                     : widget.returning
                         ? 0.92 + lift * 0.12
                         : 1;
-                final double shadowWidth =
-                    widget.size * (0.76 - lift * 0.24);
-                final double shadowHeight =
-                    widget.size * (0.095 - lift * 0.025);
-                final double shadowOpacity = 0.30 - lift * 0.14;
 
                 return SizedBox(
                   width: widget.size,
@@ -173,6 +168,7 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                     clipBehavior: Clip.none,
                     alignment: Alignment.bottomCenter,
                     children: [
+                      // Highlight / shield glow.
                       if (widget.highlighted || widget.shielded)
                         Positioned(
                           left: -widget.size * 0.18,
@@ -195,54 +191,50 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                             ),
                           ),
                         ),
+
+                      // Ground shadow.
                       Positioned(
-                        bottom: widget.size * 0.010,
+                        bottom: widget.size * 0.025,
                         child: Container(
-                          width: shadowWidth,
-                          height: shadowHeight,
+                          width: widget.size * (0.62 - lift * 0.10),
+                          height: widget.size * 0.075,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(999),
                             boxShadow: <BoxShadow>[
                               BoxShadow(
                                 color: Colors.black.withValues(
-                                  alpha: shadowOpacity,
+                                  alpha: 0.28 - lift * 0.10,
                                 ),
-                                blurRadius: widget.size * 0.15,
-                                spreadRadius: widget.size * 0.006,
+                                blurRadius: widget.size * 0.11,
+                                spreadRadius: widget.size * 0.005,
                               ),
                             ],
                           ),
                         ),
                       ),
+
+                      // -------------------------------------------------
+                      // PAWN
+                      // -------------------------------------------------
                       Transform.translate(
-                        offset: Offset(shake, hop),
+                        offset: Offset(shake, hop + widget.size * 0.08),
                         child: Transform.scale(
-                          scaleX:
-                              captureScale / squash * screenPop,
-                          scaleY:
-                              captureScale * squash * screenPop,
+                          scaleX: captureScale / squash * screenPop,
+                          scaleY: captureScale * squash * screenPop,
                           alignment: Alignment.bottomCenter,
-                          child: Transform(
-                            alignment: Alignment.bottomCenter,
-                            transform: Matrix4.identity()
-                              ..setEntry(3, 2, 0.0024)
-                              ..rotateX(-0.28),
-                            child: Transform.scale(
-                              scaleX: 1.10,
-                              scaleY: 0.90,
+                          child: SizedBox(
+                            width: widget.size * 1.92,
+                            height: widget.size * 1.30,
+                            child: SvgPicture.asset(
+                              GameAssetPaths.pawnFor(displayColor),
+                              fit: BoxFit.contain,
                               alignment: Alignment.bottomCenter,
-                              child: SizedBox(
-                                width: widget.size,
-                                height: widget.size * 1.12,
-                                child: SvgPicture.asset(
-                                  GameAssetPaths.pawnFor(displayColor),
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
                             ),
                           ),
                         ),
                       ),
+
+                      // Shield badge.
                       if (widget.shielded)
                         Positioned(
                           right: -widget.size * 0.06,

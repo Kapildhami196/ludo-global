@@ -1,92 +1,30 @@
-<svg width="104" height="104" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="head" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
-      gradientTransform="translate(42 24) rotate(45) scale(36)">
-      <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="0.14" stop-color="#9EE6FF"/>
-      <stop offset="0.58" stop-color="#299EF3"/>
-      <stop offset="1" stop-color="#0B4F9F"/>
+    <radialGradient id="head" cx="32%" cy="23%" r="76%">
+      <stop offset="0%" stop-color="#C6F9FF"/>
+      <stop offset="18%" stop-color="#68E9FF"/>
+      <stop offset="48%" stop-color="#20C7EB"/>
+      <stop offset="78%" stop-color="#0799C8"/>
+      <stop offset="100%" stop-color="#05618B"/>
     </radialGradient>
-
-    <linearGradient id="body" x1="30" y1="43" x2="75" y2="84" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#9EE6FF"/>
-      <stop offset="0.34" stop-color="#299EF3"/>
-      <stop offset="0.78" stop-color="#299EF3"/>
-      <stop offset="1" stop-color="#0B4F9F"/>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#74EEFF"/>
+      <stop offset="35%" stop-color="#20C9EC"/>
+      <stop offset="68%" stop-color="#079BC9"/>
+      <stop offset="100%" stop-color="#05638B"/>
     </linearGradient>
-
-    <linearGradient id="baseTop" x1="17" y1="76" x2="86" y2="89" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#9EE6FF"/>
-      <stop offset="0.46" stop-color="#299EF3"/>
-      <stop offset="1" stop-color="#0B4F9F"/>
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#52E1FA"/>
+      <stop offset="45%" stop-color="#16B8DF"/>
+      <stop offset="100%" stop-color="#055D85"/>
     </linearGradient>
-
-    <linearGradient id="baseFront" x1="18" y1="84" x2="84" y2="101" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#299EF3"/>
-      <stop offset="0.62" stop-color="#0B4F9F"/>
-      <stop offset="1" stop-color="#06366E"/>
-    </linearGradient>
-
-    <filter id="shadow" x="-35%" y="-60%" width="170%" height="220%">
-      <feGaussianBlur stdDeviation="2.4"/>
-    </filter>
   </defs>
-
-  <!-- soft contact shadow: wide and low, like the reference camera angle -->
-  <ellipse cx="52" cy="97.5" rx="37" ry="5.8"
-    fill="#00111F" fill-opacity="0.24" filter="url(#shadow)"/>
-
-  <!-- thick front-facing base -->
-  <path d="M15 83
-           C15 75 31 70 52 70
-           C73 70 89 75 89 83
-           L89 91
-           C89 99 74 103 52 103
-           C30 103 15 99 15 91Z"
-        fill="url(#baseFront)" stroke="#06366E" stroke-width="1.5"/>
-
-  <ellipse cx="52" cy="81.5" rx="37" ry="12.5"
-    fill="url(#baseTop)" stroke="#06366E" stroke-width="1.5"/>
-
-  <ellipse cx="52" cy="80.3" rx="31.5" ry="8.1"
-    fill="#9EE6FF" fill-opacity="0.18"/>
-
-  <!-- squat body: deliberately wider and shorter -->
-  <path d="M34 45
-           C39 50 39 55 33 61
-           C27 67 24 72 26 77
-           C29 82 38 85 52 85
-           C66 85 75 82 78 77
-           C80 72 77 67 71 61
-           C65 55 65 50 70 45
-           Z"
-        fill="url(#body)" stroke="#06366E" stroke-width="1.6"/>
-
-  <!-- front highlight -->
-  <path d="M31 65
-           C36 56 40 51 44 47"
-        stroke="#FFFFFF" stroke-opacity="0.42" stroke-width="5.4"
-        stroke-linecap="round"/>
-
-  <!-- neck shadow -->
-  <ellipse cx="52" cy="48.5" rx="15" ry="6.3"
-    fill="#0B4F9F" fill-opacity="0.52"/>
-
-  <!-- large low-set head for stronger screen-facing perspective -->
-  <circle cx="52" cy="31.5" r="20.5"
-    fill="url(#head)" stroke="#06366E" stroke-width="1.6"/>
-
-  <ellipse cx="43.8" cy="23.8" rx="7.2" ry="4.5"
-    fill="#FFFFFF" fill-opacity="0.58"/>
-
-  <path d="M35 31
-           C37 21 44 14 54 12"
-        stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="3"
-        stroke-linecap="round"/>
-
-  <!-- subtle lower-front reflection -->
-  <path d="M26 89
-           C37 94 66 95 79 89"
-        stroke="#9EE6FF" stroke-opacity="0.17" stroke-width="2.2"
-        stroke-linecap="round"/>
+  <ellipse cx="64" cy="99" rx="35" ry="15" fill="url(#base)" stroke="#045474" stroke-width="2"/>
+  <ellipse cx="64" cy="94" rx="29" ry="10" fill="#3AD7F3" opacity="0.60"/>
+  <path d="M48 52 C48 63 43 70 36 80 C31 87 29 92 31 96 C34 103 46 107 64 107 C82 107 94 103 97 96 C99 92 97 87 92 80 C85 70 80 63 80 52 Z" fill="url(#body)" stroke="#067AA0" stroke-width="2"/>
+  <path d="M48 60 C46 72 39 80 37 88 C36 92 38 95 41 97" fill="none" stroke="#C1F8FF" stroke-width="4" stroke-linecap="round" opacity="0.48"/>
+  <ellipse cx="64" cy="55" rx="17" ry="9" fill="#18AED5"/>
+  <circle cx="64" cy="37" r="20" fill="url(#head)" stroke="#067BA2" stroke-width="2"/>
+  <ellipse cx="56" cy="29" rx="7" ry="5" fill="#FFFFFF" opacity="0.62"/>
+  <ellipse cx="52" cy="36" rx="3" ry="7" fill="#FFFFFF" opacity="0.20"/>
 </svg>

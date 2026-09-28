@@ -3,7 +3,7 @@ import '../entities/player_color.dart';
 import '../rules/classic_rules.dart';
 
 abstract final class LudoBoardMap {
-  /// Canonical clockwise shared path. Red starts at global index 0.
+  /// Canonical clockwise shared path. Yellow starts at global index 0.
   static const List<BoardCell> commonPath = <BoardCell>[
     BoardCell(row: 6, column: 1),
     BoardCell(row: 6, column: 2),
@@ -60,36 +60,36 @@ abstract final class LudoBoardMap {
   ];
 
   static const Map<PlayerColor, int> startOffsets = <PlayerColor, int>{
-    PlayerColor.red: 0,
-    PlayerColor.green: 13,
-    PlayerColor.yellow: 26,
-    PlayerColor.blue: 39,
+    PlayerColor.yellow: 0,
+    PlayerColor.blue: 13,
+    PlayerColor.red: 26,
+    PlayerColor.green: 39,
   };
 
   static const Map<PlayerColor, List<BoardCell>> homeLanes =
       <PlayerColor, List<BoardCell>>{
-    PlayerColor.red: <BoardCell>[
+    PlayerColor.yellow: <BoardCell>[
       BoardCell(row: 7, column: 1),
       BoardCell(row: 7, column: 2),
       BoardCell(row: 7, column: 3),
       BoardCell(row: 7, column: 4),
       BoardCell(row: 7, column: 5),
     ],
-    PlayerColor.green: <BoardCell>[
+    PlayerColor.blue: <BoardCell>[
       BoardCell(row: 1, column: 7),
       BoardCell(row: 2, column: 7),
       BoardCell(row: 3, column: 7),
       BoardCell(row: 4, column: 7),
       BoardCell(row: 5, column: 7),
     ],
-    PlayerColor.yellow: <BoardCell>[
+    PlayerColor.red: <BoardCell>[
       BoardCell(row: 7, column: 13),
       BoardCell(row: 7, column: 12),
       BoardCell(row: 7, column: 11),
       BoardCell(row: 7, column: 10),
       BoardCell(row: 7, column: 9),
     ],
-    PlayerColor.blue: <BoardCell>[
+    PlayerColor.green: <BoardCell>[
       BoardCell(row: 13, column: 7),
       BoardCell(row: 12, column: 7),
       BoardCell(row: 11, column: 7),
@@ -121,8 +121,7 @@ abstract final class LudoBoardMap {
     }
 
     if (pathPosition < ClassicRules.finishProgress) {
-      return homeLanes[color]![
-          pathPosition - ClassicRules.commonPathLength];
+      return homeLanes[color]![pathPosition - ClassicRules.commonPathLength];
     }
 
     if (pathPosition == ClassicRules.finishProgress) {

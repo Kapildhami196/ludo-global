@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ludo_global/core/assets/game_asset_paths.dart';
+import 'package:ludo_global/core/widgets/game_asset_picture.dart';
 
 void main() {
-  testWidgets('all premium SVG assets load successfully', (
+  testWidgets('all gameplay image assets load successfully', (
     WidgetTester tester,
   ) async {
     const List<String> assets = <String>[
@@ -22,6 +22,7 @@ void main() {
       GameAssetPaths.shield,
       GameAssetPaths.diceControl,
       GameAssetPaths.bonusRoll,
+      GameAssetPaths.ludoBoard,
       GameAssetPaths.safeStar,
       GameAssetPaths.directionArrow,
       GameAssetPaths.centerGoal,
@@ -32,7 +33,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Center(
-              child: SvgPicture.asset(
+              child: GameAssetPicture.asset(
                 asset,
                 width: 96,
                 height: 96,
@@ -42,7 +43,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(SvgPicture), findsOneWidget);
+      expect(find.byType(GameAssetPicture), findsOneWidget);
     }
   });
 }

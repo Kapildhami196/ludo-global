@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/assets/game_asset_paths.dart';
 import '../../domain/engine/ludo_board_map.dart';
 import '../../domain/entities/ludo_game_state.dart';
 import '../../domain/entities/ludo_player.dart';
@@ -50,7 +51,7 @@ class LudoBoard extends StatelessWidget {
             constraints.maxHeight,
           );
           final double cell = size / 15;
-          final double tokenSize = cell * 1.30;
+          final double tokenSize = cell * 1.35;
           final List<_TokenPlacement> placements = _placements(cell);
           final Widget pawnLayer = _buildPawnLayer(
             placements: placements,
@@ -63,9 +64,11 @@ class LudoBoard extends StatelessWidget {
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  const Positioned.fill(
-                    child: CustomPaint(
-                      painter: _LudoBoardPainter(),
+                  Positioned.fill(
+                    child: Image.asset(
+                      GameAssetPaths.ludoBoard,
+                      fit: BoxFit.fill,
+                      filterQuality: FilterQuality.high,
                     ),
                   ),
                   if (gameState != null)
@@ -116,26 +119,19 @@ class LudoBoard extends StatelessWidget {
             curve: returningTokenIds.contains(placement.tokenId)
                 ? Curves.easeInOutCubic
                 : Curves.easeOutCubic,
-            left: placement.center.dx -
-                ((tokenSize * placement.scale) / 2),
-            top: placement.center.dy -
-                ((tokenSize * placement.scale) * 1.12),
+            left: placement.center.dx - ((tokenSize * placement.scale) / 2),
+            top: placement.center.dy - ((tokenSize * placement.scale) * 1.12),
             child: PremiumLudoToken(
               key: ValueKey<int>(placement.tokenId),
               playerColor: placement.playerColor,
               size: tokenSize * placement.scale,
               dimmed: placement.dimmed,
-              highlighted:
-                  movableTokenIds.contains(placement.tokenId),
+              highlighted: movableTokenIds.contains(placement.tokenId),
               moving: movingTokenId == placement.tokenId,
-              movementStep:
-                  visualPathOverrides[placement.tokenId],
-              captured:
-                  capturedTokenIds.contains(placement.tokenId),
-              returning:
-                  returningTokenIds.contains(placement.tokenId),
-              shielded:
-                  shieldedTokenIds.contains(placement.tokenId),
+              movementStep: visualPathOverrides[placement.tokenId],
+              captured: capturedTokenIds.contains(placement.tokenId),
+              returning: returningTokenIds.contains(placement.tokenId),
+              shielded: shieldedTokenIds.contains(placement.tokenId),
               onTap: movableTokenIds.contains(placement.tokenId) &&
                       onTokenTap != null
                   ? () => onTokenTap!(placement.tokenId)
@@ -164,7 +160,7 @@ class LudoBoard extends StatelessWidget {
       );
 
       switch (player.color) {
-        case PlayerColor.red:
+        case PlayerColor.yellow:
           labels.add(
             Positioned(
               left: cell * 1.00,
@@ -174,7 +170,7 @@ class LudoBoard extends StatelessWidget {
             ),
           );
           break;
-        case PlayerColor.green:
+        case PlayerColor.blue:
           labels.add(
             Positioned(
               right: cell * 0.42,
@@ -184,7 +180,7 @@ class LudoBoard extends StatelessWidget {
             ),
           );
           break;
-        case PlayerColor.yellow:
+        case PlayerColor.red:
           labels.add(
             Positioned(
               right: cell * 0.42,
@@ -194,7 +190,7 @@ class LudoBoard extends StatelessWidget {
             ),
           );
           break;
-        case PlayerColor.blue:
+        case PlayerColor.green:
           labels.add(
             Positioned(
               left: cell * 1.00,
@@ -259,8 +255,7 @@ class LudoBoard extends StatelessWidget {
               Offset(0.20, 0.13),
               Offset(-0.20, -0.12),
             ];
-            final Offset delta =
-                offsets[(stackIndex - 1) % offsets.length];
+            final Offset delta = offsets[(stackIndex - 1) % offsets.length];
             center += Offset(delta.dx * cell, delta.dy * cell);
           }
         }
@@ -287,11 +282,21 @@ class LudoBoard extends StatelessWidget {
       PlayerColor.yellow,
       PlayerColor.blue,
     ];
+    final Set<PlayerColor> activeColors = switch (activePlayerCount) {
+      2 => const <PlayerColor>{
+          PlayerColor.red,
+          PlayerColor.yellow,
+        },
+      3 => const <PlayerColor>{
+          PlayerColor.red,
+          PlayerColor.green,
+          PlayerColor.yellow,
+        },
+      _ => PlayerColor.values.toSet(),
+    };
 
     int tokenId = 0;
-    for (int playerIndex = 0;
-        playerIndex < colors.length;
-        playerIndex++) {
+    for (int playerIndex = 0; playerIndex < colors.length; playerIndex++) {
       for (int tokenIndex = 0; tokenIndex < 4; tokenIndex++) {
         result.add(
           _TokenPlacement(
@@ -302,7 +307,7 @@ class LudoBoard extends StatelessWidget {
               tokenIndex,
               cell,
             ),
-            dimmed: playerIndex >= activePlayerCount,
+            dimmed: !activeColors.contains(colors[playerIndex]),
           ),
         );
       }
@@ -317,25 +322,25 @@ class LudoBoard extends StatelessWidget {
     double cell,
   ) {
     final List<Offset> positions = switch (color) {
-      PlayerColor.red => const <Offset>[
+      PlayerColor.yellow => const <Offset>[
           Offset(2, 2),
           Offset(4, 2),
           Offset(2, 4),
           Offset(4, 4),
         ],
-      PlayerColor.green => const <Offset>[
+      PlayerColor.blue => const <Offset>[
           Offset(11, 2),
           Offset(13, 2),
           Offset(11, 4),
           Offset(13, 4),
         ],
-      PlayerColor.yellow => const <Offset>[
+      PlayerColor.red => const <Offset>[
           Offset(11, 11),
           Offset(13, 11),
           Offset(11, 13),
           Offset(13, 13),
         ],
-      PlayerColor.blue => const <Offset>[
+      PlayerColor.green => const <Offset>[
           Offset(2, 11),
           Offset(4, 11),
           Offset(2, 13),
@@ -430,6 +435,9 @@ class _TokenPlacement {
   final double scale;
 }
 
+// Retained temporarily as a reference for the legacy board geometry. The live
+// board is rendered exclusively from GameAssetPaths.ludoBoard above.
+// ignore: unused_element
 class _LudoBoardPainter extends CustomPainter {
   const _LudoBoardPainter();
 
@@ -522,8 +530,7 @@ class _LudoBoardPainter extends CustomPainter {
       canvas,
       cell,
       cells: <Offset>[
-        for (int row = 1; row <= 5; row++)
-          Offset(7, row.toDouble()),
+        for (int row = 1; row <= 5; row++) Offset(7, row.toDouble()),
       ],
       engineColor: PlayerColor.green,
     );
@@ -540,8 +547,7 @@ class _LudoBoardPainter extends CustomPainter {
       canvas,
       cell,
       cells: <Offset>[
-        for (int row = 9; row <= 13; row++)
-          Offset(7, row.toDouble()),
+        for (int row = 9; row <= 13; row++) Offset(7, row.toDouble()),
       ],
       engineColor: PlayerColor.blue,
     );
@@ -875,10 +881,9 @@ class _LudoBoardPainter extends CustomPainter {
 
     for (int index = 0; index < points * 2; index++) {
       final double r = index.isEven ? radius : radius * 0.46;
-      final double angle =
-          (-math.pi / 2) + (index * math.pi / points);
-      final Offset point = center +
-          Offset(math.cos(angle), math.sin(angle)) * r;
+      final double angle = (-math.pi / 2) + (index * math.pi / points);
+      final Offset point =
+          center + Offset(math.cos(angle), math.sin(angle)) * r;
 
       if (index == 0) {
         star.moveTo(point.dx, point.dy);
@@ -1003,23 +1008,19 @@ class _LudoBoardPainter extends CustomPainter {
 
     canvas.drawPath(
       top,
-      Paint()
-        ..color = LudoReferenceVisuals.colorFor(PlayerColor.green),
+      Paint()..color = LudoReferenceVisuals.colorFor(PlayerColor.green),
     );
     canvas.drawPath(
       right,
-      Paint()
-        ..color = LudoReferenceVisuals.colorFor(PlayerColor.yellow),
+      Paint()..color = LudoReferenceVisuals.colorFor(PlayerColor.yellow),
     );
     canvas.drawPath(
       bottom,
-      Paint()
-        ..color = LudoReferenceVisuals.colorFor(PlayerColor.blue),
+      Paint()..color = LudoReferenceVisuals.colorFor(PlayerColor.blue),
     );
     canvas.drawPath(
       left,
-      Paint()
-        ..color = LudoReferenceVisuals.colorFor(PlayerColor.red),
+      Paint()..color = LudoReferenceVisuals.colorFor(PlayerColor.red),
     );
   }
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/assets/game_asset_paths.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
+import '../../../../core/widgets/game_asset_picture.dart';
 import '../../domain/entities/power_type.dart';
 import '../../domain/power/power_rules.dart';
 
@@ -147,7 +147,7 @@ class _CompactPowerButton extends StatelessWidget {
                     SizedBox(
                       width: 30,
                       height: 30,
-                      child: SvgPicture.asset(
+                      child: GameAssetPicture.asset(
                         GameAssetPaths.powerFor(type),
                         fit: BoxFit.contain,
                       ),
