@@ -101,7 +101,7 @@ void main() {
           LudoToken(
             id: 0,
             color: PlayerColor.red,
-            pathPosition: 56,
+            pathPosition: 55,
             status: TokenStatus.homePath,
           ),
           LudoToken(
