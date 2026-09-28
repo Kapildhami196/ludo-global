@@ -13,6 +13,7 @@ class AnimatedDice extends StatefulWidget {
     required this.rolling,
     required this.onTap,
     this.accentColor = LudoGlobalColors.electricBlue,
+    this.attentionPulse = 0,
     this.size = 110,
     this.compact = false,
     this.launchDirection = Offset.zero,
@@ -24,6 +25,7 @@ class AnimatedDice extends StatefulWidget {
   final bool rolling;
   final VoidCallback onTap;
   final Color accentColor;
+  final double attentionPulse;
   final double size;
   final bool compact;
   final Offset launchDirection;
@@ -176,6 +178,9 @@ class _AnimatedDiceState extends State<AnimatedDice>
                       size: widget.size,
                       accentColor: widget.accentColor,
                       active: widget.enabled || widget.rolling || _settling,
+                      attentionPulse: widget.enabled
+                          ? widget.attentionPulse.clamp(0.0, 1.0)
+                          : 0,
                       travel: travel,
                     ),
                   ),
@@ -195,6 +200,7 @@ class _FlatDiceFace extends StatelessWidget {
     required this.size,
     required this.accentColor,
     required this.active,
+    required this.attentionPulse,
     required this.travel,
   });
 
@@ -202,6 +208,7 @@ class _FlatDiceFace extends StatelessWidget {
   final double size;
   final Color accentColor;
   final bool active;
+  final double attentionPulse;
   final double travel;
 
   @override
@@ -250,7 +257,11 @@ class _FlatDiceFace extends StatelessWidget {
             ),
           ),
 
-          // Active dice glow.
+          // Strong attention glow directly around the dice.
+          //
+          // When the dice is waiting for a tap this cycles:
+          // HIGH -> LOW -> HIGH. Once rolling starts or the player must
+          // choose a pawn, the attention pulse stops.
           if (active)
             Container(
               width: size * 1.06,
@@ -262,10 +273,18 @@ class _FlatDiceFace extends StatelessWidget {
                 boxShadow: <BoxShadow>[
                   BoxShadow(
                     color: accentColor.withValues(
-                      alpha: 0.13,
+                      alpha: attentionPulse > 0
+                          ? 0.24 + (attentionPulse * 0.66)
+                          : 0.13,
                     ),
-                    blurRadius: size * 0.22,
-                    spreadRadius: size * 0.015,
+                    blurRadius: size *
+                        (attentionPulse > 0
+                            ? 0.24 + (attentionPulse * 0.40)
+                            : 0.22),
+                    spreadRadius: size *
+                        (attentionPulse > 0
+                            ? 0.020 + (attentionPulse * 0.070)
+                            : 0.015),
                   ),
                 ],
               ),
