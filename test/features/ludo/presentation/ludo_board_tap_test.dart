@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ludo_global/features/ludo/domain/entities/game_config.dart';
 import 'package:ludo_global/features/ludo/domain/entities/game_phase.dart';
 import 'package:ludo_global/features/ludo/domain/entities/ludo_game_state.dart';
 import 'package:ludo_global/features/ludo/domain/entities/ludo_player.dart';
