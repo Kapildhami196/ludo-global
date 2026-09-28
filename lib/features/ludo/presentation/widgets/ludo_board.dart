@@ -108,9 +108,9 @@ class LudoBoard extends StatelessWidget {
     required List<_TokenPlacement> placements,
     required double tokenSize,
   }) {
-    // Paint from the back of the board toward the viewer. This keeps a pawn
-    // on a lower row visually in front of a pawn above it instead of letting
-    // player iteration order decide which pawn covers the other.
+    // Paint from the back of the board toward the viewer. Pawns lower on
+    // screen are painted later, while non-movable pawns remain transparent
+    // to taps via IgnorePointer below.
     final List<_TokenPlacement> depthSortedPlacements =
         List<_TokenPlacement>.of(placements)
           ..sort((_TokenPlacement a, _TokenPlacement b) {
@@ -122,6 +122,12 @@ class LudoBoard extends StatelessWidget {
             final int horizontal = a.center.dx.compareTo(b.center.dx);
             if (horizontal != 0) {
               return horizontal;
+            }
+
+            final bool aMovable = movableTokenIds.contains(a.tokenId);
+            final bool bMovable = movableTokenIds.contains(b.tokenId);
+            if (aMovable != bMovable) {
+              return aMovable ? 1 : -1;
             }
 
             return a.tokenId.compareTo(b.tokenId);
@@ -141,21 +147,24 @@ class LudoBoard extends StatelessWidget {
                 : Curves.easeOutCubic,
             left: placement.center.dx - ((tokenSize * placement.scale) / 2),
             top: placement.center.dy - ((tokenSize * placement.scale) * 1.12),
-            child: PremiumLudoToken(
-              key: ValueKey<int>(placement.tokenId),
-              playerColor: placement.playerColor,
-              size: tokenSize * placement.scale,
-              dimmed: placement.dimmed,
-              highlighted: movableTokenIds.contains(placement.tokenId),
-              moving: movingTokenId == placement.tokenId,
-              movementStep: visualPathOverrides[placement.tokenId],
-              captured: capturedTokenIds.contains(placement.tokenId),
-              returning: returningTokenIds.contains(placement.tokenId),
-              shielded: shieldedTokenIds.contains(placement.tokenId),
-              onTap: movableTokenIds.contains(placement.tokenId) &&
-                      onTokenTap != null
-                  ? () => onTokenTap!(placement.tokenId)
-                  : null,
+            child: IgnorePointer(
+              ignoring: !movableTokenIds.contains(placement.tokenId),
+              child: PremiumLudoToken(
+                key: ValueKey<int>(placement.tokenId),
+                playerColor: placement.playerColor,
+                size: tokenSize * placement.scale,
+                dimmed: placement.dimmed,
+                highlighted: movableTokenIds.contains(placement.tokenId),
+                moving: movingTokenId == placement.tokenId,
+                movementStep: visualPathOverrides[placement.tokenId],
+                captured: capturedTokenIds.contains(placement.tokenId),
+                returning: returningTokenIds.contains(placement.tokenId),
+                shielded: shieldedTokenIds.contains(placement.tokenId),
+                onTap: movableTokenIds.contains(placement.tokenId) &&
+                        onTokenTap != null
+                    ? () => onTokenTap!(placement.tokenId)
+                    : null,
+              ),
             ),
           ),
       ],

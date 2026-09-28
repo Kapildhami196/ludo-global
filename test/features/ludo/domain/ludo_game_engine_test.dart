@@ -248,15 +248,25 @@ void main() {
       expect(greenToken.pathPosition, 47);
     });
 
-    test('opponent blockade prevents landing or passing', () {
-      final LudoGameState state = _stateWithTokens(
+    test('opponent stacks do not block landing or passing', () {
+      final LudoGameState landingState = _stateWithTokens(
         redProgress: 2,
         greenProgresses: const [44, 44],
       );
 
       expect(
-        engine.getMovableTokenIds(state, 3),
-        isEmpty,
+        engine.getMovableTokenIds(landingState, 3),
+        contains(0),
+      );
+
+      final LudoGameState passingState = _stateWithTokens(
+        redProgress: 2,
+        greenProgresses: const [44, 44],
+      );
+
+      expect(
+        engine.getMovableTokenIds(passingState, 4),
+        contains(0),
       );
     });
 
@@ -350,15 +360,13 @@ void main() {
       expect(rolled.state.consecutiveSixes, 1);
     });
 
-    test(
-        'three opponent tokens on one unsafe cell remain an impassable blockade',
-        () {
+    test('three opponent tokens on one cell do not block movement', () {
       final LudoGameState state = _stateWithTokens(
         redProgress: 2,
         greenProgresses: const <int>[44, 44, 44],
       );
 
-      expect(engine.getMovableTokenIds(state, 4), isEmpty);
+      expect(engine.getMovableTokenIds(state, 4), contains(0));
     });
 
     test('online turn duration is twenty seconds', () {

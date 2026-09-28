@@ -38,18 +38,25 @@ class PremiumLudoToken extends StatefulWidget {
 }
 
 class _PremiumLudoTokenState extends State<PremiumLudoToken>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const double _pawnHeightScale = 1.10;
 
-  late final AnimationController _controller = AnimationController(
+  late final AnimationController _motionController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 155),
+  );
+
+  late final AnimationController _glowController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 650),
+    value: 1,
   );
 
   @override
   void initState() {
     super.initState();
     _syncMotion();
+    _syncAttentionGlow();
   }
 
   @override
@@ -60,7 +67,7 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
         widget.moving && oldWidget.movementStep != widget.movementStep;
 
     if (movedOneStep) {
-      _controller
+      _motionController
         ..duration = const Duration(milliseconds: 155)
         ..forward(from: 0);
       return;
@@ -71,31 +78,48 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
         oldWidget.returning != widget.returning) {
       _syncMotion();
     }
+
+    if (oldWidget.highlighted != widget.highlighted) {
+      _syncAttentionGlow();
+    }
+  }
+
+  void _syncAttentionGlow() {
+    if (widget.highlighted) {
+      _glowController
+        ..value = 1
+        ..repeat(reverse: true);
+      return;
+    }
+
+    _glowController
+      ..stop()
+      ..value = 0;
   }
 
   void _syncMotion() {
     if (widget.captured) {
-      _controller
+      _motionController
         ..duration = const Duration(milliseconds: 420)
         ..forward(from: 0);
       return;
     }
 
     if (widget.returning) {
-      _controller
+      _motionController
         ..duration = const Duration(milliseconds: 520)
         ..forward(from: 0);
       return;
     }
 
     if (widget.moving) {
-      _controller
+      _motionController
         ..duration = const Duration(milliseconds: 155)
         ..forward(from: 0);
       return;
     }
 
-    _controller
+    _motionController
       ..stop()
       ..reset();
   }
@@ -104,7 +128,8 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
 
   @override
   void dispose() {
-    _controller.dispose();
+    _motionController.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -129,9 +154,17 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
             curve: Curves.easeOutBack,
             alignment: Alignment.bottomCenter,
             child: AnimatedBuilder(
-              animation: _controller,
+              animation: Listenable.merge(
+                <Listenable>[
+                  _motionController,
+                  _glowController,
+                ],
+              ),
               builder: (context, _) {
-                final double t = _controller.value;
+                final double t = _motionController.value;
+                final double glow = widget.highlighted
+                    ? Curves.easeInOut.transform(_glowController.value)
+                    : 0;
 
                 final double lift = widget.returning
                     ? math.sin(t * math.pi).abs()
@@ -185,9 +218,19 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                                   color: (widget.shielded
                                           ? const Color(0xFF29D9FF)
                                           : _accentColor)
-                                      .withValues(alpha: 0.58),
-                                  blurRadius: widget.size * 0.58,
-                                  spreadRadius: widget.size * 0.025,
+                                      .withValues(
+                                    alpha: widget.highlighted
+                                        ? 0.28 + (glow * 0.64)
+                                        : 0.58,
+                                  ),
+                                  blurRadius: widget.size *
+                                      (widget.highlighted
+                                          ? 0.34 + (glow * 0.52)
+                                          : 0.58),
+                                  spreadRadius: widget.size *
+                                      (widget.highlighted
+                                          ? 0.010 + (glow * 0.075)
+                                          : 0.025),
                                 ),
                               ],
                             ),

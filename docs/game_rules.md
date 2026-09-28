@@ -55,11 +55,12 @@ Safe shared-track indices:
 - Captures do not occur in a home lane or center.
 - Capture + six, capture + finish, or any other combination still gives a maximum of one extra roll.
 
-## Stacks and blockades
+## Stacks
 
 - Two, three, or four same-color tokens may share a cell.
-- Two or more same-color opponent tokens on one non-safe shared cell form a blockade.
-- An opponent cannot land on or pass through that blockade.
+- Stacked tokens do not create a blockade.
+- Opponents may pass through or land on a cell containing multiple same-color tokens.
+- Normal safe-cell and capture rules still apply.
 - The owner may move any token away from their own stack.
 
 ## Winning
