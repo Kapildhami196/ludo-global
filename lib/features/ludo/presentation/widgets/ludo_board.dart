@@ -108,10 +108,19 @@ class LudoBoard extends StatelessWidget {
     required List<_TokenPlacement> placements,
     required double tokenSize,
   }) {
+    final List<_TokenPlacement> orderedPlacements = <_TokenPlacement>[
+      ...placements.where(
+        (placement) => !movableTokenIds.contains(placement.tokenId),
+      ),
+      ...placements.where(
+        (placement) => movableTokenIds.contains(placement.tokenId),
+      ),
+    ];
+
     return Stack(
       clipBehavior: Clip.none,
       children: <Widget>[
-        for (final _TokenPlacement placement in placements)
+        for (final _TokenPlacement placement in orderedPlacements)
           AnimatedPositioned(
             duration: returningTokenIds.contains(placement.tokenId)
                 ? const Duration(milliseconds: 520)
@@ -121,21 +130,24 @@ class LudoBoard extends StatelessWidget {
                 : Curves.easeOutCubic,
             left: placement.center.dx - ((tokenSize * placement.scale) / 2),
             top: placement.center.dy - ((tokenSize * placement.scale) * 1.12),
-            child: PremiumLudoToken(
-              key: ValueKey<int>(placement.tokenId),
-              playerColor: placement.playerColor,
-              size: tokenSize * placement.scale,
-              dimmed: placement.dimmed,
-              highlighted: movableTokenIds.contains(placement.tokenId),
-              moving: movingTokenId == placement.tokenId,
-              movementStep: visualPathOverrides[placement.tokenId],
-              captured: capturedTokenIds.contains(placement.tokenId),
-              returning: returningTokenIds.contains(placement.tokenId),
-              shielded: shieldedTokenIds.contains(placement.tokenId),
-              onTap: movableTokenIds.contains(placement.tokenId) &&
-                      onTokenTap != null
-                  ? () => onTokenTap!(placement.tokenId)
-                  : null,
+            child: IgnorePointer(
+              ignoring: !movableTokenIds.contains(placement.tokenId),
+              child: PremiumLudoToken(
+                key: ValueKey<int>(placement.tokenId),
+                playerColor: placement.playerColor,
+                size: tokenSize * placement.scale,
+                dimmed: placement.dimmed,
+                highlighted: movableTokenIds.contains(placement.tokenId),
+                moving: movingTokenId == placement.tokenId,
+                movementStep: visualPathOverrides[placement.tokenId],
+                captured: capturedTokenIds.contains(placement.tokenId),
+                returning: returningTokenIds.contains(placement.tokenId),
+                shielded: shieldedTokenIds.contains(placement.tokenId),
+                onTap: movableTokenIds.contains(placement.tokenId) &&
+                        onTokenTap != null
+                    ? () => onTokenTap!(placement.tokenId)
+                    : null,
+              ),
             ),
           ),
       ],
