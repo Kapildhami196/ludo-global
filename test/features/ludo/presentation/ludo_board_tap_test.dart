@@ -69,7 +69,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      // The movable pawn intentionally runs a repeating attention-glow
+      // animation while it is selectable, so pumpAndSettle would never
+      // settle. Pump a deterministic frame instead.
+      await tester.pump(const Duration(milliseconds: 100));
 
       final Finder boardFinder = find.byType(LudoBoard);
       final Rect boardRect = tester.getRect(boardFinder);
