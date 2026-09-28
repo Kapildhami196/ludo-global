@@ -19,7 +19,7 @@ abstract final class GameAssetPaths {
   static const String diceControl = 'assets/game/powers/dice_control.png';
   static const String bonusRoll = 'assets/game/powers/bonus_roll.png';
 
-  static const String ludoBoard = 'assets/game/board/ludo_global_board.png';
+  static const String ludoBoard = 'assets/game/board/ludo_global_board.svg';
   static const String safeStar = 'assets/game/board/safe_star.svg';
   static const String directionArrow = 'assets/game/board/direction_arrow.svg';
   static const String centerGoal = 'assets/game/board/center_goal.svg';

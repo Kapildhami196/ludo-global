@@ -39,6 +39,8 @@ class PremiumLudoToken extends StatefulWidget {
 
 class _PremiumLudoTokenState extends State<PremiumLudoToken>
     with SingleTickerProviderStateMixin {
+  static const double _pawnHeightScale = 1.10;
+
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 155),
@@ -220,7 +222,10 @@ class _PremiumLudoTokenState extends State<PremiumLudoToken>
                         offset: Offset(shake, hop + widget.size * 0.08),
                         child: Transform.scale(
                           scaleX: captureScale / squash * screenPop,
-                          scaleY: captureScale * squash * screenPop,
+                          scaleY: captureScale *
+                              squash *
+                              screenPop *
+                              _pawnHeightScale,
                           alignment: Alignment.bottomCenter,
                           child: SizedBox(
                             width: widget.size * 1.92,

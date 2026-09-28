@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/assets/game_asset_paths.dart';
 import '../../domain/engine/ludo_board_map.dart';
@@ -51,7 +52,7 @@ class LudoBoard extends StatelessWidget {
             constraints.maxHeight,
           );
           final double cell = size / 15;
-          final double tokenSize = cell * 1.35;
+          final double tokenSize = cell * 1.45;
           final List<_TokenPlacement> placements = _placements(cell);
           final Widget pawnLayer = _buildPawnLayer(
             placements: placements,
@@ -65,10 +66,9 @@ class LudoBoard extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Positioned.fill(
-                    child: Image.asset(
+                    child: SvgPicture.asset(
                       GameAssetPaths.ludoBoard,
                       fit: BoxFit.fill,
-                      filterQuality: FilterQuality.high,
                     ),
                   ),
                   if (gameState != null)
