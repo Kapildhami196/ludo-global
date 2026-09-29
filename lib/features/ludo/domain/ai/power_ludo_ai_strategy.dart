@@ -90,49 +90,21 @@ class PowerLudoAiStrategy {
       return const PowerAiDoubleDecision(shouldUse: false);
     }
 
-    if (difficulty == AiDifficulty.easy) {
-      final bool use = _random.nextInt(100) < 22;
-      return PowerAiDoubleDecision(
-        shouldUse: use,
-        reason: use ? 'tries a random power' : 'saves the power',
-      );
-    }
-
-    final int diceValue = state.gameState.diceValue!;
-    final Set<int> protectedIds = state.shields.keys.toSet();
-
-    final double normalScore = _classicStrategy
-        .chooseMove(
-          state: state.gameState,
-          engine: _classicEngine,
-          difficulty: difficulty,
-          protectedTokenIds: protectedIds,
-        )
-        .score;
-
-    final armed = engine.armDoubleDistance(state);
-    final int doubledDistance = diceValue * 2;
-
-    final double doubledScore = _classicStrategy
-        .chooseMove(
-          state: armed.state.gameState,
-          engine: _classicEngine,
-          difficulty: difficulty,
-          movementDistance: doubledDistance,
-          protectedTokenIds: protectedIds,
-        )
-        .score;
-
-    final double gain = doubledScore - normalScore;
-    final double threshold =
-        difficulty == AiDifficulty.hard ? 70 : 190;
+    final int activeTokens = state.gameState.currentPlayer.tokens
+        .where((token) => !token.isInBase && !token.isFinished)
+        .length;
+    final bool use = switch (difficulty) {
+      AiDifficulty.easy => _random.nextInt(100) < 22,
+      AiDifficulty.medium => activeTokens >= 2,
+      AiDifficulty.hard => true,
+    };
 
     return PowerAiDoubleDecision(
-      shouldUse: gain >= threshold || doubledScore >= 1200,
-      scoreGain: gain,
-      reason: doubledScore >= 1200
-          ? 'creates a major tactical move'
-          : 'improves move score by ${gain.round()}',
+      shouldUse: use,
+      scoreGain: activeTokens * 15,
+      reason: use
+          ? 'arms Double Distance before rolling'
+          : 'saves Double Distance',
     );
   }
 
