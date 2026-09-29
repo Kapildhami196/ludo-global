@@ -45,6 +45,10 @@ void main() {
 
     expect(find.text('SELECT MATCH TYPE'), findsOneWidget);
     expect(find.text('Normal Ludo'), findsOneWidget);
+    expect(
+      find.byKey(const Key('match_type_bottom_banner')),
+      findsOneWidget,
+    );
     expect(find.text('CHOOSE YOUR MODE'), findsNothing);
   });
 
