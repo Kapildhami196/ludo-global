@@ -162,7 +162,7 @@ void main() {
       expect(decision.diceValue, 6);
     });
 
-    test('hard AI uses Double Distance when it creates a capture', () {
+    test('hard AI can choose Double Distance before rolling', () {
       final engine = PowerLudoEngine(
         classicEngine: LudoGameEngine(random: Random(5)),
       );
@@ -189,6 +189,10 @@ void main() {
           ],
           diceValue: 3,
           movableTokenIds: const <int>[0],
+        ).copyWith(
+          phase: GamePhase.waitingForRoll,
+          clearDiceValue: true,
+          movableTokenIds: const <int>[],
         ),
         inventories: <String, PowerInventory>{
           'player_0': _inventory(doubleDistance: 1),
@@ -204,7 +208,7 @@ void main() {
       );
 
       expect(decision.shouldUse, isTrue);
-      expect(decision.scoreGain, greaterThan(0));
+      expect(decision.reason, contains('before rolling'));
     });
   });
 }
