@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/ads/ad_service.dart';
 import '../../../../core/audio/game_audio_service.dart';
 import '../../../../core/settings/game_preferences.dart';
 import '../../../../core/theme/ludo_global_tokens.dart';
@@ -830,6 +831,12 @@ class _PowerComputerGameScreenState
   Future<void> _showWinner() async {
     final bool humanWon = _state.winnerPlayerId == 'player_0';
     final String winner = _winnerName(_state);
+
+    await AdService.instance
+        .showMatchFinishInterstitialIfNeeded();
+    if (!mounted) {
+      return;
+    }
 
     await showDialog<void>(
       context: context,
