@@ -33,8 +33,10 @@ class _HomeBannerAdState extends State<HomeBannerAd> {
   }
 
   Future<void> _loadBanner() async {
-    final int width =
-        MediaQuery.sizeOf(context).width.floor();
+    final int width = (
+      MediaQuery.sizeOf(context).width -
+      (LudoGlobalSpacing.md * 2)
+    ).floor();
 
     final AdSize? size =
         await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
