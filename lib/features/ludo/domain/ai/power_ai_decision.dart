@@ -2,6 +2,7 @@ import '../entities/power_type.dart';
 
 enum PowerAiPreRollActionType {
   normalRoll,
+  doubleDistance,
   shield,
   diceControl,
 }
@@ -23,6 +24,7 @@ class PowerAiPreRollDecision {
 
   PowerType? get powerType => switch (type) {
         PowerAiPreRollActionType.normalRoll => null,
+        PowerAiPreRollActionType.doubleDistance => PowerType.doubleDistance,
         PowerAiPreRollActionType.shield => PowerType.shield,
         PowerAiPreRollActionType.diceControl => PowerType.diceControl,
       };
