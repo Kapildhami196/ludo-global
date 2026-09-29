@@ -47,6 +47,8 @@ class PowerLudoAiStrategy {
 
     final PowerAiPreRollDecision? shield =
         _bestShieldDecision(state, engine);
+    final PowerAiPreRollDecision? doubleDistance =
+        _doublePreRollDecision(state, engine, difficulty);
 
     if (difficulty == AiDifficulty.hard) {
       if (diceControl != null && diceControl.score >= 230) {
@@ -54,6 +56,9 @@ class PowerLudoAiStrategy {
       }
       if (shield != null) {
         return shield;
+      }
+      if (doubleDistance != null) {
+        return doubleDistance;
       }
       if (diceControl != null && diceControl.score > 60) {
         return diceControl;
@@ -64,6 +69,9 @@ class PowerLudoAiStrategy {
       }
       if (shield != null && shield.score >= 300) {
         return shield;
+      }
+      if (doubleDistance != null && doubleDistance.score >= 90) {
+        return doubleDistance;
       }
     }
 
@@ -182,6 +190,15 @@ class PowerLudoAiStrategy {
     final List<PowerAiPreRollDecision> available =
         <PowerAiPreRollDecision>[];
 
+    if (engine.canUseDoubleDistance(state)) {
+      available.add(
+        const PowerAiPreRollDecision(
+          type: PowerAiPreRollActionType.doubleDistance,
+          reason: 'random Double Distance use',
+        ),
+      );
+    }
+
     if (engine.canUseShield(state)) {
       available.add(
         PowerAiPreRollDecision(
@@ -209,6 +226,28 @@ class PowerLudoAiStrategy {
     }
 
     return available[_random.nextInt(available.length)];
+  }
+
+  PowerAiPreRollDecision? _doublePreRollDecision(
+    PowerLudoState state,
+    PowerLudoEngine engine,
+    AiDifficulty difficulty,
+  ) {
+    if (!engine.canUseDoubleDistance(state)) {
+      return null;
+    }
+
+    final int activeTokens = state.gameState.currentPlayer.tokens
+        .where((token) => !token.isInBase && !token.isFinished)
+        .length;
+    final double score =
+        (difficulty == AiDifficulty.hard ? 120 : 70) + (activeTokens * 15);
+
+    return PowerAiPreRollDecision(
+      type: PowerAiPreRollActionType.doubleDistance,
+      score: score,
+      reason: 'doubles the next roll for active pawns',
+    );
   }
 
   PowerAiPreRollDecision? _bestDiceControlDecision(
