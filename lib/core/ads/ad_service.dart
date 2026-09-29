@@ -94,8 +94,9 @@ class AdService {
       },
     );
 
-    ad.show(
-      onUserEarnedReward: (
+    unawaited(
+      ad.show(
+        onUserEarnedReward: (
         AdWithoutView ad,
         RewardItem reward,
       ) {
@@ -104,8 +105,9 @@ class AdService {
         }
 
         rewardEarned = true;
-        unawaited(_grantAdFreeMatch());
-      },
+          unawaited(_grantAdFreeMatch());
+        },
+      ),
     );
 
     return completer.future;
@@ -156,7 +158,7 @@ class AdService {
       },
     );
 
-    ad.show();
+    unawaited(ad.show());
     await completer.future;
   }
 
