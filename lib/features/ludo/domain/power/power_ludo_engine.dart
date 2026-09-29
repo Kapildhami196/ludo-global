@@ -56,7 +56,10 @@ class PowerLudoEngine {
     );
   }
 
-  PowerLudoActionResult rollDice(PowerLudoState state) {
+  PowerLudoActionResult rollDice(
+    PowerLudoState state, {
+    int? forcedValue,
+  }) {
     _requirePowerMode(state);
     final bool doubleArmed = state.doubleDistanceArmed;
 
@@ -64,6 +67,7 @@ class PowerLudoEngine {
       before: state,
       baseResult: _classic.rollDice(
         state.gameState,
+        forcedValue: forcedValue,
         movementMultiplier:
             doubleArmed ? PowerRules.doubleDistanceMultiplier : 1,
         allowBaseRelease: !doubleArmed,
