@@ -39,7 +39,7 @@ class _HomeBannerAdState extends State<HomeBannerAd> {
     ).floor();
 
     final AdSize? size =
-        await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
+        await AdSize.getLargeAnchoredAdaptiveBannerAdSize(
       width,
     );
 
