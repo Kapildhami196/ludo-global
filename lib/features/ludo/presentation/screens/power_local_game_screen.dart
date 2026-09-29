@@ -706,7 +706,13 @@ class _PowerLocalGameScreenState
   Future<void> _showWinner() async {
     final String winner = _winnerName(_state);
 
-    await AdService.instance\n        .showMatchFinishInterstitialIfNeeded();\n    if (!mounted) {\n      return;\n    }\n\n    await showDialog<void>(
+    await AdService.instance
+        .showMatchFinishInterstitialIfNeeded();
+    if (!mounted) {
+      return;
+    }
+
+    await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => MatchResultDialog(
