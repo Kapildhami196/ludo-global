@@ -14,10 +14,8 @@ import '../../domain/entities/game_phase.dart';
 import '../../domain/entities/ludo_game_event.dart';
 import '../../domain/entities/ludo_game_state.dart';
 import '../../domain/entities/ludo_player.dart';
-import '../../domain/entities/ludo_token.dart';
 import '../../domain/entities/player_color.dart';
 import '../../domain/entities/power_type.dart';
-import '../../domain/entities/token_status.dart';
 import '../../domain/power/power_game_event.dart';
 import '../../domain/power/power_inventory.dart';
 import '../../domain/power/power_ludo_action_result.dart';
@@ -227,6 +225,7 @@ class _PowerComputerGameScreenState
       _scheduleHumanSingleAutoMove();
     }
   }
+
   void _applyRollResult(
     PowerLudoActionResult result, {
     required bool isComputer,
@@ -394,6 +393,7 @@ class _PowerComputerGameScreenState
       _showRuleMessage(error.message);
     }
   }
+
   Future<void> _humanUseDiceControl() async {
     final int? value = await showModalBottomSheet<int>(
       context: context,
