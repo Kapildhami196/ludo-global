@@ -205,43 +205,86 @@ void main() {
       );
     });
 
-    test('Double Distance moves twice the die value when collected', () {
+    test('Double Distance is armed before roll and doubles movement', () {
       final PowerLudoState state = _stateWithTokens(
         redProgresses: const <int>[5],
         greenProgresses: const <int>[],
-        phase: GamePhase.selectingToken,
-        diceValue: 3,
-        movableTokenIds: const <int>[0],
+        phase: GamePhase.waitingForRoll,
         redInventory: _inventory(doubleDistance: 1),
       );
 
       final armed = engine.armDoubleDistance(state);
-      final moved = engine.moveToken(armed.state, 0);
-
+      expect(armed.state.doubleDistanceArmed, isTrue);
       expect(
-        moved.state.gameState.players.first.tokens.first.pathPosition,
-        11,
-      );
-      expect(
-        moved.state
+        armed.state
             .inventoryFor('player_0')
             .count(PowerType.doubleDistance),
         0,
       );
+
+      final rolled = engine.rollDice(armed.state, forcedValue: 3);
+      expect(rolled.state.gameState.diceValue, 3);
+      expect(rolled.state.gameState.movableTokenIds, contains(0));
+      expect(rolled.state.doubleDistanceArmed, isTrue);
+
+      final moved = engine.moveToken(rolled.state, 0);
+      expect(
+        moved.state.gameState.players.first.tokens.first.pathPosition,
+        11,
+      );
+      expect(moved.state.doubleDistanceArmed, isFalse);
     });
 
-    test('Double Distance cannot release a base token', () {
+    test('Double Distance cannot be armed with only base tokens', () {
       final PowerLudoState state = _stateWithTokens(
         redProgresses: const <int>[-1],
         greenProgresses: const <int>[],
-        phase: GamePhase.selectingToken,
-        diceValue: 6,
-        movableTokenIds: const <int>[0],
+        phase: GamePhase.waitingForRoll,
         redInventory: _inventory(doubleDistance: 1),
       );
 
       expect(engine.canUseDoubleDistance(state), isFalse);
       expect(() => engine.armDoubleDistance(state), throwsStateError);
+    });
+
+    test('Double Distance roll cannot release a base token', () {
+      final PowerLudoState state = _stateWithTokens(
+        redProgresses: const <int>[5, -1],
+        greenProgresses: const <int>[],
+        phase: GamePhase.waitingForRoll,
+        redInventory: _inventory(doubleDistance: 1),
+      );
+
+      final armed = engine.armDoubleDistance(state);
+      final rolled = engine.rollDice(armed.state, forcedValue: 6);
+
+      expect(rolled.state.gameState.movableTokenIds, contains(0));
+      expect(rolled.state.gameState.movableTokenIds, isNot(contains(1)));
+    });
+
+    test('Shield protects all eligible track pawns with one charge', () {
+      final PowerLudoState state = _stateWithTokens(
+        redProgresses: const <int>[2, 5, -1],
+        greenProgresses: const <int>[],
+        phase: GamePhase.waitingForRoll,
+        redInventory: _inventory(shield: 1),
+      );
+
+      final result = engine.applyShield(state);
+
+      expect(result.state.isShielded(0), isTrue);
+      expect(result.state.isShielded(1), isTrue);
+      expect(result.state.isShielded(2), isFalse);
+      expect(
+        result.state.inventoryFor('player_0').count(PowerType.shield),
+        0,
+      );
+      expect(
+        result.powerEvents
+            .where((event) => event.type == PowerGameEventType.shieldApplied)
+            .length,
+        2,
+      );
     });
 
     test('shielded enemy can share unsafe square without capture', () {
@@ -289,7 +332,7 @@ void main() {
         redInventory: _inventory(diceControl: 1),
       );
 
-      state = engine.applyShield(state, 4).state;
+      state = engine.applyShield(state).state;
       expect(state.isShielded(4), isTrue);
 
       state = engine.useDiceControl(state, 1).state;

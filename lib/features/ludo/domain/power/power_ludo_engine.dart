@@ -56,11 +56,22 @@ class PowerLudoEngine {
     );
   }
 
-  PowerLudoActionResult rollDice(PowerLudoState state) {
+  PowerLudoActionResult rollDice(
+    PowerLudoState state, {
+    int? forcedValue,
+  }) {
     _requirePowerMode(state);
+    final bool doubleArmed = state.doubleDistanceArmed;
+
     return _resolveClassicAction(
       before: state,
-      baseResult: _classic.rollDice(state.gameState),
+      baseResult: _classic.rollDice(
+        state.gameState,
+        forcedValue: forcedValue,
+        movementMultiplier:
+            doubleArmed ? PowerRules.doubleDistanceMultiplier : 1,
+        allowBaseRelease: !doubleArmed,
+      ),
     );
   }
 
@@ -116,37 +127,19 @@ class PowerLudoEngine {
     PowerLudoState state,
   ) {
     _requirePowerMode(state);
-    _requirePhase(state.gameState, GamePhase.selectingToken);
+    _requirePhase(state.gameState, GamePhase.waitingForRoll);
 
     final String playerId = state.gameState.currentPlayer.id;
     if (state.doubleDistanceArmed) {
       throw StateError('Double Distance is already armed.');
     }
 
-    final int diceValue = state.gameState.diceValue ??
-        (throw StateError('Roll the dice before using Double Distance.'));
-    final int distance =
-        diceValue * PowerRules.doubleDistanceMultiplier;
-
-    final List<int> eligibleTokenIds = state
-        .gameState.currentPlayer.tokens
-        .where(
-          (LudoToken token) =>
-              !token.isInBase &&
-              !token.isFinished &&
-              _classic.canMoveToken(
-                state: state.gameState,
-                token: token,
-                diceValue: diceValue,
-                movementDistance: distance,
-              ),
-        )
-        .map((LudoToken token) => token.id)
-        .toList(growable: false);
-
-    if (eligibleTokenIds.isEmpty) {
+    final bool hasEligibleToken = state.gameState.currentPlayer.tokens.any(
+      (LudoToken token) => !token.isInBase && !token.isFinished,
+    );
+    if (!hasEligibleToken) {
       throw StateError(
-        'No token can legally use Double Distance for this roll.',
+        'Move a token out of base before using Double Distance.',
       );
     }
 
@@ -157,9 +150,6 @@ class PowerLudoEngine {
     );
 
     final PowerLudoState next = consumed.copyWith(
-      gameState: consumed.gameState.copyWith(
-        movableTokenIds: eligibleTokenIds,
-      ),
       doubleDistancePlayerId: playerId,
     );
 
@@ -170,13 +160,11 @@ class PowerLudoEngine {
           type: PowerGameEventType.powerActivated,
           playerId: playerId,
           powerType: PowerType.doubleDistance,
-          value: distance,
         ),
         PowerGameEvent(
           type: PowerGameEventType.doubleDistanceArmed,
           playerId: playerId,
           powerType: PowerType.doubleDistance,
-          value: distance,
         ),
       ],
     );
@@ -184,27 +172,23 @@ class PowerLudoEngine {
 
   PowerLudoActionResult applyShield(
     PowerLudoState state,
-    int tokenId,
   ) {
     _requirePowerMode(state);
     _requirePhase(state.gameState, GamePhase.waitingForRoll);
 
     final String playerId = state.gameState.currentPlayer.id;
-    final LudoToken token = state.gameState.currentPlayer.tokens.firstWhere(
-      (LudoToken candidate) => candidate.id == tokenId,
-      orElse: () => throw StateError(
-        'Token $tokenId does not belong to the current player.',
-      ),
-    );
+    final List<LudoToken> eligibleTokens = state.gameState.currentPlayer.tokens
+        .where(
+          (LudoToken token) =>
+              token.status == TokenStatus.active &&
+              !state.isShielded(token.id),
+        )
+        .toList(growable: false);
 
-    if (token.status != TokenStatus.active) {
+    if (eligibleTokens.isEmpty) {
       throw StateError(
-        'Shield can only protect a token on the shared track.',
+        'Shield needs at least one unshielded token on the shared track.',
       );
-    }
-
-    if (state.isShielded(tokenId)) {
-      throw StateError('Token $tokenId is already shielded.');
     }
 
     final PowerLudoState consumed = _consume(
@@ -214,12 +198,14 @@ class PowerLudoEngine {
     );
 
     final Map<int, ShieldEffect> shields =
-        Map<int, ShieldEffect>.of(consumed.shields)
-          ..[tokenId] = ShieldEffect(
-            tokenId: tokenId,
-            ownerPlayerId: playerId,
-            activatedAtTurnSerial: state.turnSerial,
-          );
+        Map<int, ShieldEffect>.of(consumed.shields);
+    for (final LudoToken token in eligibleTokens) {
+      shields[token.id] = ShieldEffect(
+        tokenId: token.id,
+        ownerPlayerId: playerId,
+        activatedAtTurnSerial: state.turnSerial,
+      );
+    }
 
     return PowerLudoActionResult(
       state: consumed.copyWith(shields: shields),
@@ -228,14 +214,14 @@ class PowerLudoEngine {
           type: PowerGameEventType.powerActivated,
           playerId: playerId,
           powerType: PowerType.shield,
-          tokenId: tokenId,
         ),
-        PowerGameEvent(
-          type: PowerGameEventType.shieldApplied,
-          playerId: playerId,
-          powerType: PowerType.shield,
-          tokenId: tokenId,
-        ),
+        for (final LudoToken token in eligibleTokens)
+          PowerGameEvent(
+            type: PowerGameEventType.shieldApplied,
+            playerId: playerId,
+            powerType: PowerType.shield,
+            tokenId: token.id,
+          ),
       ],
     );
   }
@@ -364,35 +350,16 @@ class PowerLudoEngine {
   }
 
   bool canUseDoubleDistance(PowerLudoState state) {
-    if (!_hasCharge(
+    return state.gameState.phase == GamePhase.waitingForRoll &&
+        !state.doubleDistanceArmed &&
+        _hasCharge(
           state,
           state.gameState.currentPlayer.id,
           PowerType.doubleDistance,
-        ) ||
-        state.gameState.phase != GamePhase.selectingToken ||
-        state.doubleDistanceArmed) {
-      return false;
-    }
-
-    final int? diceValue = state.gameState.diceValue;
-    if (diceValue == null) {
-      return false;
-    }
-
-    final int distance =
-        diceValue * PowerRules.doubleDistanceMultiplier;
-
-    return state.gameState.currentPlayer.tokens.any(
-      (LudoToken token) =>
-          !token.isInBase &&
-          !token.isFinished &&
-          _classic.canMoveToken(
-            state: state.gameState,
-            token: token,
-            diceValue: diceValue,
-            movementDistance: distance,
-          ),
-    );
+        ) &&
+        state.gameState.currentPlayer.tokens.any(
+          (LudoToken token) => !token.isInBase && !token.isFinished,
+        );
   }
 
   bool canUseShield(PowerLudoState state) {
@@ -411,6 +378,7 @@ class PowerLudoEngine {
 
   bool canUseDiceControl(PowerLudoState state) {
     return state.gameState.phase == GamePhase.waitingForRoll &&
+        !state.doubleDistanceArmed &&
         _hasCharge(
           state,
           state.gameState.currentPlayer.id,
@@ -522,7 +490,8 @@ class PowerLudoEngine {
 
     PowerLudoState next = before.copyWith(
       gameState: baseResult.state,
-      clearDoubleDistancePlayerId: true,
+      clearDoubleDistancePlayerId:
+          changedPlayer || baseResult.state.phase != GamePhase.selectingToken,
     );
 
     final List<PowerGameEvent> resolvedPowerEvents =

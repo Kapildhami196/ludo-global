@@ -99,6 +99,8 @@ class LudoGameEngine {
   LudoGameActionResult rollDice(
     LudoGameState state, {
     int? forcedValue,
+    int movementMultiplier = 1,
+    bool allowBaseRelease = true,
   }) {
     _requirePhase(state, GamePhase.waitingForRoll);
 
@@ -154,6 +156,8 @@ class LudoGameEngine {
     final List<int> movableTokenIds = getMovableTokenIds(
       state,
       diceValue,
+      movementDistance: diceValue * movementMultiplier,
+      allowBaseRelease: allowBaseRelease,
     );
 
     if (movableTokenIds.isEmpty) {
@@ -431,8 +435,10 @@ class LudoGameEngine {
 
   List<int> getMovableTokenIds(
     LudoGameState state,
-    int diceValue,
-  ) {
+    int diceValue, {
+    int? movementDistance,
+    bool allowBaseRelease = true,
+  }) {
     if (diceValue < 1 || diceValue > 6) {
       return const <int>[];
     }
@@ -443,6 +449,8 @@ class LudoGameEngine {
             state: state,
             token: token,
             diceValue: diceValue,
+            movementDistance: movementDistance,
+            allowBaseRelease: allowBaseRelease,
           ),
         )
         .map((LudoToken token) => token.id)
@@ -454,13 +462,15 @@ class LudoGameEngine {
     required LudoToken token,
     required int diceValue,
     int? movementDistance,
+    bool allowBaseRelease = true,
   }) {
     if (token.isFinished || diceValue < 1 || diceValue > 6) {
       return false;
     }
 
     if (token.isInBase) {
-      return diceValue == ClassicRules.rollRequiredToLeaveBase;
+      return allowBaseRelease &&
+          diceValue == ClassicRules.rollRequiredToLeaveBase;
     }
 
     final int steps = movementDistance ?? diceValue;

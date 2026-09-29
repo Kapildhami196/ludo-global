@@ -14,10 +14,8 @@ import '../../domain/entities/game_phase.dart';
 import '../../domain/entities/ludo_game_event.dart';
 import '../../domain/entities/ludo_game_state.dart';
 import '../../domain/entities/ludo_player.dart';
-import '../../domain/entities/ludo_token.dart';
 import '../../domain/entities/player_color.dart';
 import '../../domain/entities/power_type.dart';
-import '../../domain/entities/token_status.dart';
 import '../../domain/power/power_game_event.dart';
 import '../../domain/power/power_inventory.dart';
 import '../../domain/power/power_ludo_action_result.dart';
@@ -188,11 +186,15 @@ class _PowerComputerGameScreenState
   Future<void> _rollNormally({
     required bool isComputer,
   }) async {
+    final bool doubleArmed = _powerState.doubleDistanceArmed;
+
     setState(() {
       _isRolling = true;
       _message = isComputer
-          ? '${_state.currentPlayer.name} is rolling...'
-          : 'Rolling...';
+          ? (doubleArmed
+              ? '${_state.currentPlayer.name} is rolling Double Distance...'
+              : '${_state.currentPlayer.name} is rolling...')
+          : (doubleArmed ? 'Rolling Double Distance...' : 'Rolling...');
     });
 
     unawaited(_feedback.diceRoll());
@@ -203,8 +205,22 @@ class _PowerComputerGameScreenState
 
     final PowerLudoActionResult result =
         _engine.rollDice(_powerState);
+    final LudoGameEvent? diceEvent = _eventOfType(
+      result.gameEvents,
+      LudoGameEventType.diceRolled,
+    );
 
     _applyRollResult(result, isComputer: isComputer);
+
+    if (doubleArmed && diceEvent?.value != null) {
+      final int rolled = diceEvent!.value!;
+      await _triggerFx(
+        GameFxType.doubleDistance,
+        label: '$rolled × 2 = ${rolled * 2}',
+        durationMs: 760,
+      );
+    }
+
     if (!isComputer) {
       _scheduleHumanSingleAutoMove();
     }
@@ -335,8 +351,7 @@ class _PowerComputerGameScreenState
               _engine.armDoubleDistance(_powerState);
           setState(() {
             _powerState = result.state;
-            _message =
-                'Double Distance armed. Tap a glowing token.';
+            _message = 'Double Distance armed. Roll the dice.';
           });
           unawaited(_feedback.doubleDistance());
         } on StateError catch (error) {
@@ -361,73 +376,17 @@ class _PowerComputerGameScreenState
   }
 
   Future<void> _humanUseShield() async {
-    final List<LudoToken> eligible = _state.currentPlayer.tokens
-        .where(
-          (token) =>
-              token.status == TokenStatus.active &&
-              !_powerState.isShielded(token.id),
-        )
-        .toList(growable: false);
-
-    if (eligible.isEmpty) {
-      _showRuleMessage(
-        'Move a token onto the shared track before using Shield.',
-      );
-      return;
-    }
-
-    final int? tokenId = await showModalBottomSheet<int>(
-      context: context,
-      backgroundColor: LudoGlobalColors.surface,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'SHIELD A TOKEN',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 10),
-              for (int index = 0;
-                  index < eligible.length;
-                  index++)
-                ListTile(
-                  leading: const Icon(
-                    Icons.shield_rounded,
-                    color: LudoGlobalColors.electricBlue,
-                  ),
-                  title: Text('Token ${index + 1}'),
-                  subtitle: Text(
-                    'Position ${eligible[index].pathPosition + 1}',
-                  ),
-                  onTap: () => Navigator.of(sheetContext)
-                      .pop(eligible[index].id),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (tokenId == null || !mounted) {
-      return;
-    }
-
     try {
-      final result = _engine.applyShield(
-        _powerState,
-        tokenId,
-      );
+      final result = _engine.applyShield(_powerState);
+      final int protectedCount = result.powerEvents
+          .where((event) => event.type == PowerGameEventType.shieldApplied)
+          .length;
+
       setState(() {
         _powerState = result.state;
-        _message = 'Shield active on your token.';
+        _message = protectedCount == 1
+            ? 'Shield active on your track pawn.'
+            : 'Shield active on all $protectedCount track pawns.';
       });
       unawaited(_feedback.shield());
     } on StateError catch (error) {
@@ -553,14 +512,28 @@ class _PowerComputerGameScreenState
         );
 
         switch (decision.type) {
-          case PowerAiPreRollActionType.shield:
-            final int tokenId = decision.tokenId ??
-                _ai.chooseShieldToken(_powerState);
+          case PowerAiPreRollActionType.doubleDistance:
             final result =
-                _engine.applyShield(_powerState, tokenId);
+                _engine.armDoubleDistance(_powerState);
             setState(() {
               _powerState = result.state;
-              _message = '$computerName used Shield.';
+              _message = '$computerName armed Double Distance.';
+            });
+            unawaited(_feedback.doubleDistance());
+            await Future<void>.delayed(
+              const Duration(milliseconds: 330),
+            );
+            if (!mounted || _isHumanTurn) {
+              continue;
+            }
+            await _rollNormally(isComputer: true);
+            break;
+
+          case PowerAiPreRollActionType.shield:
+            final result = _engine.applyShield(_powerState);
+            setState(() {
+              _powerState = result.state;
+              _message = '$computerName shielded all track pawns.';
             });
             unawaited(_feedback.shield());
             await Future<void>.delayed(
@@ -609,37 +582,12 @@ class _PowerComputerGameScreenState
 
       if (_state.phase == GamePhase.selectingToken &&
           !_isHumanTurn) {
-        final PowerAiDoubleDecision doubleDecision =
-            _ai.shouldUseDoubleDistance(
-          state: _powerState,
-          engine: _engine,
-          difficulty: widget.difficulty,
-        );
-
-        if (doubleDecision.shouldUse) {
-          final result =
-              _engine.armDoubleDistance(_powerState);
-          setState(() {
-            _powerState = result.state;
-            _message =
-                '${_state.currentPlayer.name} used Double Distance.';
-          });
-          unawaited(_feedback.doubleDistance());
-          await Future<void>.delayed(
-            const Duration(milliseconds: 350),
-          );
-        }
-
-        if (!mounted || _isHumanTurn || _state.isGameOver) {
-          break;
-        }
-
         final int tokenId = _ai.chooseMove(
           state: _powerState,
           difficulty: widget.difficulty,
         );
 
-        final String reason = doubleDecision.shouldUse
+        final String reason = _powerState.doubleDistanceArmed
             ? 'Double Distance'
             : 'strategic move';
 

@@ -11,10 +11,8 @@ import '../../domain/entities/game_phase.dart';
 import '../../domain/entities/ludo_game_event.dart';
 import '../../domain/entities/ludo_game_state.dart';
 import '../../domain/entities/ludo_player.dart';
-import '../../domain/entities/ludo_token.dart';
 import '../../domain/entities/player_color.dart';
 import '../../domain/entities/power_type.dart';
-import '../../domain/entities/token_status.dart';
 import '../../domain/power/power_game_event.dart';
 import '../../domain/power/power_inventory.dart';
 import '../../domain/power/power_ludo_action_result.dart';
@@ -123,11 +121,12 @@ class _PowerLocalGameScreenState
       return;
     }
 
+    final bool doubleArmed = _powerState.doubleDistanceArmed;
     _autoMoveSequence++;
 
     setState(() {
       _isRolling = true;
-      _message = 'Rolling...';
+      _message = doubleArmed ? 'Rolling Double Distance...' : 'Rolling...';
     });
 
     unawaited(_feedback.diceRoll());
@@ -139,11 +138,25 @@ class _PowerLocalGameScreenState
 
     final PowerLudoActionResult result =
         _engine.rollDice(_powerState);
+    final LudoGameEvent? diceEvent = _eventOfType(
+      result.gameEvents,
+      LudoGameEventType.diceRolled,
+    );
 
     _applyActionResult(
       result,
       updateDice: true,
     );
+
+    if (doubleArmed && diceEvent?.value != null) {
+      final int rolled = diceEvent!.value!;
+      await _triggerFx(
+        GameFxType.doubleDistance,
+        label: '$rolled × 2 = ${rolled * 2}',
+        durationMs: 760,
+      );
+    }
+
     _scheduleSingleLegalAutoMove();
   }
 
@@ -251,7 +264,7 @@ class _PowerLocalGameScreenState
       unawaited(_feedback.doubleDistance());
       setState(() {
         _powerState = result.state;
-        _message = 'Double Distance armed. Tap a glowing token.';
+        _message = 'Double Distance armed. Roll the dice.';
       });
     } on StateError catch (error) {
       _showRuleMessage(error.message);
@@ -263,92 +276,19 @@ class _PowerLocalGameScreenState
       return;
     }
 
-    final List<LudoToken> eligible = _state.currentPlayer.tokens
-        .where(
-          (token) =>
-              token.status == TokenStatus.active &&
-              !_powerState.isShielded(token.id),
-        )
-        .toList(growable: false);
-
-    if (eligible.isEmpty) {
-      _showRuleMessage(
-        'Move a token onto the shared track before using Shield.',
-      );
-      return;
-    }
-
-    final int? tokenId = await showModalBottomSheet<int>(
-      context: context,
-      backgroundColor: LudoGlobalColors.surface,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'SHIELD A TOKEN',
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Protection lasts until your next turn begins.',
-                  style: TextStyle(
-                    color: LudoGlobalColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                for (int index = 0;
-                    index < eligible.length;
-                    index++)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      tileColor: LudoGlobalColors.surfaceBright,
-                      leading: const Icon(
-                        Icons.shield_rounded,
-                        color: LudoGlobalColors.electricBlue,
-                      ),
-                      title: Text('Token ${index + 1}'),
-                      subtitle: Text(
-                        'Track position ${eligible[index].pathPosition + 1}',
-                      ),
-                      trailing:
-                          const Icon(Icons.chevron_right_rounded),
-                      onTap: () => Navigator.of(sheetContext)
-                          .pop(eligible[index].id),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (tokenId == null || !mounted) {
-      return;
-    }
-
     try {
       final PowerLudoActionResult result =
-          _engine.applyShield(_powerState, tokenId);
+          _engine.applyShield(_powerState);
+      final int protectedCount = result.powerEvents
+          .where((event) => event.type == PowerGameEventType.shieldApplied)
+          .length;
 
       unawaited(_feedback.shield());
       setState(() {
         _powerState = result.state;
-        _message = 'Shield active. This token cannot be captured.';
+        _message = protectedCount == 1
+            ? 'Shield active on your track pawn.'
+            : 'Shield active on all $protectedCount track pawns.';
       });
     } on StateError catch (error) {
       _showRuleMessage(error.message);
