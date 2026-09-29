@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/ads/home_banner_ad.dart';
 import '../../../core/theme/ludo_global_tokens.dart';
 import '../../../core/widgets/game_background.dart';
 import '../../../core/widgets/game_icon_tile.dart';
@@ -49,85 +50,104 @@ class MatchTypeScreen extends StatelessWidget {
     return Scaffold(
       body: GameBackground(
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(LudoGlobalSpacing.md),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: LudoGlobalSpacing.md,
+            ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _Header(modeName: _modeName),
-                const SizedBox(height: 22),
-                _MatchTypeCard(
-                  icon: Icons.phone_android_rounded,
-                  title: 'Local / Pass-and-Play',
-                  subtitle: '2, 3, or 4 humans • Same device • Offline',
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFFFB62C),
-                      Color(0xFFEA6B16),
-                    ],
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.only(
+                      top: LudoGlobalSpacing.md,
+                      bottom: LudoGlobalSpacing.sm,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _Header(modeName: _modeName),
+                        const SizedBox(height: 22),
+                        _MatchTypeCard(
+                          icon: Icons.phone_android_rounded,
+                          title: 'Local / Pass-and-Play',
+                          subtitle:
+                              '2, 3, or 4 humans • Same device • Offline',
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFFFFB62C),
+                              Color(0xFFEA6B16),
+                            ],
+                          ),
+                          badge: 'READY',
+                          onTap: () => _openLocal(context),
+                        ),
+                        const SizedBox(height: 12),
+                        _MatchTypeCard(
+                          icon: Icons.smart_toy_rounded,
+                          title: 'Play with Computer',
+                          subtitle: 'Practice against AI players',
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF9B55FF),
+                              Color(0xFF5628CE),
+                            ],
+                          ),
+                          badge: 'READY',
+                          onTap: () => _openComputer(context),
+                        ),
+                        const SizedBox(height: 12),
+                        _MatchTypeCard(
+                          icon: Icons.public_rounded,
+                          title: 'Online Match',
+                          subtitle:
+                              'Match with players around the world',
+                          gradient: LudoGlobalGradients.normal,
+                          badge: 'LATER',
+                          onTap: () => _showPlanned(
+                            context,
+                            'Online Match',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _MatchTypeCard(
+                          icon: Icons.lock_rounded,
+                          title: 'Private Room',
+                          subtitle: 'Create or join with a room code',
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFFC13CFF),
+                              Color(0xFF7137E7),
+                            ],
+                          ),
+                          badge: 'LATER',
+                          onTap: () => _showPlanned(
+                            context,
+                            'Private Room',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _MatchTypeCard(
+                          icon: Icons.groups_rounded,
+                          title: 'Play with Friends',
+                          subtitle: 'Invite friends and play together',
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF19C6D7),
+                              Color(0xFF087DCB),
+                            ],
+                          ),
+                          badge: 'LATER',
+                          onTap: () => _showPlanned(
+                            context,
+                            'Play with Friends',
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  badge: 'READY',
-                  onTap: () => _openLocal(context),
                 ),
-                const SizedBox(height: 12),
-                _MatchTypeCard(
-                  icon: Icons.smart_toy_rounded,
-                  title: 'Play with Computer',
-                  subtitle: 'Practice against AI players',
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF9B55FF),
-                      Color(0xFF5628CE),
-                    ],
-                  ),
-                  badge: 'READY',
-                  onTap: () => _openComputer(context),
-                ),
-                const SizedBox(height: 12),
-                _MatchTypeCard(
-                  icon: Icons.public_rounded,
-                  title: 'Online Match',
-                  subtitle: 'Match with players around the world',
-                  gradient: LudoGlobalGradients.normal,
-                  badge: 'LATER',
-                  onTap: () => _showPlanned(
-                    context,
-                    'Online Match',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _MatchTypeCard(
-                  icon: Icons.lock_rounded,
-                  title: 'Private Room',
-                  subtitle: 'Create or join with a room code',
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFC13CFF),
-                      Color(0xFF7137E7),
-                    ],
-                  ),
-                  badge: 'LATER',
-                  onTap: () => _showPlanned(
-                    context,
-                    'Private Room',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _MatchTypeCard(
-                  icon: Icons.groups_rounded,
-                  title: 'Play with Friends',
-                  subtitle: 'Invite friends and play together',
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF19C6D7),
-                      Color(0xFF087DCB),
-                    ],
-                  ),
-                  badge: 'LATER',
-                  onTap: () => _showPlanned(
-                    context,
-                    'Play with Friends',
-                  ),
+                const HomeBannerAd(
+                  key: Key('match_type_bottom_banner'),
                 ),
               ],
             ),
