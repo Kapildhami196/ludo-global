@@ -11,10 +11,8 @@ import '../../domain/entities/game_phase.dart';
 import '../../domain/entities/ludo_game_event.dart';
 import '../../domain/entities/ludo_game_state.dart';
 import '../../domain/entities/ludo_player.dart';
-import '../../domain/entities/ludo_token.dart';
 import '../../domain/entities/player_color.dart';
 import '../../domain/entities/power_type.dart';
-import '../../domain/entities/token_status.dart';
 import '../../domain/power/power_game_event.dart';
 import '../../domain/power/power_inventory.dart';
 import '../../domain/power/power_ludo_action_result.dart';
@@ -161,6 +159,7 @@ class _PowerLocalGameScreenState
 
     _scheduleSingleLegalAutoMove();
   }
+
   Future<void> _useDiceControl() async {
     if (_isBusy) {
       return;
@@ -295,6 +294,7 @@ class _PowerLocalGameScreenState
       _showRuleMessage(error.message);
     }
   }
+
   void _onPowerTap(PowerType type) {
     switch (type) {
       case PowerType.doubleDistance:
