@@ -8,6 +8,7 @@ enum GameFxType {
   capture,
   home,
   winner,
+  doubleDistance,
 }
 
 class GameFxOverlay extends StatefulWidget {
@@ -177,6 +178,7 @@ class _GameFxOverlayState extends State<GameFxOverlay>
       GameFxType.capture => LudoGlobalColors.red,
       GameFxType.home => LudoGlobalColors.cyan,
       GameFxType.winner => LudoGlobalColors.gold,
+      GameFxType.doubleDistance => LudoGlobalColors.purple,
     };
   }
 
@@ -185,6 +187,7 @@ class _GameFxOverlayState extends State<GameFxOverlay>
       GameFxType.capture => 'CAPTURE!',
       GameFxType.home => 'HOME!',
       GameFxType.winner => 'WINNER!',
+      GameFxType.doubleDistance => 'DOUBLE!',
     };
   }
 }
@@ -204,6 +207,7 @@ class _EventIcon extends StatelessWidget {
       GameFxType.capture => Icons.flash_on_rounded,
       GameFxType.home => Icons.auto_awesome_rounded,
       GameFxType.winner => Icons.emoji_events_rounded,
+      GameFxType.doubleDistance => Icons.close_rounded,
     };
 
     final double size = type == GameFxType.winner ? 64 : 48;
