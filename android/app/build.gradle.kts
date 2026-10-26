@@ -64,6 +64,11 @@ android {
                 signingConfig =
                     signingConfigs.getByName("release")
             }
+
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
@@ -73,6 +78,10 @@ kotlin {
         jvmTarget =
             org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
+}
+
+dependencies {
+    implementation("androidx.work:work-runtime:2.11.2")
 }
 
 flutter {
