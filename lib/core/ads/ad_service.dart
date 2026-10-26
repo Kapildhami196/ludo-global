@@ -262,12 +262,13 @@ class AdService extends ChangeNotifier {
   }
 
   Future<void> showMatchFinishInterstitialIfNeeded() async {
-    if (_adFreeMatches > 0) {
-      await _consumeAdFreeMatch();
+    if (!await _mayRequestAds()) {
+      // Do not spend an ad-free match when no ads may be shown.
       return;
     }
 
-    if (!await _mayRequestAds()) {
+    if (_adFreeMatches > 0) {
+      await _consumeAdFreeMatch();
       return;
     }
 
