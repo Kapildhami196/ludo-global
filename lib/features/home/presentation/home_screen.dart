@@ -29,6 +29,19 @@ class HomeScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _openAdPrivacyChoices(BuildContext context) async {
+    final bool success =
+        await AdService.instance.showPrivacyOptionsForm();
+
+    if (!success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Privacy choices are unavailable. Try again later.'),
+        ),
+      );
+    }
+  }
+
   void _openMatchType(
     BuildContext context,
     LudoGameMode mode,
@@ -185,6 +198,25 @@ class HomeScreen extends StatelessWidget {
                                 size: 18,
                               ),
                               label: const Text('Privacy Policy'),
+                            ),
+                            AnimatedBuilder(
+                              animation: AdService.instance,
+                              builder: (context, child) {
+                                if (!AdService.instance.privacyOptionsRequired) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                return TextButton.icon(
+                                  key: const Key('ad_privacy_choices_button'),
+                                  onPressed: () =>
+                                      _openAdPrivacyChoices(context),
+                                  icon: const Icon(
+                                    Icons.tune_rounded,
+                                    size: 18,
+                                  ),
+                                  label: const Text('Privacy choices'),
+                                );
+                              },
                             ),
                           ],
                         ),
