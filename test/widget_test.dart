@@ -22,6 +22,14 @@ void main() {
       find.byKey(const Key('rewarded_ad_free_button')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const Key('privacy_policy_button')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('ad_privacy_choices_button')),
+      findsNothing,
+    );
     expect(find.text('Lv. 1'), findsNothing);
     expect(find.text('12,500'), findsNothing);
     expect(find.text('320'), findsNothing);
