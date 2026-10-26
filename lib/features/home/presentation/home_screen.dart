@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/ads/ad_service.dart';
 import '../../../core/ads/home_banner_ad.dart';
@@ -10,6 +11,23 @@ import 'widgets/ludo_mode_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  static const MethodChannel _privacyChannel =
+      MethodChannel('com.local.ludo_global/privacy');
+
+  Future<void> _openPrivacyPolicy(BuildContext context) async {
+    try {
+      await _privacyChannel.invokeMethod<void>('openPrivacyPolicy');
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open the Privacy Policy.'),
+          ),
+        );
+      }
+    }
+  }
 
   void _openMatchType(
     BuildContext context,
@@ -159,6 +177,15 @@ class HomeScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 8),
+                            TextButton.icon(
+                              key: const Key('privacy_policy_button'),
+                              onPressed: () => _openPrivacyPolicy(context),
+                              icon: const Icon(
+                                Icons.privacy_tip_outlined,
+                                size: 18,
+                              ),
+                              label: const Text('Privacy Policy'),
+                            ),
                           ],
                         ),
                       ),
