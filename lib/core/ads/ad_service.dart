@@ -130,10 +130,18 @@ class AdService extends ChangeNotifier {
     _privacyOptionsRequired = optionsRequired;
 
     if (!allowed) {
-      _interstitialAd?.dispose();
+      final InterstitialAd? interstitial = _interstitialAd;
+      final RewardedAd? rewarded = _rewardedAd;
+
       _interstitialAd = null;
-      _rewardedAd?.dispose();
       _rewardedAd = null;
+
+      if (interstitial != null) {
+        unawaited(interstitial.dispose());
+      }
+      if (rewarded != null) {
+        unawaited(rewarded.dispose());
+      }
     }
 
     notifyListeners();
