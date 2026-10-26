@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,7 +12,7 @@ enum RewardedAdOutcome {
   dismissedWithoutReward,
 }
 
-class AdService {
+class AdService extends ChangeNotifier {
   AdService._();
 
   static final AdService instance = AdService._();
@@ -23,41 +24,188 @@ class AdService {
   RewardedAd? _rewardedAd;
 
   bool _initialized = false;
+  bool _initializing = false;
+  bool _canRequestAds = false;
+  bool _privacyOptionsRequired = false;
   bool _interstitialLoading = false;
   bool _rewardedLoading = false;
   int _adFreeMatches = 0;
 
   bool get isInitialized => _initialized;
+  bool get canShowAds => _initialized && _canRequestAds;
+  bool get privacyOptionsRequired => _privacyOptionsRequired;
   int get adFreeMatches => _adFreeMatches;
 
   Future<void> initialize() async {
-    if (_initialized) {
+    if (_initializing || _initialized) {
       return;
     }
 
-    _preferences = await SharedPreferences.getInstance();
-    _adFreeMatches =
-        _preferences?.getInt(_adFreeMatchesKey) ?? 0;
+    _initializing = true;
 
     try {
-      await MobileAds.instance.initialize();
+      _preferences = await SharedPreferences.getInstance();
+      _adFreeMatches = _preferences?.getInt(_adFreeMatchesKey) ?? 0;
+
+      // Google recommends updating UMP consent information on each launch.
+      final bool updated = await _requestConsentInfoUpdate();
+      if (updated) {
+        await _showConsentFormIfRequired();
+      }
+
+      // On network errors, UMP can still allow ads from saved consent.
+      await _refreshConsentState();
+
+      if (_canRequestAds) {
+        await _startAds();
+      }
     } catch (_) {
+      // The game remains playable without advertising.
+      await _refreshConsentState();
+      if (_canRequestAds) {
+        await _startAds();
+      }
+    } finally {
+      _initializing = false;
+    }
+  }
+
+  Future<bool> _requestConsentInfoUpdate() async {
+    final Completer<bool> result = Completer<bool>();
+
+    try {
+      ConsentInformation.instance.requestConsentInfoUpdate(
+        ConsentRequestParameters(),
+        () {
+          if (!result.isCompleted) {
+            result.complete(true);
+          }
+        },
+        (FormError error) {
+          if (!result.isCompleted) {
+            result.complete(false);
+          }
+        },
+      );
+
+      return await result.future;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _showConsentFormIfRequired() async {
+    final Completer<void> dismissed = Completer<void>();
+
+    try {
+      await ConsentForm.loadAndShowConsentFormIfRequired(
+        (FormError? error) {
+          if (!dismissed.isCompleted) {
+            dismissed.complete();
+          }
+        },
+      );
+      await dismissed.future;
+    } catch (_) {
+      // If the form fails, canRequestAds() decides whether ads are allowed.
+    }
+  }
+
+  Future<void> _refreshConsentState() async {
+    bool allowed = false;
+    bool optionsRequired = false;
+
+    try {
+      allowed = await ConsentInformation.instance.canRequestAds();
+      optionsRequired =
+          await ConsentInformation.instance
+              .getPrivacyOptionsRequirementStatus() ==
+          PrivacyOptionsRequirementStatus.required;
+    } catch (_) {
+      // Fail closed when the SDK cannot confirm permission.
+      allowed = false;
+    }
+
+    _canRequestAds = allowed;
+    _privacyOptionsRequired = optionsRequired;
+
+    if (!allowed) {
+      _interstitialAd?.dispose();
+      _interstitialAd = null;
+      _rewardedAd?.dispose();
+      _rewardedAd = null;
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> _startAds() async {
+    if (!_canRequestAds) {
       return;
     }
 
-    _initialized = true;
-    _loadInterstitial();
-    _loadRewarded();
+    if (!_initialized) {
+      try {
+        await MobileAds.instance.initialize();
+        _initialized = true;
+      } catch (_) {
+        return;
+      }
+    }
+
+    notifyListeners();
+    unawaited(_loadInterstitial());
+    unawaited(_loadRewarded());
+  }
+
+  Future<bool> showPrivacyOptionsForm() async {
+    if (!_privacyOptionsRequired) {
+      return false;
+    }
+
+    final Completer<FormError?> dismissed = Completer<FormError?>();
+
+    try {
+      await ConsentForm.showPrivacyOptionsForm((FormError? error) {
+        if (!dismissed.isCompleted) {
+          dismissed.complete(error);
+        }
+      });
+
+      final FormError? error = await dismissed.future;
+      await _refreshConsentState();
+
+      if (_canRequestAds) {
+        await _startAds();
+      }
+
+      return error == null;
+    } catch (_) {
+      await _refreshConsentState();
+      return false;
+    }
+  }
+
+  Future<bool> _mayRequestAds() async {
+    if (!canShowAds) {
+      return false;
+    }
+
+    try {
+      return await ConsentInformation.instance.canRequestAds();
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<RewardedAdOutcome> showRewardedForAdFreeMatch() async {
-    if (!_initialized) {
+    if (!await _mayRequestAds()) {
       return RewardedAdOutcome.unavailable;
     }
 
     final RewardedAd? ad = _rewardedAd;
     if (ad == null) {
-      _loadRewarded();
+      unawaited(_loadRewarded());
       return RewardedAdOutcome.unavailable;
     }
 
@@ -77,7 +225,7 @@ class AdService {
         FullScreenContentCallback<RewardedAd>(
       onAdDismissedFullScreenContent: (RewardedAd dismissedAd) {
         dismissedAd.dispose();
-        _loadRewarded();
+        unawaited(_loadRewarded());
         complete(
           rewardEarned
               ? RewardedAdOutcome.earned
@@ -89,7 +237,7 @@ class AdService {
         AdError error,
       ) {
         failedAd.dispose();
-        _loadRewarded();
+        unawaited(_loadRewarded());
         complete(RewardedAdOutcome.unavailable);
       },
     );
@@ -97,14 +245,14 @@ class AdService {
     unawaited(
       ad.show(
         onUserEarnedReward: (
-        AdWithoutView ad,
-        RewardItem reward,
-      ) {
-        if (rewardEarned) {
-          return;
-        }
+          AdWithoutView ad,
+          RewardItem reward,
+        ) {
+          if (rewardEarned) {
+            return;
+          }
 
-        rewardEarned = true;
+          rewardEarned = true;
           unawaited(_grantAdFreeMatch());
         },
       ),
@@ -119,13 +267,13 @@ class AdService {
       return;
     }
 
-    if (!_initialized) {
+    if (!await _mayRequestAds()) {
       return;
     }
 
     final InterstitialAd? ad = _interstitialAd;
     if (ad == null) {
-      _loadInterstitial();
+      unawaited(_loadInterstitial());
       return;
     }
 
@@ -145,7 +293,7 @@ class AdService {
         InterstitialAd dismissedAd,
       ) {
         dismissedAd.dispose();
-        _loadInterstitial();
+        unawaited(_loadInterstitial());
         complete();
       },
       onAdFailedToShowFullScreenContent: (
@@ -153,7 +301,7 @@ class AdService {
         AdError error,
       ) {
         failedAd.dispose();
-        _loadInterstitial();
+        unawaited(_loadInterstitial());
         complete();
       },
     );
@@ -162,62 +310,79 @@ class AdService {
     await completer.future;
   }
 
-  void _loadInterstitial() {
-    if (!_initialized ||
-        _interstitialLoading ||
-        _interstitialAd != null) {
+  Future<void> _loadInterstitial() async {
+    if (!await _mayRequestAds()) {
+      return;
+    }
+
+    if (_interstitialLoading || _interstitialAd != null || !canShowAds) {
       return;
     }
 
     _interstitialLoading = true;
 
-    InterstitialAd.load(
-      adUnitId: AdIds.interstitial,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (InterstitialAd ad) {
-          _interstitialLoading = false;
-          _interstitialAd = ad;
-        },
-        onAdFailedToLoad: (LoadAdError error) {
-          _interstitialLoading = false;
-          _interstitialAd = null;
-        },
-      ),
-    );
+    try {
+      await InterstitialAd.load(
+        adUnitId: AdIds.interstitial,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (InterstitialAd ad) {
+            _interstitialLoading = false;
+            if (!canShowAds) {
+              ad.dispose();
+              return;
+            }
+            _interstitialAd = ad;
+          },
+          onAdFailedToLoad: (LoadAdError error) {
+            _interstitialLoading = false;
+            _interstitialAd = null;
+          },
+        ),
+      );
+    } catch (_) {
+      _interstitialLoading = false;
+    }
   }
 
-  void _loadRewarded() {
-    if (!_initialized ||
-        _rewardedLoading ||
-        _rewardedAd != null) {
+  Future<void> _loadRewarded() async {
+    if (!await _mayRequestAds()) {
+      return;
+    }
+
+    if (_rewardedLoading || _rewardedAd != null || !canShowAds) {
       return;
     }
 
     _rewardedLoading = true;
 
-    RewardedAd.load(
-      adUnitId: AdIds.rewarded,
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (RewardedAd ad) {
-          _rewardedLoading = false;
-          _rewardedAd = ad;
-        },
-        onAdFailedToLoad: (LoadAdError error) {
-          _rewardedLoading = false;
-          _rewardedAd = null;
-        },
-      ),
-    );
+    try {
+      await RewardedAd.load(
+        adUnitId: AdIds.rewarded,
+        request: const AdRequest(),
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+          onAdLoaded: (RewardedAd ad) {
+            _rewardedLoading = false;
+            if (!canShowAds) {
+              ad.dispose();
+              return;
+            }
+            _rewardedAd = ad;
+          },
+          onAdFailedToLoad: (LoadAdError error) {
+            _rewardedLoading = false;
+            _rewardedAd = null;
+          },
+        ),
+      );
+    } catch (_) {
+      _rewardedLoading = false;
+    }
   }
 
   Future<void> _grantAdFreeMatch() async {
     _adFreeMatches += 1;
-    await _preferences?.setInt(
-      _adFreeMatchesKey,
-      _adFreeMatches,
-    );
+    await _preferences?.setInt(_adFreeMatchesKey, _adFreeMatches);
   }
 
   Future<void> _consumeAdFreeMatch() async {
@@ -226,9 +391,6 @@ class AdService {
     }
 
     _adFreeMatches -= 1;
-    await _preferences?.setInt(
-      _adFreeMatchesKey,
-      _adFreeMatches,
-    );
+    await _preferences?.setInt(_adFreeMatchesKey, _adFreeMatches);
   }
 }
